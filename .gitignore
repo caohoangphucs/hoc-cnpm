@@ -1,0 +1,8 @@
+*.mp4
+*.pyc
+*.zip
+.env
+.venv/
+__pycache__/
+node_modules/
+venv/
