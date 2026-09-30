@@ -56,20 +56,22 @@ $$\text{<tiền-tố>}/\text{<tên-bạn>}-\text{<tên-chức-năng>}$$
 
 Mỗi commit phải giải thích rõ ràng **đã làm gì và ở đâu**. Giúp cả nhóm theo dõi lịch sử và debug khi có sự cố.
 
-### 3.1. Cú pháp chuẩn:
-$$\text{<type>}(\text{<scope>}): \text{<mô tả ngắn ngọn>}$$
+### 3.1. Cú pháp chuẩn (Bắt buộc theo C6-D1):
+$$\text{<type>}(\text{<scope>}): \text{<mô tả ngắn ngọn>} \text{ #UC-XX}$$
 
 * **`<type>`**: `feat`, `fix`, `refactor`, `style`, `docs`, `chore`, `test`.
 * **`<scope>`**: Phân hệ chịu ảnh hưởng (`auth`, `room`, `invoice`, `maintenance`, `security`, `db`, `ui`, `config`).
 * **`<mô tả>`**: Viết ngắn gọn (dưới 72 ký tự), viết bằng tiếng Việt (hoặc tiếng Anh nhất quán).
+* **`#UC-XX`**: Mã Use Case tương ứng (`#UC-01` .. `#UC-08`) để đối chiếu Traceability khi chấm bài.
 
 ### 3.2. Ví dụ chuẩn:
-* ✅ `feat(room): them chuc nang loc phong con trong theo tang`
-* ✅ `fix(invoice): sua loi tinh tien dien bi am khi chi so moi nho hon chi so cu`
-* ✅ `feat(payment): tich hop tao url thanh toan sandbox vnpay`
-* ✅ `style(ui): can chinh responsive modal dat giuong tren man hinh dien thoai`
-* ✅ `docs(workflow): bo sung huong dan git workflow va quy tac commit`
-* ✅ `refactor(db): toi uu co che tu dong phat hien host docker vs local trong DBContext`
+* ✅ `feat(room): them chuc nang loc phong con trong theo tang #UC-02`
+* ✅ `fix(invoice): sua loi tinh tien dien bi am khi chi so moi nho hon chi so cu #UC-06`
+* ✅ `feat(payment): tich hop tao url thanh toan sandbox vnpay #UC-07`
+* ✅ `feat(booking): sinh vien chon va dat giuong chong tranh chap #UC-03`
+* ✅ `style(ui): can chinh responsive modal dat giuong tren dien thoai #UC-03`
+* ✅ `docs(diagram): bo sung sequence diagram luong duyet dang ky #UC-04`
+* ✅ `refactor(db): toi uu co che connection pool trong DBContext`
 
 ### 3.3. Các commit BỊ CẤM:
 * ❌ `update`

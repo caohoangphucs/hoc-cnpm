@@ -1,5 +1,3 @@
-USE CNPM_KTX;
-SET FOREIGN_KEY_CHECKS = 0;
 
 -- =========================================================================
 -- SEED DATA (Chuẩn bị dữ liệu mẫu ban đầu)
@@ -682,4 +680,16 @@ INSERT INTO VI_PHAM (MaViPham, MaSinhVien, MaRaVao, NoiDungViPham, MucDo, HinhTh
 (15, '21110015', 45, 'Về KTX muộn sau 23h không xin phép', 'LOW', 'Nhắc nhở và ghi biên bản', '2026-09-30 23:15:00', 'DA_XU_LY');
 
 
-SET FOREIGN_KEY_CHECKS = 1;
+
+-- Sync sequences for SERIAL primary keys
+SELECT setval('tai_khoan_mataikhoan_seq', (SELECT MAX(MaTaiKhoan) FROM TAI_KHOAN));
+SELECT setval('dang_ky_phong_madangky_seq', (SELECT COALESCE(MAX(MaDangKy), 1) FROM DANG_KY_PHONG));
+SELECT setval('luu_tru_maluutru_seq', (SELECT COALESCE(MAX(MaLuuTru), 1) FROM LUU_TRU));
+SELECT setval('chi_so_dien_nuoc_machiso_seq', (SELECT COALESCE(MAX(MaChiSo), 1) FROM CHI_SO_DIEN_NUOC));
+SELECT setval('hoa_don_mahoadon_seq', (SELECT COALESCE(MAX(MaHoaDon), 1) FROM HOA_DON));
+SELECT setval('chi_tiet_hoa_don_machitiet_seq', (SELECT COALESCE(MAX(MaChiTiet), 1) FROM CHI_TIET_HOA_DON));
+SELECT setval('thanh_toan_mathanhtoan_seq', (SELECT COALESCE(MAX(MaThanhToan), 1) FROM THANH_TOAN));
+SELECT setval('ra_vao_maravao_seq', (SELECT COALESCE(MAX(MaRaVao), 1) FROM RA_VAO));
+SELECT setval('vi_pham_mavipham_seq', (SELECT COALESCE(MAX(MaViPham), 1) FROM VI_PHAM));
+SELECT setval('yeu_cau_sua_chua_mayeucau_seq', (SELECT COALESCE(MAX(MaYeuCau), 1) FROM YEU_CAU_SUA_CHUA));
+SELECT setval('xuat_vat_tu_maxuat_seq', (SELECT COALESCE(MAX(MaXuat), 1) FROM XUAT_VAT_TU));

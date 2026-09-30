@@ -1,7 +1,7 @@
 # HỆ THỐNG QUẢN LÝ KÝ TÚC XÁ (KTX SMART HUB) - ĐỒ ÁN CNPM
 
 - **Production URL:** [https://cnpm.caohoangphuc.id.vn](https://cnpm.caohoangphuc.id.vn)
-- **Tech Stack:** Java 17, Jakarta EE 10 (Servlet 6.0, JSP/JSTL 3.0), MySQL 8.0, HikariCP Connection Pool, BCrypt, Docker, Bootstrap 5.
+- **Tech Stack:** Java 17, Jakarta EE 10 (Servlet 6.0, JSP/JSTL 3.0), PostgreSQL 16, HikariCP Connection Pool, BCrypt, Docker, Bootstrap 5.
 - **Kiến trúc:** 3 Tầng chuẩn hóa (Presentation Layer $\rightarrow$ Business/Service Layer $\rightarrow$ Data Access / Stored Procedures & Triggers).
 
 ---
@@ -18,21 +18,28 @@
 
 ---
 
-## QUY TẮC PHÁT TRIỂN & SỬ DỤNG NHÁNH (BẮT BUỘC)
+## QUY TẮC PHÁT TRIỂN, SỬ DỤNG NHÁNH & COMMIT (BẮT BUỘC THEO C6-D1)
 
 > 📖 **Xem chi tiết toàn bộ:** [Quy Chuẩn Git Workflow, Commit & Push Code](docs/GIT_WORKFLOW.md)
 
-1. **Tạo nhánh theo module / chức năng:**
-   - **TUYỆT ĐỐI KHÔNG commit/push trực tiếp vào nhánh `main` hay `develop`**.
-   - Cú pháp: `<loại>/<tên-bạn>-<chức-năng>` (Ví dụ: `feat/dat-vnpay`, `feat/linh-auth`, `fix/dat-invoice-calc`).
+1. **Cấu trúc nhánh chuẩn (Branching Strategy):**
+   - `main`: Nhánh Release / Production (tự động deploy lên https://cnpm.caohoangphuc.id.vn).
+   - `develop`: Nhánh tích hợp chính (Staging) của toàn nhóm. Toàn bộ tính năng mới bắt buộc tạo PR vào `develop`.
+   - `feat/<tên-bạn>-<chức-năng>` / `fix/<tên-bạn>-<lỗi>`: Nhánh làm việc cá nhân (Ví dụ: `feat/dat-vnpay`, `feat/linh-auth`, `fix/dat-invoice-calc`).
    - Sử dụng script tạo nhánh nhanh tự động:
      ```powershell
      .\scripts\git-branch.ps1 -Type feat -Author dat -Feature vnpay
      ```
 
-2. **Quy tắc viết Commit Message (Conventional Commits):**
-   - Cú pháp: `<type>(<scope>): <mô tả ngắn>`
-   - Ví dụ: `feat(payment): them nut thanh toan vnpay sandbox`, `fix(invoice): sua loi am tien dien`.
+2. **Quy tắc viết Commit Message (Conventional Commits kèm #UC-XX):**
+   - **Bắt buộc gắn mã Use Case (`#UC-XX`)** vào cuối message để phục vụ chấm điểm Traceability theo rubric C6-D1.
+   - Cú pháp: `<type>(<scope>): <mô tả ngắn> #UC-XX`
+   - Ví dụ chuẩn:
+     - `feat(booking): sinh vien dat giuong chong tranh chap #UC-03`
+     - `feat(payment): them nut thanh toan vnpay sandbox #UC-07`
+     - `feat(auth): dang nhap 5 phan he phan quyen #UC-01`
+     - `fix(invoice): sua loi am tien dien khi nhap sai #UC-06`
+     - `docs(api): cap nhat sequence diagram luong dat giuong #UC-03`
 
 3. **Cơ sở dữ liệu (Database) đã có sẵn:**
    - Dữ liệu và database được quản lý tự động bởi Docker container.

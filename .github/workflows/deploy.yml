@@ -10,16 +10,19 @@ jobs:
   database-schema-seed-and-build:
     runs-on: ubuntu-latest
     services:
-      mysql:
-        image: mysql:8.0
+      postgres:
+        image: postgres:16-alpine
         env:
-          MYSQL_ROOT_PASSWORD: RootPassword2026!
-          MYSQL_DATABASE: CNPM_KTX
-          MYSQL_USER: cnpm_user
-          MYSQL_PASSWORD: CnpmUserPassword2026!
+          POSTGRES_PASSWORD: RootPassword2026!
+          POSTGRES_DB: cnpm_db
+          POSTGRES_USER: cnpm_user
         ports:
-          - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout Code
@@ -33,21 +36,27 @@ jobs:
           cache: maven
 
       - name: 1. Apply Table Schema (01_schema.sql)
+        env:
+          PGPASSWORD: RootPassword2026!
         run: |
           echo "Applying database schema..."
-          mysql -h 127.0.0.1 -u root -pRootPassword2026! CNPM_KTX < database/01_schema.sql
+          psql -h 127.0.0.1 -U cnpm_user -d cnpm_db -v ON_ERROR_STOP=1 -f database/01_schema.sql
           echo "Schema updated successfully."
 
       - name: 2. Load Seed Data (02_seed.sql)
+        env:
+          PGPASSWORD: RootPassword2026!
         run: |
           echo "Loading seed data..."
-          mysql -h 127.0.0.1 -u root -pRootPassword2026! CNPM_KTX < database/02_seed.sql
+          psql -h 127.0.0.1 -U cnpm_user -d cnpm_db -v ON_ERROR_STOP=1 -f database/02_seed.sql
           echo "Seed data loaded successfully."
 
       - name: 3. Verify Database Integrity & Counts
+        env:
+          PGPASSWORD: RootPassword2026!
         run: |
           echo "Verifying tables and record counts..."
-          mysql -h 127.0.0.1 -u root -pRootPassword2026! CNPM_KTX -e "
+          psql -h 127.0.0.1 -U cnpm_user -d cnpm_db -c "
             SELECT 'SINH_VIEN' AS TableName, COUNT(*) AS Total FROM SINH_VIEN
             UNION ALL
             SELECT 'GIUONG', COUNT(*) FROM GIUONG
