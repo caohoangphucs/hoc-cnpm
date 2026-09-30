@@ -18,7 +18,7 @@
 
 ---
 
-## QUY TẮC PHÁT TRIỂN, SỬ DỤNG NHÁNH & COMMIT (BẮT BUỘC THEO C6-D1)
+## QUY TẮC PHÁT TRIỂN, SỬ DỤNG NHÁNH & COMMIT (BẮT BUỘC CHO TOÀN BỘ DỰ ÁN)
 
 > 📖 **Xem chi tiết toàn bộ:** [Quy Chuẩn Git Workflow, Commit & Push Code](docs/main/GIT_WORKFLOW.md)
 
@@ -26,7 +26,7 @@
 - **NGHIÊM CẤM TẤT CẢ THÀNH VIÊN commit hoặc push trực tiếp vào nhánh `main`**.
 - Nhánh `main` chỉ nhận merge từ nhánh `develop` thông qua Pull Request (PR) sau khi đã kiểm thử ổn định.
 - **Thời điểm duy nhất được merge vào `main`:**
-  1. Khi đã hoàn tất và kiểm thử trơn tru toàn bộ 6–8 Use Cases trên `develop`.
+  1. Khi đã hoàn tất và kiểm thử trơn tru toàn bộ các Use Cases trên `develop`.
   2. Khi chốt đợt Release / Nộp bài / Demo chấm điểm cuối kỳ.
   3. Khi Lead cập nhật tài liệu hoặc cấu hình nền móng chung của toàn dự án.
 
