@@ -27,8 +27,8 @@ Hệ thống tuân thủ mô hình Git Flow chuẩn hóa gồm 3 cấp độ nh�
 >    - Chốt đợt Release / Báo cáo / Chấm điểm đồ án cuối kỳ.
 >    - Khi Lead cập nhật tài liệu hoặc cấu hình chung của toàn repo.
 
-* **`main`**: Nhánh Production chính thức (tự động kích hoạt GitHub Actions build & deploy lên `https://cnpm.caohoangphuc.id.vn`). Chỉ nhận merge từ `develop` qua PR do Lead duyệt.
-* **`develop`**: Nhánh tích hợp đang phát triển của cả nhóm. Toàn bộ tính năng mới sau khi hoàn thành sẽ được tạo PR vào đây.
+* **`develop`**: Nhánh tích hợp chính (Staging & Continuous Deployment — tự động kích hoạt CI/CD deploy lên `https://cnpm.caohoangphuc.id.vn`). Toàn bộ tính năng mới sau khi hoàn thành sẽ được tạo PR vào đây.
+* **`main`**: Nhánh Release / Production chính thức (chốt nộp bài cuối kỳ / demo đồ án). Chỉ nhận merge từ `develop` qua PR do Lead duyệt.
 * **Nhánh cá nhân (`feat/*`, `fix/*`, `docs/*`)**: Nơi mỗi thành viên tự do phát triển mà không làm ảnh hưởng đến người khác.
 
 ---
