@@ -18,8 +18,17 @@ Hệ thống tuân thủ mô hình Git Flow chuẩn hóa gồm 3 cấp độ nh�
   feat/fix/refactor (Nhánh làm việc của từng cá nhân)
 ```
 
-* **`main`**: Nhánh Production chính thức. **TUYỆT ĐỐI KHÔNG commit hoặc push trực tiếp**. Chỉ nhận merge từ `develop` qua PR đã được Lead duyệt.
-* **`develop`**: Nhánh tích hợp đang phát triển. Toàn bộ tính năng mới sau khi hoàn thành sẽ được tạo PR vào đây.
+> [!CAUTION]
+> **LỆNH CẤM BẮT BUỘC ĐỐI VỚI TẤT CẢ THÀNH VIÊN:**
+> 1. **TUYỆT ĐỐI KHÔNG commit hoặc push trực tiếp vào nhánh `main`**.
+> 2. Mọi thành viên chỉ làm việc trên nhánh cá nhân `feat/...`, `fix/...` và tạo Pull Request vào **`develop`**.
+> 3. **Nhánh `main` CHỈ được merge từ `develop` khi:**
+>    - Toàn bộ 6–8 Use Cases đã hoàn thành và kiểm thử ổn định trên `develop`.
+>    - Chốt đợt Release / Báo cáo / Chấm điểm đồ án cuối kỳ.
+>    - Khi Lead cập nhật tài liệu hoặc cấu hình chung của toàn repo.
+
+* **`main`**: Nhánh Production chính thức (tự động kích hoạt GitHub Actions build & deploy lên `https://cnpm.caohoangphuc.id.vn`). Chỉ nhận merge từ `develop` qua PR do Lead duyệt.
+* **`develop`**: Nhánh tích hợp đang phát triển của cả nhóm. Toàn bộ tính năng mới sau khi hoàn thành sẽ được tạo PR vào đây.
 * **Nhánh cá nhân (`feat/*`, `fix/*`, `docs/*`)**: Nơi mỗi thành viên tự do phát triển mà không làm ảnh hưởng đến người khác.
 
 ---
