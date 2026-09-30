@@ -1,4 +1,4 @@
-# 🏢 HỆ THỐNG QUẢN LÝ KÝ TÚC XÁ (KTX SMART HUB) - ĐỒ ÁN CNPM
+# HỆ THỐNG QUẢN LÝ KÝ TÚC XÁ (KTX SMART HUB) - ĐỒ ÁN CNPM
 
 - **Production URL:** [https://cnpm.caohoangphuc.id.vn](https://cnpm.caohoangphuc.id.vn)
 - **Tech Stack:** Java 17, Jakarta EE 10 (Servlet 6.0, JSP/JSTL 3.0), MySQL 8.0, HikariCP Connection Pool, BCrypt, Docker, Bootstrap 5.
@@ -6,7 +6,7 @@
 
 ---
 
-## 👥 PHÂN CÔNG TRÁCH NHIỆM 5 THÀNH VIÊN & 8 USE CASES
+## PHÂN CÔNG TRÁCH NHIỆM 5 THÀNH VIÊN & 8 USE CASES
 
 | STT | Thành Viên | Vai Trò & Phân Hệ | Thực Thể Phụ Trách | Use Cases & Nghiệp Vụ Chính |
 |---|---|---|---|---|
@@ -18,7 +18,7 @@
 
 ---
 
-## 🚨 QUY TẮC PHÁT TRIỂN & SỬ DỤNG NHÁNH (BẮT BUỘC)
+## QUY TẮC PHÁT TRIỂN & SỬ DỤNG NHÁNH (BẮT BUỘC)
 
 1. **Tạo nhánh theo module / chức năng:**
    - **TUYỆT ĐỐI KHÔNG commit/push trực tiếp vào nhánh `main` hay `develop`**.
@@ -39,7 +39,7 @@
 
 ---
 
-## 🔐 TÀI KHOẢN TRẢI NGHIỆM DEMO (5 VAI TRÒ)
+## TÀI KHOẢN TRẢI NGHIỆM DEMO (5 VAI TRÒ)
 
 | Vai Trò | Username | Mật Khẩu | Quyền Hạn & Màn Hình |
 |---|---|---|---|
@@ -51,7 +51,7 @@
 
 ---
 
-## 🛠 HƯỚNG DẪN CHẠY LOCAL VỚI DOCKER
+## HƯỚNG DẪN CHẠY LOCAL VỚI DOCKER
 
 ```bash
 # 1. Khởi động DB và ứng dụng
