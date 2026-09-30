@@ -20,7 +20,7 @@
 
 ## QUY TẮC PHÁT TRIỂN, SỬ DỤNG NHÁNH & COMMIT (BẮT BUỘC THEO C6-D1)
 
-> 📖 **Xem chi tiết toàn bộ:** [Quy Chuẩn Git Workflow, Commit & Push Code](docs/GIT_WORKFLOW.md)
+> 📖 **Xem chi tiết toàn bộ:** [Quy Chuẩn Git Workflow, Commit & Push Code](docs/main/GIT_WORKFLOW.md)
 
 1. **Cấu trúc nhánh chuẩn (Branching Strategy):**
    - `main`: Nhánh Release / Production (tự động deploy lên https://cnpm.caohoangphuc.id.vn).
