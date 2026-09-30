@@ -6,29 +6,32 @@
 
 ## 1. TỔNG QUAN HỆ THỐNG & TECH STACK
 * **Mục tiêu:** Hệ thống quản lý toàn diện KTX: duyệt phòng, đặt giữ giường chống race-condition, tính toán phát hành hóa đơn tự động, báo hỏng xuất kho vật tư và kiểm soát an ninh ra vào sau 23h.
-* **Ngôn ngữ & Runtime:** Java 17 (Eclipse Temurin), Apache Tomcat 10.1.
-* **Web Specification:** Jakarta EE 10 (Jakarta Servlet 6.0, JSP/JSTL 3.0).
-* **Database & Pool:** PostgreSQL 16, HikariCP Connection Pool (`DBContext.java`), BCrypt password hash.
+* **Ngôn ngữ & Runtime đích:** Java17, Spring Boot4.1.1 executable JAR, Tomcat11 nhúng.
+* **Web đích:** Spring MVC @RestController/@Controller, Thymeleaf/Bootstrap5; Spring Security, DTO @Valid và @RestControllerAdvice.
+* **Database & Pool:** PostgreSQL 16, Spring JDBC/JdbcTemplate, HikariCP/DataSource auto-configured, Flyway; BCrypt qua Spring Security.
 * **Ảo hóa & CI/CD:** Docker multi-stage build, Docker Compose, GitHub Actions.
 
 ---
+
+> Chỉ tài liệu đã đổi công nghệ; code hiện tại còn Servlet/JSP WAR. Mapping và hướng chuyển: [Spring Boot](docs/demo/SPRING_BOOT.md).
 
 ## 2. QUY TẮC KIẾN TRÚC BẮT BUỘC (CRITICAL ARCHITECTURE RULES)
 
 Khi hỗ trợ viết code hoặc refactor, AI **BẮT BUỘC** tuân thủ các quy tắc sau:
 
-1. **Kiến trúc 3 Tầng chuẩn mực:**
-   * **Presentation:** JSP & JSTL trong `src/main/webapp/WEB-INF/views/` (sử dụng component chung `_header.jspf` và `_footer.jspf`).
-   * **Controller (Servlet):** Nằm tại `src/main/java/vn/id/caohoangphuc/cnpm/controller/`. Chỉ làm nhiệm vụ điều hướng, kiểm tra session/auth và parse request.
-   * **Data Access (DAO):** Nằm tại `src/main/java/vn/id/caohoangphuc/cnpm/dao/`. Chỉ gọi Connection từ `DBContext.getConnection()` và tương tác với CSDL.
+1. **Kiến trúc đích Spring Boot:**
+   * **Presentation:** Thymeleaf templates trong `src/main/resources/templates`, static trong resources/static; không dùng JSP làm đích mới.
+   * **Controller:** Spring @RestController nhận DTO @Valid; @Controller phục vụ trang. SecurityFilterChain kiểm session/CSRF, @PreAuthorize và ownership ở Service.
+   * **Service:** Constructor injection, public @Transactional điều phối; status SP lỗi chuyển thành exception để rollback. Không gọi mạng khi giữ transaction.
+   * **Repository:** @Repository/JdbcTemplate gọi PostgreSQL function/procedure; không tạo pool/commit/Connection riêng. DBContext/static DAO chỉ là legacy để chuyển đổi.
 
 2. **Nghiệp vụ cốt lõi nằm ở Stored Procedures:**
-   * Nghiệp vụ phức tạp có transaction, khóa dòng (`FOR UPDATE`) và cập nhật liên bảng (đặt giường, duyệt phòng, phát hành hóa đơn, xuất kho vật tư, quét thẻ vi phạm) **ĐÃ ĐƯỢC ĐÓNG GÓI TRONG STORED PROCEDURES** tại `database/01_schema.sql`.
+   * Nghiệp vụ phức tạp có transaction, khóa dòng (`FOR UPDATE`) và cập nhật liên bảng (đặt giường, duyệt phòng, phát hành hóa đơn, xuất kho vật tư, quét thẻ vi phạm) **CÓ NỀN STORED PROCEDURES** tại `database/01_schema.sql`.
    * **KHÔNG** tự ý viết các câu lệnh raw SQL insert/update thủ công trong DAO làm phá vỡ logic ràng buộc hoặc bỏ qua Stored Procedures có sẵn.
 
 3. **Bảo toàn các file hệ thống:**
    * **KHÔNG** chỉnh sửa `Dockerfile`, `docker-compose.yml`, `.github/workflows/deploy.yml` trừ khi có yêu cầu trực tiếp từ Tech Lead.
-   * Thêm bảng mới hoặc cập nhật logic database chỉ tạo file SQL mới trong `database/` (ví dụ: `database/03_update_vnpay.sql`).
+   * Đích dùng Flyway versioned migrations tại resources/db/migration, nguồn/historical SQL trong database/. Không replay 01_schema có DROP trên DB cần giữ; không init đồng thời Flyway và Docker entrypoint. Khi chưa chuyển code, chỉ tạo SQL mới trong database/ theo quy trình legacy.
 
 ---
 
@@ -36,7 +39,7 @@ Khi hỗ trợ viết code hoặc refactor, AI **BẮT BUỘC** tuân thủ các
 
 Khi giải thích hoặc hướng dẫn cho lập trình viên, AI cần hướng dẫn sử dụng các công cụ sẵn có sau:
 
-* **Chế độ Hot-Reload Giao Diện:**
+* **Hot reload legacy (chưa chuyển code):**
   * File `docker-compose.override.yml` đã mount thư mục JSP vào Tomcat container.
   * **Sửa JSP/HTML/CSS:** Chỉ cần lưu file và **bấm F5 trên trình duyệt** (không cần rebuild container).
 * **Reset Database sạch sẽ khi test:**
@@ -48,7 +51,7 @@ Khi giải thích hoặc hướng dẫn cho lập trình viên, AI cần hướn
 
 ## 4. QUY TẮC GIT WORKFLOW (BẮT BUỘC CHO MỌI COMMIT & PR)
 
-Xem tài liệu đầy đủ tại: `docs/GIT_WORKFLOW.md`
+Xem tài liệu đầy đủ tại: [Git workflow](docs/main/GIT_WORKFLOW.md)
 
 1. **Tuyệt đối không commit/push lên `main` hay `develop`:**
    * Mọi công việc phải thực hiện trên nhánh riêng.

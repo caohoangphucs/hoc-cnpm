@@ -1,7 +1,7 @@
 @startuml UC-12_duyet-dang-ky
 title
 UC-12 — Duyệt đơn đăng ký phòng
-REQ-011, REQ-005 • Thiết kế demo theo SRS cũ
+REQ-011, REQ-005 • Spring Boot • Thiết kế demo theo SRS cũ
 end title
 hide footbox
 autonumber
@@ -13,17 +13,18 @@ skinparam maxMessageSize 85
 skinparam sequenceParticipantBackgroundColor #EAF2F8
 skinparam sequenceGroupBackgroundColor #F8FAFC
 actor "Admin BQL" as A
-boundary "Giao diện" as UI
-control "AdminServlet" as C
+boundary "Thymeleaf / Bootstrap" as UI
+control "RegistrationController" as C
 control "RegistrationService\n<<đề xuất>>" as S
-participant "RoomDAO" as D
+participant "RoomRepository" as D
 database "PostgreSQL\nSP / dữ liệu" as DB
 participant "Thông báo / Outbox\n<<đề xuất>>" as N
 actor "Sinh viên" as SV
 note over C,DB
 Đã có: /admin/registrations, /admin/approve-registration; usp_DuyetDangKy.
 SP cập nhật lưu trú trực tiếp, không có trigger gán giường; khóa / audit / hợp đồng / email cần bổ sung.
-Các Service và bước ghi là thiết kế đích; xem bảng khoảng cách triển khai.
+Đích mới: Spring Boot @RestController → @Service @Transactional → @Repository/JdbcTemplate.
+Code nền còn Servlet/DAO legacy; các bước ghi là thiết kế cần triển khai.
 end note
 ref over UI,C : Tiền điều kiện: đăng nhập, kiểm tra quyền phía server; Admin/Kế toán có 2FA
 A -> UI : Mở danh sách hồ sơ chờ duyệt; chọn bộ lọc

@@ -5,11 +5,7 @@
 Class Diagram đích: [thiết kế lớp demo](class-diagrams/README.md).
 Quy tắc chi tiết và hợp đồng SP tại [quy tắc](QUY_TAC_NGHIEP_VU.md) và [dữ liệu](DU_LIEU_VA_SP.md).
 
-Controller parse request, kiểm tra session/quyền và điều hướng; Service đề xuất
-điều phối; DAO lấy connection từ DBContext và gọi SP trong transaction.
-Client có loading/khóa nút, empty state và lỗi theo trường. Server luôn kiểm
-tra quyền/sở hữu, validation, CSRF, SQL tham số hóa và escape nội dung.
-Admin/Kế toán cần 2FA; dữ liệu nhạy cảm cần mã hóa theo SRS.
+Spring Boot @RestController nhận DTO @Valid; SecurityFilterChain và @PreAuthorize kiểm quyền/2FA, Service @Transactional điều phối; @Repository dùng JdbcTemplate gọi SP. Thymeleaf/Bootstrap giữ loading/empty state và lỗi theo trường. Xem [mapping và ranh giới transaction](SPRING_BOOT.md). Danh mục class legacy ở phần bước5 dưới đây được thay bằng class đích; toàn bộ còn là thiết kế, chưa có code Boot.
 
 ## UC-04 Đăng ký phòng
 
@@ -31,7 +27,7 @@ rời trang trước submit: cảnh báo; không tạo giữ chỗ từ bản nh
 **Bước 4 — Sequence Diagram:** [PlantUML](../sequence-diagrams/demo/UC-04_dang-ky-phong.puml)
 · [SVG](../sequence-diagrams/demo/UC-04_dang-ky-phong.svg).
 
-**Bước 5 — Lớp tham gia và phần bổ sung:** StudentServlet, RoomDAO, DBContext có sẵn; BookingService/BookingRequestDTO đề xuất. SP cần thời hạn 48 giờ; schema hồ sơ/ảnh và audit cần bổ sung.
+**Bước 5 — Lớp tham gia và phần bổ sung:** BookingController/BookingService/RoomRepository/BookingRequestDTO; DataSource và JdbcTemplate do Spring quản lý. SP cần thời hạn 48 giờ; schema hồ sơ/ảnh và audit cần bổ sung.
 
 ## UC-12 Duyệt đăng ký
 
@@ -54,7 +50,7 @@ gửi email sau commit; lỗi kênh gửi thì retry, không đảo quyết đ�
 **Bước 4 — Sequence Diagram:** [PlantUML](../sequence-diagrams/demo/UC-12_duyet-dang-ky.puml)
 · [SVG](../sequence-diagrams/demo/UC-12_duyet-dang-ky.svg).
 
-**Bước 5 — Lớp tham gia và phần bổ sung:** AdminServlet/RoomDAO có sẵn; RegistrationService/ApprovalDecisionDTO/NotificationService/Outbox đề xuất. Hợp đồng, người duyệt, hồ sơ, khóa và audit cần bổ sung.
+**Bước 5 — Lớp tham gia và phần bổ sung:** RegistrationController/RegistrationService/RoomRepository/ApprovalDecisionDTO/NotificationService/Outbox. Hợp đồng, người duyệt, hồ sơ, khóa và audit cần bổ sung.
 
 ## UC-17 Tạo hóa đơn tháng
 
@@ -79,7 +75,7 @@ gửi hóa đơn; trả thành công/bỏ qua/lỗi
 **Bước 4 — Sequence Diagram:** [PlantUML](../sequence-diagrams/demo/UC-17_tao-hoa-don.puml)
 · [SVG](../sequence-diagrams/demo/UC-17_tao-hoa-don.svg).
 
-**Bước 5 — Lớp tham gia và phần bổ sung:** AccountingServlet/InvoiceDAO có sẵn; InvoiceBatchService/InvoiceDraftDTO/PricingService đề xuất. Schema giá theo kỳ/chính sách cần bổ sung; không mặc định tính lũy tiến.
+**Bước 5 — Lớp tham gia và phần bổ sung:** InvoiceController/InvoiceService/InvoiceRepository/InvoiceDraftDTO/PricingService. Schema giá theo kỳ/chính sách cần bổ sung; không mặc định tính lũy tiến.
 
 ## UC-08 Thanh toán online
 
@@ -105,7 +101,7 @@ quá 15 phút: hết hạn phiên; IPN muộn vẫn phải đối soát tiền t
 **Bước 4 — Sequence Diagram:** [PlantUML](../sequence-diagrams/demo/UC-08_thanh-toan-truc-tuyen.puml)
 · [SVG](../sequence-diagrams/demo/UC-08_thanh-toan-truc-tuyen.svg).
 
-**Bước 5 — Lớp tham gia và phần bổ sung:** InvoiceDAO/SP có sẵn; PaymentServlet/PaymentService/PaymentDAO/GatewayAdapter/PaymentResultDTO đề xuất. Cần chống xử lý lặp, tạo giao dịch và phân bổ gộp; return URL không tự gạch nợ.
+**Bước 5 — Lớp tham gia và phần bổ sung:** PaymentController/PaymentCallbackController/PaymentService/PaymentRepository/GatewayAdapter/PaymentResultDTO; SP được kế thừa. Cần chống xử lý lặp, tạo giao dịch và phân bổ gộp; return URL không tự gạch nợ.
 
 ## UC-22 Xử lý sửa chữa
 
@@ -128,7 +124,7 @@ thành công: lịch sử/audit/outbox; commit; gửi thông báo và link đán
 **Bước 4 — Sequence Diagram:** [PlantUML](../sequence-diagrams/demo/UC-22_xu-ly-sua-chua.puml)
 · [SVG](../sequence-diagrams/demo/UC-22_xu-ly-sua-chua.svg).
 
-**Bước 5 — Lớp tham gia và phần bổ sung:** MaintenanceServlet/MaintenanceDAO có sẵn; MaintenanceService/RepairCompletionDTO/NotificationService đề xuất. Cần ảnh, người phụ trách, lịch hẹn/bảo hành, mua bổ sung và audit.
+**Bước 5 — Lớp tham gia và phần bổ sung:** RepairController/RepairService/RepairRepository/RepairCompletionDTO/NotificationService. Cần ảnh, người phụ trách, lịch hẹn/bảo hành, mua bổ sung và audit.
 
 ## UC-25 Ghi nhận về KTX
 
@@ -150,7 +146,7 @@ kiểm tra đúng 23:00, sau 23:00, qua nửa đêm theo quy tắc được ch�
 **Bước 4 — Sequence Diagram:** [PlantUML](../sequence-diagrams/demo/UC-25_ghi-nhan-ra-vao.puml)
 · [SVG](../sequence-diagrams/demo/UC-25_ghi-nhan-ra-vao.svg).
 
-**Bước 5 — Lớp tham gia và phần bổ sung:** SecurityServlet/SecurityDAO có sẵn; GateService/GateEntryDTO/BarrierAdapter/VisitorDAO đề xuất. SP tạo vi phạm trực tiếp, không có trigger. Khách phải lưu riêng, không dùng RA_VAO bắt buộc MSSV.
+**Bước 5 — Lớp tham gia và phần bổ sung:** GateController/GateService/GateRepository/GateEntryDTO/BarrierAdapter/VisitorRepository. SP tạo vi phạm trực tiếp, không có trigger. Khách phải lưu riêng, không dùng RA_VAO bắt buộc MSSV.
 
 ## UC-14 Xử lý kỷ luật
 
@@ -174,7 +170,7 @@ Admin giữ nguyên hoặc tạo phiên bản quyết định mới; không xóa
 **Bước 4 — Sequence Diagram:** [PlantUML](../sequence-diagrams/demo/UC-14_xu-ly-ky-luat.puml)
 · [SVG](../sequence-diagrams/demo/UC-14_xu-ly-ky-luat.svg).
 
-**Bước 5 — Lớp tham gia và phần bổ sung:** VI_PHAM có sẵn; DisciplineServlet/DisciplineService/DisciplineDAO/DisciplineDecisionDTO đề xuất. Cần schema minh chứng, quyết định, học kỳ và khiếu nại.
+**Bước 5 — Lớp tham gia và phần bổ sung:** VI_PHAM có sẵn; DisciplineController/DisciplineService/DisciplineRepository/DisciplineDecisionDTO. Cần schema minh chứng, quyết định, học kỳ và khiếu nại.
 
 ## UC-30 Đăng ký công ích
 
@@ -200,4 +196,4 @@ PDF: chỉ hoạt động hoàn thành; chữ ký số BQL và QR kiểm chứng
 **Bước 4 — Sequence Diagram:** [PlantUML](../sequence-diagrams/demo/UC-30_dang-ky-cong-ich.puml)
 · [SVG](../sequence-diagrams/demo/UC-30_dang-ky-cong-ich.svg).
 
-**Bước 5 — Lớp tham gia và phần bổ sung:** CommunityServlet/CommunityService/CommunityDAO/CommunityRegistrationDTO/PointConversionService/CTSVAdapter/CertificateService đề xuất. Cần bảng hoạt động/đăng ký/điểm/quy đổi/chứng nhận/outbox.
+**Bước 5 — Lớp tham gia và phần bổ sung:** CommunityController/CommunityService/CommunityRepository/CommunityRegistrationDTO/PointConversionService/CTSVAdapter/CertificateService. Cần bảng hoạt động/đăng ký/điểm/quy đổi/chứng nhận/outbox.

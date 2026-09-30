@@ -2,80 +2,78 @@
 !pragma layout smetana
 skinparam classAttributeIconSize 0
 left to right direction
-title Thiết kế lớp demo 8 UC — PostgreSQL 16 (chưa triển khai)
-package "Presentation" {
- class JSPViews
- class AuthFilter {
-  +requireRole(role)
-  +requireOwnership(resource)
-  +verifyCsrf(request)
- }
- class DemoApiServlet {
-  +parseAndValidate(request)
-  +respond(result)
- }
+title Spring Boot 4.1.1 / PostgreSQL16 — thiết kế đích 8 UC
+package "Web / Security" {
+ class ThymeleafViews
+ class SecurityFilterChain <<Spring Security>>
+ class GlobalExceptionHandler <<@RestControllerAdvice>>
+ class BookingController <<@RestController>>
+ class RegistrationController <<@RestController>>
+ class InvoiceController <<@RestController>>
+ class PaymentController <<@RestController>>
+ class RepairController <<@RestController>>
+ class GateController <<@RestController>>
+ class DisciplineController <<@RestController>>
+ class CommunityController <<@RestController>>
+ class PaymentCallbackController <<@RestController>>
 }
-package "Điều phối đề xuất" {
- class BookingService {
+package "Services" {
+ class BookingService <<@Service / @Transactional>> {
  +book()
+}
+ class RegistrationService <<@Service / @Transactional>> {
  +decide()
 }
- class InvoiceService {
+ class InvoiceService <<@Service / @Transactional>> {
  +preview()
  +issue()
 }
- class PaymentService {
+ class PaymentService <<@Service / @Transactional>> {
  +createSession()
  +handleIpn()
 }
- class RepairService {
+ class RepairService <<@Service / @Transactional>> {
  +assign()
  +complete()
 }
- class GateService {
+ class GateService <<@Service / @Transactional>> {
  +record()
  +approveVisitor()
 }
- class DisciplineService {
+ class DisciplineService <<@Service / @Transactional>> {
  +decide()
  +respondAppeal()
 }
- class CommunityService {
+ class CommunityService <<@Service / @Transactional>> {
  +register()
  +cancel()
  +confirm()
  +convert()
  +certificate()
 }
- class TransactionRunner {
- +executeWithConnection(operation)
 }
+package "Persistence" {
+ class RoomRepository <<@Repository>>
+ class InvoiceRepository <<@Repository>>
+ class PaymentRepository <<@Repository>>
+ class RepairRepository <<@Repository>>
+ class GateRepository <<@Repository>>
+ class DisciplineRepository <<@Repository>>
+ class CommunityRepository <<@Repository>>
+ class JdbcTemplate <<Spring JDBC>>
+ class JdbcTransactionManager <<Spring>>
+ class HikariDataSource <<auto-configured>>
+ class Flyway <<migration>>
 }
-package "DAO / JDBC" {
- class RoomDAO
- class InvoiceDAO
- class PaymentDAO
- class MaintenanceDAO
- class SecurityDAO
- class DisciplineDAO
- class CommunityDAO
- class DBContext {
- +getConnection() : Connection
-}
-}
-package "Adapters đề xuất" {
+package "Integration / Jobs" {
  interface PaymentGateway {
- +create()
- +verifyCallback()
- +query()
-}
+  +create()
+  +verifyCallback()
+  +query()
+ }
  class VnpayAdapter
  class MomoAdapter
- class OutboxWorker {
- +lease()
- +send()
- +retry()
-}
+ class OutboxWorker <<@Scheduled>>
  interface NotificationAdapter
  interface CTSVAdapter
  interface BarrierAdapter
@@ -83,48 +81,66 @@ package "Adapters đề xuất" {
 }
 class PostgreSQL16 <<database>> {
  +procedures : PL/pgSQL
- +rowLocks : FOR UPDATE
  +constraints : FK, UNIQUE, CHECK
 }
-JSPViews --> DemoApiServlet
-DemoApiServlet --> AuthFilter
-DemoApiServlet --> BookingService
-DemoApiServlet --> InvoiceService
-DemoApiServlet --> PaymentService
-DemoApiServlet --> RepairService
-DemoApiServlet --> GateService
-DemoApiServlet --> DisciplineService
-DemoApiServlet --> CommunityService
-BookingService --> RoomDAO
-InvoiceService --> InvoiceDAO
-PaymentService --> PaymentDAO
+ThymeleafViews --> SecurityFilterChain
+SecurityFilterChain --> BookingController
+BookingController --> BookingService
+BookingService --> RoomRepository
+BookingService ..> JdbcTransactionManager
+SecurityFilterChain --> RegistrationController
+RegistrationController --> RegistrationService
+RegistrationService --> RoomRepository
+RegistrationService ..> JdbcTransactionManager
+SecurityFilterChain --> InvoiceController
+InvoiceController --> InvoiceService
+InvoiceService --> InvoiceRepository
+InvoiceService ..> JdbcTransactionManager
+SecurityFilterChain --> PaymentController
+PaymentController --> PaymentService
+PaymentService --> PaymentRepository
+PaymentService ..> JdbcTransactionManager
+SecurityFilterChain --> RepairController
+RepairController --> RepairService
+RepairService --> RepairRepository
+RepairService ..> JdbcTransactionManager
+SecurityFilterChain --> GateController
+GateController --> GateService
+GateService --> GateRepository
+GateService ..> JdbcTransactionManager
+SecurityFilterChain --> DisciplineController
+DisciplineController --> DisciplineService
+DisciplineService --> DisciplineRepository
+DisciplineService ..> JdbcTransactionManager
+SecurityFilterChain --> CommunityController
+CommunityController --> CommunityService
+CommunityService --> CommunityRepository
+CommunityService ..> JdbcTransactionManager
+RoomRepository --> JdbcTemplate
+InvoiceRepository --> JdbcTemplate
+PaymentRepository --> JdbcTemplate
+RepairRepository --> JdbcTemplate
+GateRepository --> JdbcTemplate
+DisciplineRepository --> JdbcTemplate
+CommunityRepository --> JdbcTemplate
+SecurityFilterChain --> PaymentCallbackController : chỉ miễn CSRF đúng IPN
+PaymentCallbackController --> PaymentService : chữ ký provider bắt buộc
 PaymentService --> PaymentGateway
-RepairService --> MaintenanceDAO
-GateService --> SecurityDAO
-DisciplineService --> DisciplineDAO
-CommunityService --> CommunityDAO
-BookingService ..> TransactionRunner
-PaymentService ..> TransactionRunner
-CommunityService ..> TransactionRunner
-TransactionRunner --> DBContext
-DBContext --> PostgreSQL16
-RoomDAO --> PostgreSQL16
-InvoiceDAO --> PostgreSQL16
-PaymentDAO --> PostgreSQL16
-MaintenanceDAO --> PostgreSQL16
-SecurityDAO --> PostgreSQL16
-DisciplineDAO --> PostgreSQL16
-CommunityDAO --> PostgreSQL16
 VnpayAdapter ..|> PaymentGateway
 MomoAdapter ..|> PaymentGateway
-OutboxWorker --> PostgreSQL16
+JdbcTemplate --> HikariDataSource
+JdbcTransactionManager --> HikariDataSource
+HikariDataSource --> PostgreSQL16
+Flyway --> PostgreSQL16
+OutboxWorker --> JdbcTemplate
 OutboxWorker --> NotificationAdapter
 OutboxWorker --> CTSVAdapter
 OutboxWorker --> BarrierAdapter
 OutboxWorker --> CertificateSigner
-note bottom of TransactionRunner
- Mỗi nghiệp vụ nhiều bảng dùng cùng Connection.
- Service điều phối; khóa/cập nhật liên bảng nằm trong SP.
- Không gọi mạng khi đang giữ transaction.
+GlobalExceptionHandler ..> BookingController : Error DTO chung
+note bottom of JdbcTransactionManager
+ @Transactional tại Service; cùng DataSource/Connection.
+ JdbcTemplate gọi procedure; khóa/cập nhật liên bảng nằm trong SP.
+ Không gọi mạng khi giữ transaction.
 end note
 @enduml

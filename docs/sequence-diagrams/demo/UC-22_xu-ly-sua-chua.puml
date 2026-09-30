@@ -1,7 +1,7 @@
 @startuml UC-22_xu-ly-sua-chua
 title
 UC-22 — Tiếp nhận và xử lý yêu cầu sửa chữa
-REQ-030, REQ-003, REQ-015, REQ-005 • Thiết kế demo theo SRS cũ
+REQ-030, REQ-003, REQ-015, REQ-005 • Spring Boot • Thiết kế demo theo SRS cũ
 end title
 hide footbox
 autonumber
@@ -13,16 +13,17 @@ skinparam maxMessageSize 85
 skinparam sequenceParticipantBackgroundColor #EAF2F8
 skinparam sequenceGroupBackgroundColor #F8FAFC
 actor "Nhân viên kỹ thuật" as A
-boundary "Giao diện" as UI
-control "MaintenanceServlet" as C
-control "MaintenanceService\n<<đề xuất>>" as S
-participant "MaintenanceDAO" as D
+boundary "Thymeleaf / Bootstrap" as UI
+control "RepairController" as C
+control "RepairService\n<<đề xuất>>" as S
+participant "RepairRepository" as D
 database "PostgreSQL\nSP / dữ liệu" as DB
 participant "Thông báo / Outbox\n<<đề xuất>>" as N
 note over C,DB
 Đã có: /maintenance/dashboard, /maintenance/complete-repair; usp_HoanThanhSuaChua.
 Tiếp nhận/gán người, ảnh, bảo hành, lịch hẹn và thông báo cần bổ sung.
-Các Service và bước ghi là thiết kế đích; xem bảng khoảng cách triển khai.
+Đích mới: Spring Boot @RestController → @Service @Transactional → @Repository/JdbcTemplate.
+Code nền còn Servlet/DAO legacy; các bước ghi là thiết kế cần triển khai.
 end note
 ref over UI,C : Tiền điều kiện: đăng nhập, kiểm tra quyền phía server; Admin/Kế toán có 2FA
 A -> UI : Mở danh sách phiếu mới

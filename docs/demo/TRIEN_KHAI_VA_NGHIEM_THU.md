@@ -1,26 +1,26 @@
 # Kế hoạch triển khai và nghiệm thu
 
-Bộ tài liệu áp dụng cho 8 UC trong NGUON.md. Tất cả class/API/bảng bổ sung là thiết kế đích; hiện tại chỉ chỉnh docs và AGENTS mô tả PostgreSQL. Không dùng checklist tài liệu để đánh dấu code đã hoàn thành.
+Bộ tài liệu áp dụng cho 8 UC trong NGUON.md. Tất cả class/API/bảng bổ sung là thiết kế đích; hiện tại chỉ chỉnh docs và AGENTS mô tả đích Spring Boot/PostgreSQL. Không dùng checklist tài liệu để đánh dấu code đã hoàn thành.
 
 ## Thứ tự thực hiện
 
 | Đợt | Sản phẩm code phải có | Điều kiện qua đợt |
 |---|---|---|
-| 0 | Sửa các sai lệch PostgreSQL trong POSTGRESQL.md; auth/2FA/RBAC/CSRF; fixture riêng; quản lý secret | Build Java17; schema/seed/migration nạp PG16; kiểm function và 7 procedure qua JDBC; login sai/hash lỗi bị chặn |
+| 0 | Spring Boot skeleton/JAR theo SPRING_BOOT.md, Thymeleaf/Spring Security/JdbcTemplate/Flyway; sửa sai lệch PostgreSQL trong POSTGRESQL.md; auth/2FA/RBAC/CSRF; fixture riêng; quản lý secret | Build Boot4.1.1/Java17 JAR; schema/seed/migration nạp PG16; kiểm function và 7 procedure qua JDBC; login sai/hash lỗi bị chặn |
 | 1 | Dữ liệu học kỳ/đợt/hồ sơ/hợp đồng; UC04/12 | Tranh chấp một giường, hết hạn48h, duyệt/từ chối rollback; email lỗi vẫn giữ quyết định |
 | 2 | Giá/chính sách/snapshot/draft; UC17/08 | Hóa đơn khớp tiền; IPN sandbox thật, chữ ký sai/lặp/tiền sai không gạch sai; gộp và đối soát |
 | 3 | Phân công/lịch sử/sửa chữa; thẻ/log/khách/barrier; UC22/25 | Không âm kho; hoàn thành lặp không xuất lại; mốc giờ Việt Nam; mock barrier được gắn nhãn |
 | 4 | Quyết định/khiếu nại; UC14 | Ngưỡng học kỳ, quyền Admin, quyết định nhóm nguyên tử và lịch sử bất biến |
 | 5 | Công ích/điểm/CTSV/PDF; UC30 | Cuối chỗ/trùng lịch, điểm cộng một lần, cap5ĐRL, ký/verify/thu hồi giấy |
 
-Service trong Class Diagram chỉ điều phối validation/adapter/transaction; nghiệp vụ khóa và cập nhật nhiều bảng nằm trong SP. DAO cùng module nhận Connection chung khi cần. Không tự thêm ORM persistence song song JDBC cho cùng transaction.
+Service trong Class Diagram chỉ điều phối validation/adapter/transaction; nghiệp vụ khóa và cập nhật nhiều bảng nằm trong SP. @Repository dùng JdbcTemplate cùng DataSource; @Transactional Service chia sẻ Connection Spring quản lý. Không tự thêm ORM persistence song song JDBC cho cùng transaction.
 
 ## Migration và rollback
 
 1. Backup dữ liệu và xác nhận phục hồi trên DB riêng; ghi schema version/checksum.
 2. Chạy preflight duplicate active residency/registration, tiền âm/trạng thái sai, liên kết orphan; sửa bằng kế hoạch dữ liệu có log, không xóa âm thầm.
 3. Tạo bảng/cột nullable trước, backfill có giới hạn batch; kiểm count và FK, rồi thêm NOT NULL/CHECK/unique/index. Timestamp cũ chuyển bằng AT TIME ZONE 'Asia/Ho_Chi_Minh', không giả là UTC.
-4. Tạo SP mới/CREATE OR REPLACE giữ signature; triển khai Java tương thích cột cũ/mới trước khi bật tính năng.
+4. Flyway baseline có preflight và migrations versioned; tạo SP mới/CREATE OR REPLACE giữ signature; triển khai Spring Boot tương thích cột cũ/mới trước khi bật tính năng.
 5. Chạy test, bật từng module. Rollback app trước; migration down không drop chứng từ mới có dữ liệu. Khôi phục SP version trước nếu tương thích; lỗi dữ liệu dùng migration sửa tiến, không replay seed.
 
 Đây là kế hoạch tài liệu; migration SQL thật sẽ được viết ở giai đoạn code. Không chạy 01_schema trên DB có dữ liệu cần giữ.
@@ -40,3 +40,5 @@ Mỗi test có mã UC/BR, fixture, requestId, request/response đã che dữ li�
 ## Trạng thái giao nộp
 
 Tài liệu là đầu vào triển khai; ứng dụng chỉ sẵn sàng demo khi các điều kiện trên có bằng chứng. SRS lịch sử giữ nguyên. Các UC ngoài 8 UC vẫn nằm backlog. Bộ docs không tạo tài khoản sandbox, chứng thư ký số hoặc tích hợp nhà cung cấp thay nhóm triển khai.
+
+Điều kiện công nghệ: executable JAR khởi động, Spring Security trả đúng JSON/CSRF/2FA, Flyway không DROP/seed production, TestcontainersPG16 kiểm rollback và gọi SP; Thymeleaf thay JSP. Chi tiết [chuyển đổi Spring Boot](SPRING_BOOT.md).

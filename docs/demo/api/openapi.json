@@ -1,9 +1,9 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "KTX demo 8 UC — thiết kế đích PostgreSQL",
-    "version": "1.0.0",
-    "description": "Chưa triển khai. API_VA_PHAN_QUYEN.md và bảng output là một phần contract."
+    "title": "KTX demo 8 UC — Spring Boot / PostgreSQL",
+    "version": "1.1.0",
+    "description": "Thiết kế đích Spring Boot4.1.1, Spring Security session+CSRF, Spring JDBC. Chưa triển khai."
   },
   "servers": [
     {
@@ -141,7 +141,18 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
       }
     },
     "/auth/2fa": {
@@ -273,7 +284,7 @@
         ],
         "parameters": [
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -426,32 +437,9 @@
             }
           }
         },
-        "security": [
-          {
-            "session": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 1
-            }
-          },
-          {
-            "name": "pageSize",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 100,
-              "default": 20
-            }
-          }
-        ]
+        "security": [],
+        "parameters": [],
+        "description": "Public bootstrap; authenticated=false và csrfToken khi chưa login."
       }
     },
     "/auth/logout": {
@@ -583,7 +571,7 @@
         ],
         "parameters": [
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -1025,7 +1013,7 @@
         ],
         "parameters": [
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -1343,7 +1331,7 @@
             }
           },
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -1503,7 +1491,7 @@
         ],
         "parameters": [
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -1663,7 +1651,7 @@
         ],
         "parameters": [
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -1963,7 +1951,7 @@
         ],
         "parameters": [
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -2275,7 +2263,7 @@
         ],
         "parameters": [
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -2577,7 +2565,7 @@
         ],
         "parameters": [
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -2897,7 +2885,7 @@
             }
           },
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -3066,7 +3054,7 @@
             }
           },
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -3226,7 +3214,7 @@
         ],
         "parameters": [
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -3537,7 +3525,7 @@
         ],
         "parameters": [
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -3706,7 +3694,7 @@
             }
           },
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -4018,7 +4006,7 @@
         ],
         "parameters": [
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -4187,7 +4175,7 @@
             }
           },
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -4356,7 +4344,7 @@
             }
           },
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -4665,7 +4653,7 @@
         ],
         "parameters": [
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -4834,7 +4822,7 @@
             }
           },
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -4993,7 +4981,7 @@
             }
           },
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -5162,7 +5150,7 @@
             }
           },
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -5331,7 +5319,7 @@
             }
           },
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -5642,7 +5630,7 @@
         ],
         "parameters": [
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -5802,7 +5790,7 @@
         ],
         "parameters": [
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -6311,7 +6299,7 @@
         ],
         "parameters": [
           {
-            "name": "X-CSRF-Token",
+            "name": "X-CSRF-TOKEN",
             "in": "header",
             "required": true,
             "schema": {
@@ -7112,10 +7100,7 @@
         },
         "required": [
           "authenticated",
-          "role",
-          "twoFactorVerified",
-          "csrfToken",
-          "idleExpiresAt"
+          "csrfToken"
         ]
       },
       "Room": {

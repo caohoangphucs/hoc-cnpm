@@ -6,6 +6,8 @@
 
 ## Phạm vi demo hiện tại
 
+**Đích công nghệ:** Spring Boot4.1.1/Java17, Thymeleaf, Spring Security, Spring JDBC và PostgreSQL16; xem [kiến trúc và chuyển đổi](docs/demo/SPRING_BOOT.md). Code chưa chuyển.
+
 Theo phạm vi đã chốt: dùng **8 UC trong SRS cũ** — UC-04, UC-08, UC-30,
 UC-12, UC-17, UC-22, UC-25, UC-14. Các mục 28 yêu cầu phía dưới được giữ
 làm **backlog toàn hệ thống**, không là điều kiện hoàn thành đợt demo này.

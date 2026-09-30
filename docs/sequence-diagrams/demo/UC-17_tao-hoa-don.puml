@@ -1,7 +1,7 @@
 @startuml UC-17_tao-hoa-don
 title
 UC-17 — Tạo hóa đơn tháng tự động
-REQ-033, REQ-008, REQ-034, REQ-005 • Thiết kế demo theo SRS cũ
+REQ-033, REQ-008, REQ-034, REQ-005 • Spring Boot • Thiết kế demo theo SRS cũ
 end title
 hide footbox
 autonumber
@@ -13,16 +13,17 @@ skinparam maxMessageSize 85
 skinparam sequenceParticipantBackgroundColor #EAF2F8
 skinparam sequenceGroupBackgroundColor #F8FAFC
 actor "Kế toán" as A
-boundary "Giao diện" as UI
-control "AccountingServlet" as C
-control "InvoiceBatchService\n<<đề xuất>>" as S
-participant "InvoiceDAO" as D
+boundary "Thymeleaf / Bootstrap" as UI
+control "InvoiceController" as C
+control "InvoiceService\n<<đề xuất>>" as S
+participant "InvoiceRepository" as D
 database "PostgreSQL\nSP / dữ liệu" as DB
 participant "Thông báo / Outbox\n<<đề xuất>>" as N
 note over C,DB
 Đã có: /accounting/generate-invoice; usp_PhatHanhHoaDon từng phòng.
 SRS dùng lượng × đơn giá; preview, giá theo kỳ, giảm giá, QR và gửi hóa đơn cần bổ sung.
-Các Service và bước ghi là thiết kế đích; xem bảng khoảng cách triển khai.
+Đích mới: Spring Boot @RestController → @Service @Transactional → @Repository/JdbcTemplate.
+Code nền còn Servlet/DAO legacy; các bước ghi là thiết kế cần triển khai.
 end note
 ref over UI,C : Tiền điều kiện: đăng nhập, kiểm tra quyền phía server; Admin/Kế toán có 2FA
 A -> UI : Chọn kỳ tháng/năm và danh sách phòng

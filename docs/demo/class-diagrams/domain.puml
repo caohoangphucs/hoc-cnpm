@@ -2,7 +2,7 @@
 !pragma layout smetana
 skinparam classAttributeIconSize 0
 left to right direction
-title Mô hình miền 8 UC — thiết kế đích, không phải bảng đã có
+title Spring Boot — mô hình miền 8 UC / PostgreSQL16
 class SinhVien {
  +id : String
 }

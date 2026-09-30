@@ -1,7 +1,7 @@
 @startuml UC-25_ghi-nhan-ra-vao
 title
 UC-25 — Ghi nhận giờ sinh viên về KTX
-REQ-036, REQ-035, REQ-037 • Thiết kế demo theo SRS cũ
+REQ-036, REQ-035, REQ-037 • Spring Boot • Thiết kế demo theo SRS cũ
 end title
 hide footbox
 autonumber
@@ -13,10 +13,10 @@ skinparam maxMessageSize 85
 skinparam sequenceParticipantBackgroundColor #EAF2F8
 skinparam sequenceGroupBackgroundColor #F8FAFC
 actor "Bảo vệ" as A
-boundary "Giao diện" as UI
-control "SecurityServlet" as C
+boundary "Thymeleaf / Bootstrap" as UI
+control "GateController" as C
 control "GateService\n<<đề xuất>>" as S
-participant "SecurityDAO" as D
+participant "GateRepository" as D
 database "PostgreSQL\nSP / dữ liệu" as DB
 participant "Barrier\n<<đề xuất>>" as B
 participant "Thông báo / Outbox\n<<đề xuất>>" as N
@@ -24,7 +24,8 @@ note over C,DB
 Đã có: /security/record-entry; usp_GhiNhanRaVao.
 SP tạo vi phạm trực tiếp (không qua trigger), dùng CURRENT_TIME;
 >=23:00 hoặc <05:00. Đích BR-12: >23:00 hoặc <05:00, giờ Việt Nam.
-Các Service và bước ghi là thiết kế đích; xem bảng khoảng cách triển khai.
+Đích mới: Spring Boot @RestController → @Service @Transactional → @Repository/JdbcTemplate.
+Code nền còn Servlet/DAO legacy; các bước ghi là thiết kế cần triển khai.
 end note
 ref over UI,C : Tiền điều kiện: đăng nhập, kiểm tra quyền phía server; Admin/Kế toán có 2FA
 alt AF-1: Khách thăm tại cổng

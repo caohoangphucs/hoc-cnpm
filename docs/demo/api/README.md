@@ -1,4 +1,4 @@
-# Danh mục API đích
+# API Spring Boot đích
 
 OpenAPI mô tả input, loại dữ liệu, headers và response lỗi. Output cụ thể dưới đây là contract bổ sung; đây là thiết kế chưa có endpoint runtime.
 
@@ -66,3 +66,5 @@ List: `{items:[Resource],page,pageSize,total}`. Mutation: `{id,status,version,re
 | Notification | id,type,title,readAt,createdAt |
 
 POST login trả session; payment-sessions trả CommandResult cùng payUrl/amount/expiresAt; invoice-drafts trả draft; certificates trả 202 khi job PENDING, GET đọc trạng thái. OpenAPI đã có schema response cụ thể theo tài nguyên và list; `/files/{id}` GET trả binary sau kiểm ownership. Không có public file URL.
+
+Endpoint dùng Spring MVC @RestController, DTO @Valid và Spring Security. GET auth/session public để cấp csrfToken trước login; POST login cũng gửi X-CSRF-TOKEN. Schema Session chỉ bắt buộc authenticated/csrfToken khi chưa login.
