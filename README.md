@@ -6,6 +6,14 @@
 
 ---
 
+## PHẠM VI DEMO ĐÃ CHỐT
+
+Demo dùng 8 UC trọng tâm theo SRS cũ: **UC-04, UC-08, UC-30, UC-12,
+UC-17, UC-22, UC-25, UC-14**. Xem [bộ demo](docs/demo/README.md),
+[Sequence Diagram](docs/sequence-diagrams/README.md) và [mục lục tài liệu](docs/README.md).
+Mã UC trong bảng phân công cũ bên dưới là bộ mã triển khai ban đầu;
+đối chiếu bằng tên nghiệp vụ và REQ, không dùng làm mã đặc tả demo.
+
 ## PHÂN CÔNG TRÁCH NHIỆM 5 THÀNH VIÊN & 8 USE CASES
 
 | STT | Thành Viên | Vai Trò & Phân Hệ | Thực Thể Phụ Trách | Use Cases & Nghiệp Vụ Chính |
@@ -52,7 +60,7 @@
 
 3. **Cơ sở dữ liệu (Database) đã có sẵn:**
    - Dữ liệu và database được quản lý tự động bởi Docker container.
-   - Reset và nạp lại CSDL mẫu 1-click bằng lệnh: `.\scripts\reset-db.ps1`.
+   - Script `.\scripts\reset-db.ps1` còn lệnh MySQL; cần sửa theo [chuẩn PostgreSQL](docs/demo/POSTGRESQL.md) trước khi reset.
    - Thêm bảng hoặc update logic chỉ tạo file SQL mới trong thư mục `/database/` (ví dụ: `/database/02_update_vnpay.sql`). Không xóa hoặc làm gián đoạn DB.
 
 4. **Tiện ích phát triển nhanh (Hot-reload UI):**
@@ -84,3 +92,5 @@ docker compose up -d --build
 # 2. Truy cập ứng dụng local
 http://localhost:8091
 ```
+
+> Tài liệu triển khai demo dùng **PostgreSQL 16**: [chuẩn kết nối và các sai lệch cấu hình cần sửa](docs/demo/POSTGRESQL.md). Các hướng dẫn reset/cấu hình legacy phải được sửa ở đợt code; bộ docs không xác nhận ứng dụng đã chạy đủ 8 UC.

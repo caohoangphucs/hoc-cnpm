@@ -1,0 +1,89 @@
+@startuml UC-17_tao-hoa-don
+title
+UC-17 — Tạo hóa đơn tháng tự động
+REQ-033, REQ-008, REQ-034, REQ-005 • Thiết kế demo theo SRS cũ
+end title
+hide footbox
+autonumber
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 13
+skinparam backgroundColor #FFFFFF
+skinparam sequenceMessageAlign left
+skinparam maxMessageSize 85
+skinparam sequenceParticipantBackgroundColor #EAF2F8
+skinparam sequenceGroupBackgroundColor #F8FAFC
+actor "Kế toán" as A
+boundary "Giao diện" as UI
+control "AccountingServlet" as C
+control "InvoiceBatchService\n<<đề xuất>>" as S
+participant "InvoiceDAO" as D
+database "PostgreSQL\nSP / dữ liệu" as DB
+participant "Thông báo / Outbox\n<<đề xuất>>" as N
+note over C,DB
+Đã có: /accounting/generate-invoice; usp_PhatHanhHoaDon từng phòng.
+SRS dùng lượng × đơn giá; preview, giá theo kỳ, giảm giá, QR và gửi hóa đơn cần bổ sung.
+Các Service và bước ghi là thiết kế đích; xem bảng khoảng cách triển khai.
+end note
+ref over UI,C : Tiền điều kiện: đăng nhập, kiểm tra quyền phía server; Admin/Kế toán có 2FA
+A -> UI : Chọn kỳ tháng/năm và danh sách phòng
+UI -> C : Yêu cầu tính dự thảo
+C -> S : tinhDuThao(ky, dsPhong)
+S -> D : Đọc chỉ số, giá có hiệu lực, chính sách đã duyệt
+D -> DB : CHI_SO_DIEN_NUOC, PHONG, DON_GIA_DICH_VU\nChính sách và lịch sử duyệt giá: cần bổ sung
+DB --> D : Dữ liệu căn cứ
+D --> S : Chỉ số, giá, hồ sơ chính sách
+alt EF-2: Kỳ/phòng đã có hóa đơn
+  S --> C : Không cho tạo trùng các phòng đã phát hành
+  C --> UI : Cảnh báo; chọn phòng chưa phát hành
+else Còn phòng chưa phát hành
+  opt EF-1: Một số phòng thiếu chỉ số
+    S --> C : Danh sách phòng thiếu số đo
+    C --> UI : Cảnh báo các phòng lỗi
+    A -> UI : Bỏ qua phòng lỗi hoặc chờ kỹ thuật bổ sung
+    UI -> C : Xác nhận tập phòng hợp lệ
+    C -> S : Chỉ xử lý tập phòng được chọn
+  end
+  opt <<extend>> Đơn giá mới đã duyệt và đến ngày hiệu lực (REQ-034)
+    S -> S : Chọn phiên bản giá đúng kỳ; không đổi hóa đơn cũ
+  end
+  S -> S : Điện/nước = (mới - cũ) × đơn giá\nCộng tiền phòng và dịch vụ
+  opt <<extend>> Sinh viên có hồ sơ diện chính sách (REQ-008)
+    S -> S : Áp dụng % giảm tiền phòng; ghi căn cứ giảm
+  end
+  S --> C : Bảng dự thảo và tổng doanh thu dự kiến
+  C --> UI : Hiển thị dự thảo; chưa ghi hóa đơn
+  opt AF-1: Xuất Excel đối soát nội bộ
+    A -> UI : Xuất bảng nháp
+    UI -> C : Tải Excel từ cùng bản dự thảo
+    C --> UI : File chỉ số cũ/mới, đơn giá, thành tiền
+  end
+  opt AF-2: Chi phí phát sinh riêng
+    A -> UI : Nhập khoản phát sinh và ghi chú cho phòng
+    UI -> C : Cập nhật dự thảo
+    C -> S : Kiểm tra căn cứ; tính lại tổng tiền
+    S --> UI : Dự thảo mới
+  end
+  A -> UI : Xác nhận phát hành
+  UI -> C : Kỳ, tập phòng, phiên bản dự thảo
+  C -> S : phatHanh(duThaoDaXacNhan)
+  loop Mỗi phòng hợp lệ
+    S -> D : generateInvoice(roomId, month)
+    D -> DB : usp_PhatHanhHoaDon(room, month, OUT id, status, message)
+    DB -> DB : Kiểm tra trùng và thiếu số đo lần cuối
+    alt SUCCESS
+      DB -> DB : Tạo HOA_DON CHUA_TT và CHI_TIET_HOA_DON
+      note right of DB : Cần mở rộng SP để tổng tiền khớp\npreview, giảm giá, chi phí và giá theo kỳ.
+      D -> DB : Ghi QR và outbox hóa đơn; commit cùng transaction (đề xuất)
+      DB --> D : Mã hóa đơn
+      D --> S : Đã phát hành
+      S -> N : <<include>> Gửi app/email cho SV trong phòng
+      N -> N : Retry nếu kênh gửi lỗi; không phát hành lại hóa đơn
+    else ERROR_50005 / ERROR_50006 / lỗi DB
+      DB --> D : Không phát hành phòng lỗi; rollback
+      D --> S : Lý do theo phòng
+    end
+  end
+  S --> C : Danh sách thành công / bỏ qua / lỗi
+  C --> UI : Báo cáo kết quả; không báo thành công cho phòng lỗi
+end
+@enduml

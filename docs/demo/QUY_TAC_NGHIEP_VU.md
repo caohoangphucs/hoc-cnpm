@@ -1,0 +1,25 @@
+# Quy tắc triển khai demo
+
+Đây là quyết định thiết kế cho 8 UC từ SRS cũ, áp dụng khi triển khai mới. Không mô tả khả năng đã có của ứng dụng. SRS nguồn được giữ nguyên để truy vết; khi khác code hiện hành, lấy quy tắc dưới đây làm đích demo.
+
+| Mã | Quy tắc và kết quả bắt buộc |
+|---|---|
+| BR-01 | PostgreSQL 16 là DB duy nhất của ứng dụng. Java 17, JDBC/HikariCP; nghiệp vụ nhiều bảng nằm trong PL/pgSQL procedure. |
+| BR-02 | Múi giờ nghiệp vụ Asia/Ho_Chi_Minh. Thời điểm mới lưu timestamptz; ngày lưu date; kỳ hóa đơn lưu ngày đầu tháng, API dùng YYYY-MM. Dữ liệu timestamp cũ được hiểu là giờ Việt Nam khi chuyển đổi. |
+| BR-03 | Giữ giường đúng 48 giờ tính từ thời điểm tạo đơn. Hết hạn khi expiresAt <= now. Hết hạn trả giường và HUY đơn trong cùng transaction; tác vụ chạy mỗi phút, thao tác duyệt luôn tự kiểm tra lại. |
+| BR-04 | Mỗi SV chỉ có một đơn CHO_DUYET chưa hết hạn hoặc một lưu trú DANG_O. Đơn DA_DUYET lịch sử không chặn đăng ký sau khi trả phòng. Giới tính của SV phải phù hợp tòa; TAT_CA chấp nhận cả NAM/NU. |
+| BR-05 | Duyệt chỉ từ CHO_DUYET, còn hạn và giường GIU_CHO thuộc đơn. Giường KHOA/DANG_O hoặc hồ sơ thiếu trả 409; từ chối bắt buộc lý do. Tạo LUU_TRU, cập nhật SV, giường, số người/phòng và hợp đồng dự thảo nguyên tử. |
+| BR-06 | VND nguyên đồng: DB numeric(15,0), Java BigDecimal, API integer tối đa 999999999999999. Không dùng double để tính/đối chiếu tiền. Điện/nước = (chỉ số mới − cũ) × đơn giá có hiệu lực tại ngày đầu kỳ. Không lũy tiến trong demo. |
+| BR-07 | Giá phòng là tổng phí phòng/kỳ. Chia phí phòng cho SV đang lưu trú tại ngày đầu kỳ, số dư chia cho MSSV tăng dần. Mỗi SV dùng một chính sách hợp lệ có mức giảm cao nhất; giảm trên phần phí phòng, làm tròn xuống; không cộng dồn chính sách. GiamGia của hóa đơn bằng tổng phần giảm; không giảm điện/nước. Chính sách/giá/đối tượng được snapshot khi phát hành. |
+| BR-08 | Một hóa đơn/phòng/kỳ. Preview có version và snapshot đầu vào; phát hành sai version trả 409. Tổng = phí phòng + điện + nước + chi phí riêng − giảm; không âm. Hạn trả là ngày phát hành tại Việt Nam + 15 ngày. Sau phát hành không sửa số đo/giá của hóa đơn; điều chỉnh bằng chứng từ riêng. |
+| BR-09 | Chỉ thanh toán hóa đơn thuộc phòng lưu trú của SV và còn nợ. Tạo phiên PENDING trước redirect. Gộp nhiều hóa đơn bằng một phiên và nhiều phân bổ cố định. Không gạch nợ từ return URL. IPN hợp lệ và thành công mới ghi nhận; tổng phân bổ đúng số tiền, không vượt nợ. |
+| BR-10 | Khóa phiên và hóa đơn theo ID tăng dần khi xác nhận tiền. IPN lặp trả ACK cũ, không tăng tiền lần hai. IPN sai chữ ký/đơn vị/tiền không sửa hóa đơn. Callback thành công đến muộn phải đối soát; nếu đã có thanh toán khác gây dư chuyển NEEDS_REVIEW, không tự gạch thêm. |
+| BR-11 | Sửa chữa MOI → DANG_XU_LY → HOAN_THANH; HUY chỉ trước hoàn thành, bắt buộc lý do. Hoàn thành một lần, vật tư số lượng >0, tồn đủ; khóa phiếu và vật tư, cập nhật/xuất kho nguyên tử. Thiếu hàng tạo đề nghị mua, không tự tăng tồn. Hẹn và bảo hành ghi lịch sử; ảnh tối đa 5MB/tệp JPG/PNG, tối đa 5 tệp/phiếu. |
+| BR-12 | Giờ về trễ: giờ địa phương >23:00:00 hoặc <05:00:00. Đúng 23:00 và 05:00 được phép. Thẻ phải còn hạn và lưu trú DANG_O; quét lại cùng eventId không tạo thêm RA_VAO/VI_PHAM. Hai eventId khác nhau là hai sự kiện hợp lệ. Barrier lỗi không xóa log; lưu trạng thái thiết bị để bảo vệ xử lý. |
+| BR-13 | Học kỳ có startDate/endDate rõ ràng, không suy từ tháng; đếm vi phạm đã xác nhận thuộc học kỳ. >=3 lần tạo cờ cảnh báo cho Admin; không tự khóa tài khoản/đuổi học. Xử lý cần minh chứng và quyết định; nhóm SV tạo quyết định riêng mỗi người trong một transaction. Khiếu nại được lưu và xử lý bằng phiên bản quyết định mới, không xóa lịch sử. |
+| BR-14 | Hoạt động có đầu/cuối, chỉ tiêu >0; lịch trùng khi startA < endB và startB < endA. Kết thúc hoạt động A đúng lúc B bắt đầu được phép. Khóa SV trước hoạt động khi đăng ký; cùng SV/hoạt động chỉ một đăng ký đang hiệu lực; còn một chỗ chỉ một yêu cầu đồng thời được nhận. |
+| BR-15 | Hủy đăng ký được phép khi còn >=12 giờ trước start; hủy một lần trả một chỗ. Quét QR ghi hiện diện, chưa cộng điểm. Chỉ Admin xác nhận hoàn thành mới cộng điểm một lần theo (SV,hoạt động). Không cho sửa điểm sau quy đổi bằng update trực tiếp; dùng bút toán điều chỉnh. |
+| BR-16 | 10 điểm công ích = 1 ĐRL, lấy phần nguyên; tối đa 5 ĐRL/học kỳ kể cả các lần quy đổi trước. Điểm dư giữ trong học kỳ. CTSV retry dùng cùng transferId, không trừ điểm lại; bị từ chối hoàn điểm bằng bút toán bù. Giấy xác nhận chỉ gồm hoạt động đã hoàn thành, PDF có chữ ký số và QR token kiểm chứng có thể thu hồi. |
+| BR-17 | Mọi ghi nghiệp vụ có requestId, người thực hiện, thời điểm và audit. Email/SMS/CTSV/barrier gửi sau commit qua outbox. Lỗi gửi không rollback quyết định nghiệp vụ, có trạng thái và retry. |
+
+Khóa hàng theo thứ tự cố định trong từng module; không giữ transaction trong lúc upload/gọi mạng. Deadlock/serialization failure thử lại tối đa 3 lần với cùng idempotency key; sau đó trả 503 có requestId. Ràng buộc unique/check/FK là lớp cuối, validation UI không thay thế kiểm tra server.

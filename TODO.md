@@ -4,6 +4,26 @@
 
 ---
 
+## Phạm vi demo hiện tại
+
+Theo phạm vi đã chốt: dùng **8 UC trong SRS cũ** — UC-04, UC-08, UC-30,
+UC-12, UC-17, UC-22, UC-25, UC-14. Các mục 28 yêu cầu phía dưới được giữ
+làm **backlog toàn hệ thống**, không là điều kiện hoàn thành đợt demo này.
+
+- [x] Chốt SRS nguồn và bảng UC/REQ: [nguồn demo](docs/demo/NGUON.md).
+- [x] Tạo 8 Sequence Diagram riêng: [mục lục](docs/sequence-diagrams/README.md).
+- [x] Viết thiết kế xử lý 5 bước cho 8 UC: [thiết kế](docs/demo/THIET_KE_XU_LY.md).
+- [x] Viết kịch bản demo và bảng khoảng cách triển khai: [kế hoạch](docs/demo/README.md).
+- [x] Class Diagram 8 UC: [kiến trúc và miền](docs/demo/class-diagrams/README.md).
+- [x] Chuẩn PostgreSQL, dữ liệu/SP và quyết định nghiệp vụ: [PostgreSQL](docs/demo/POSTGRESQL.md).
+- [x] API/OpenAPI, phân quyền và tích hợp: [API](docs/demo/API_VA_PHAN_QUYEN.md), [tích hợp](docs/demo/TICH_HOP.md).
+- [x] Test case/fixture, truy vết và tiêu chí nghiệm thu: [kiểm thử](docs/demo/KIEM_THU.md), [triển khai](docs/demo/TRIEN_KHAI_VA_NGHIEM_THU.md).
+- [ ] Hoàn thiện auth/phân quyền, dữ liệu demo và các phần thiếu trong code.
+- [ ] Triển khai module còn thiếu UC-14 và UC-30, tích hợp thanh toán UC-08.
+- [ ] Chạy kịch bản demo, lưu bằng chứng thực thi và nghiệm thu đủ 8 UC.
+
+Hoàn thành tài liệu không đồng nghĩa ứng dụng đã demo được.
+
 ## 🚀 TIẾN TRÌNH THIẾT KẾ PHẦN MỀM CHUẨN (CHƯƠNG 11) CHO TỪNG USE CASE
 
 Mỗi Use Case đều được thực hiện đầy đủ theo chu trình 5 bước:
@@ -15,14 +35,14 @@ Mỗi Use Case đều được thực hiện đầy đủ theo chu trình 5 bư�
 
 ---
 
-## 📌 PHẦN I: DANH SÁCH TO-DO CẤP TÀI LIỆU CỐT LÕI (DOC-LEVEL TASKS)
+## 📌 PHẦN I: BACKLOG TÀI LIỆU TOÀN HỆ THỐNG (DOC-LEVEL TASKS)
 
 - [x] **Doc Task 0: Hoàn thành Đặc tả Use Case chi tiết 100% (28 Functional Use Cases)**
   - **Đính kèm tài liệu:** [`docs/main/SRS_HeThongQuanLyKTX_v3.docx`](docs/main/SRS_HeThongQuanLyKTX_v3.docx) (Mục 5: Bảng tổng quan Table 17 & 28 bảng đặc tả 12 trường chuẩn).
   - **Trạng thái:** ✅ Đã hoàn thành và commit (`c8849a0`).
 
 - [ ] **Doc Task 1: Hoàn thiện Sequence Diagram toàn bộ 28 Functional Use Cases**
-  - **Đính kèm tài liệu:** [`docs/main/D10/SequenceDiagram.puml`](docs/main/D10/SequenceDiagram.puml), [`docs/main/SRS_HeThongQuanLyKTX_v3.docx`](docs/main/SRS_HeThongQuanLyKTX_v3.docx).
+  - **Đính kèm tài liệu:** [`docs/sequence-diagrams/README.md`](docs/sequence-diagrams/README.md), [`docs/main/SRS_HeThongQuanLyKTX_v3.docx`](docs/main/SRS_HeThongQuanLyKTX_v3.docx).
   - **Nội dung:** Mở rộng vẽ đầy đủ Sequence Diagram cho toàn bộ 28 Use Cases chức năng thuộc 5 phân hệ (Sinh viên, Admin, Kế toán, Kỹ thuật, Bảo vệ, Bảo trì hệ thống).
 
 - [ ] **Doc Task 2: Mở rộng Class Diagram chi tiết toàn hệ thống**
@@ -39,7 +59,7 @@ Mỗi Use Case đều được thực hiện đầy đủ theo chu trình 5 bư�
 
 ---
 
-## 📌 PHẦN II: TIẾN TRÌNH CHI TIẾT TOÀN BỘ 28 FUNCTIONAL USE CASES (5 VAI TRÒ & 5 BƯỚC CHƯƠNG 11)
+## 📌 PHẦN II: BACKLOG TOÀN BỘ 28 FUNCTIONAL USE CASES (5 VAI TRÒ & 5 BƯỚC CHƯƠNG 11)
 
 ### 🎓 1. Phân Hệ 1: Sinh Viên (Student Actor - 9 Use Cases)
 - [ ] **Task 1.1 (REQ-001 / UC-04): Đăng ký phòng trực tuyến & Tải hồ sơ minh chứng**

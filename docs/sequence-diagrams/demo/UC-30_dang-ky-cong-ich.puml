@@ -1,0 +1,105 @@
+@startuml UC-30_dang-ky-cong-ich
+title
+UC-30 — Đăng ký hoạt động công ích
+REQ-017, REQ-029, REQ-038 • Thiết kế demo theo SRS cũ
+end title
+hide footbox
+autonumber
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 13
+skinparam backgroundColor #FFFFFF
+skinparam sequenceMessageAlign left
+skinparam maxMessageSize 85
+skinparam sequenceParticipantBackgroundColor #EAF2F8
+skinparam sequenceGroupBackgroundColor #F8FAFC
+actor "Sinh viên" as A
+boundary "Giao diện" as UI
+control "CommunityServlet\n<<đề xuất>>" as C
+control "CommunityService\n<<đề xuất>>" as S
+participant "CommunityDAO\n<<đề xuất>>" as D
+database "PostgreSQL\nSP / dữ liệu" as DB
+actor "Admin BQL" as BQL
+participant "Thông báo / Outbox\n<<đề xuất>>" as N
+participant "Phòng CTSV" as CTSV
+note over C,DB
+Chưa có giao diện, Servlet/DAO và bảng hoạt động/điểm công ích.
+Toàn bộ luồng này là thiết kế cần triển khai; không coi seed hiện tại đã hỗ trợ.
+Các Service và bước ghi là thiết kế đích; xem bảng khoảng cách triển khai.
+end note
+ref over UI,C : Tiền điều kiện: đăng nhập, kiểm tra quyền phía server; Admin/Kế toán có 2FA
+A -> UI : Mở danh sách hoạt động
+UI -> C : Yêu cầu hoạt động đang mở
+C -> S : danhSachHoatDong()
+S -> D : Đọc tên, giờ, địa điểm, chỉ tiêu, điểm
+D -> DB : Các bảng hoạt động và đăng ký cần bổ sung
+DB --> UI : Danh sách / empty state
+A -> UI : Chọn hoạt động; Đăng ký
+UI -> C : activityId
+C -> S : dangKy(sinhVienTuSession, activityId)
+S -> D : Transaction: khóa chỉ tiêu, kiểm tra đăng ký và lịch của SV
+D -> DB : Đọc số chỗ còn lại và lịch hoạt động đã đăng ký
+alt EF-1: Hết chỉ tiêu
+  DB --> UI : Không ghi danh; báo đủ chỗ; làm mới danh sách
+else EF-2: Trùng lịch với hoạt động khác
+  DB --> UI : Từ chối; hiển thị lịch trùng
+else Còn chỗ và không trùng lịch
+  D -> DB : Lưu đăng ký duy nhất; giảm chỗ; cấp QR điểm danh\nGhi outbox xác nhận; commit
+  DB --> S : Mã đăng ký và QR
+  S -> N : Gửi xác nhận đăng ký
+  S --> UI : Đã ghi danh; chưa cộng điểm
+  opt AF-1: Hủy trước hoạt động ít nhất 12 giờ
+    A -> UI : Hủy đăng ký
+    UI -> C : registrationId
+    C -> S : huyDangKy(sinhVien, id)
+    S -> D : Khóa đăng ký; kiểm tra hạn hủy
+    alt Đủ thời gian và chưa hủy
+      D -> DB : Đánh dấu hủy; hoàn trả đúng một chỗ; commit
+      DB --> UI : Đã hủy
+    else Không đủ thời gian / đã hủy
+      D --> UI : Không hoàn trả chỗ lần nữa; báo lý do
+    end
+  end
+  == Sau khi tham gia hoạt động ==
+  opt Đăng ký còn hiệu lực và thực sự hoàn thành
+    BQL -> UI : Điểm danh; xác nhận SV hoàn thành
+    UI -> C : activityId, studentId, xác nhận
+    C -> S : xacNhanHoanThanh(admin, sv, activity)
+    S -> D : Transaction: kiểm tra chưa từng cộng điểm
+    D -> DB : Lưu hoàn thành; cộng điểm đúng một lần; cập nhật số dư
+    DB --> S : Tổng điểm tích lũy
+    S --> UI : Ghi nhận điểm thành công
+    opt <<extend>> Có ít nhất 10 điểm công ích; SV xác nhận quy đổi
+      A -> UI : Xác nhận quy đổi trong học kỳ
+      UI -> C : Yêu cầu quy đổi
+      C -> S : quyDoiDiem(sv, hocKy)
+      S -> D : Khóa số dư và điểm đã quy đổi trong kỳ
+      D -> DB : Đọc điểm công ích còn lại và ĐRL đã nhận
+      DB --> S : Số dư
+      S -> S : n = min(floor(số dư / 10), 5 - ĐRL đã quy đổi kỳ này)
+      alt n > 0
+        S -> D : Trừ 10*n; cộng n ĐRL; lưu sự kiện đồng bộ CTSV; commit
+        D -> DB : Giữ nguyên điểm dư; lưu khóa quy đổi duy nhất
+        S -> CTSV : Đồng bộ điểm với khóa chống gửi lặp
+        alt CTSV nhận thành công
+          CTSV --> S : Đã xác nhận
+        else CTSV lỗi kết nối
+          S -> S : Chờ gửi bù; không trừ điểm/cộng ĐRL lần nữa
+        end
+        S --> UI : Kết quả quy đổi và trạng thái đồng bộ
+      else Đạt trần 5 ĐRL/kỳ
+        S --> UI : Bảo lưu điểm dư; không trừ thêm điểm
+      end
+    end
+    opt AF-2: Xuất giấy xác nhận công ích
+      A -> UI : Xuất giấy xác nhận
+      UI -> C : Yêu cầu PDF hoạt động đã hoàn thành
+      C -> S : taoGiayXacNhan(sv)
+      S -> D : Đọc lịch sử hoàn thành và điểm
+      D -> DB : Dữ liệu đã được BQL xác nhận
+      DB --> S : Nội dung chứng nhận
+      S -> S : Tạo PDF; QR kiểm chứng và chữ ký số BQL
+      S --> UI : Tải PDF; mục tiêu tạo file < 3 giây
+    end
+  end
+end
+@enduml

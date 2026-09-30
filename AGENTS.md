@@ -8,7 +8,7 @@
 * **Mục tiêu:** Hệ thống quản lý toàn diện KTX: duyệt phòng, đặt giữ giường chống race-condition, tính toán phát hành hóa đơn tự động, báo hỏng xuất kho vật tư và kiểm soát an ninh ra vào sau 23h.
 * **Ngôn ngữ & Runtime:** Java 17 (Eclipse Temurin), Apache Tomcat 10.1.
 * **Web Specification:** Jakarta EE 10 (Jakarta Servlet 6.0, JSP/JSTL 3.0).
-* **Database & Pool:** MySQL 8.0, HikariCP Connection Pool (`DBContext.java`), BCrypt password hash.
+* **Database & Pool:** PostgreSQL 16, HikariCP Connection Pool (`DBContext.java`), BCrypt password hash.
 * **Ảo hóa & CI/CD:** Docker multi-stage build, Docker Compose, GitHub Actions.
 
 ---
@@ -40,8 +40,8 @@ Khi giải thích hoặc hướng dẫn cho lập trình viên, AI cần hướn
   * File `docker-compose.override.yml` đã mount thư mục JSP vào Tomcat container.
   * **Sửa JSP/HTML/CSS:** Chỉ cần lưu file và **bấm F5 trên trình duyệt** (không cần rebuild container).
 * **Reset Database sạch sẽ khi test:**
-  * Chạy: `.\scripts\reset-db.ps1` (Script tự động dọn sạch và nạp lại 19 bảng + dữ liệu mẫu chỉ sau 2 giây).
-* **Tài khoản test (Mật khẩu chung `123456`):**
+  * `scripts/reset-db.ps1` hiện còn lệnh MySQL, cần sửa trước khi dùng cho PostgreSQL. Chuẩn kết nối/reset/migration: [docs/demo/POSTGRESQL.md](docs/demo/POSTGRESQL.md). Reset xóa dữ liệu local; không dùng cho DB cần giữ.
+* **Tài khoản test (mật khẩu công bố `123456`; cần sửa/xác minh hash seed trước khi demo):**
   * `admin` (Quản trị viên) | `sv001` (Sinh viên) | `ketoan1` (Kế toán) | `kythuat1` (Kỹ thuật) | `baove1` (Bảo vệ).
 
 ---

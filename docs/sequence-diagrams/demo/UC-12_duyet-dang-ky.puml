@@ -1,0 +1,84 @@
+@startuml UC-12_duyet-dang-ky
+title
+UC-12 — Duyệt đơn đăng ký phòng
+REQ-011, REQ-005 • Thiết kế demo theo SRS cũ
+end title
+hide footbox
+autonumber
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 13
+skinparam backgroundColor #FFFFFF
+skinparam sequenceMessageAlign left
+skinparam maxMessageSize 85
+skinparam sequenceParticipantBackgroundColor #EAF2F8
+skinparam sequenceGroupBackgroundColor #F8FAFC
+actor "Admin BQL" as A
+boundary "Giao diện" as UI
+control "AdminServlet" as C
+control "RegistrationService\n<<đề xuất>>" as S
+participant "RoomDAO" as D
+database "PostgreSQL\nSP / dữ liệu" as DB
+participant "Thông báo / Outbox\n<<đề xuất>>" as N
+actor "Sinh viên" as SV
+note over C,DB
+Đã có: /admin/registrations, /admin/approve-registration; usp_DuyetDangKy.
+SP cập nhật lưu trú trực tiếp, không có trigger gán giường; khóa / audit / hợp đồng / email cần bổ sung.
+Các Service và bước ghi là thiết kế đích; xem bảng khoảng cách triển khai.
+end note
+ref over UI,C : Tiền điều kiện: đăng nhập, kiểm tra quyền phía server; Admin/Kế toán có 2FA
+A -> UI : Mở danh sách hồ sơ chờ duyệt; chọn bộ lọc
+UI -> C : Tải hồ sơ CHO_DUYET
+C -> S : danhSachHoSo(boLoc)
+S -> D : getPendingRegistrations()
+D -> DB : Đọc đơn, sinh viên, giường, minh chứng (minh chứng đề xuất)
+DB --> D : Danh sách
+D --> S : Hồ sơ
+S --> C : Hồ sơ và diện ưu tiên
+C --> UI : Danh sách / empty state
+A -> UI : Xem thông tin và ảnh minh chứng; chọn quyết định
+opt AF-2: Duyệt hàng loạt theo ưu tiên
+  UI -> C : Yêu cầu duyệt theo chỉ tiêu
+  C -> S : Sắp xếp điểm ưu tiên giảm dần (đề xuất)
+  S -> S : Tạo danh sách hồ sơ; xử lý kết quả từng đơn
+end
+UI --> A : Hộp thoại xác nhận; yêu cầu lý do nếu từ chối
+A -> UI : Xác nhận
+UI -> C : registrationId, decision, reason
+C -> S : duyetHoSo(admin, hoSo, quyetDinh)
+loop Từng hồ sơ đã xác nhận (một hoặc nhiều)
+  S -> D : Khóa đơn + giường/phòng trong transaction (đề xuất)
+  D -> DB : Đọc lại trạng thái và hạn giữ chỗ
+  DB --> D : Trạng thái mới nhất
+  D --> S : Điều kiện duyệt
+  alt EF-1: Giường bị khóa / phòng đang sửa; hoặc đơn hết hạn
+    S --> C : Chưa duyệt; cần bố trí giường hợp lệ khác
+    C --> UI : Chọn giường khác và xác nhận lại
+  else Hồ sơ không còn CHO_DUYET
+    S --> C : Đã được xử lý; không ghi lần hai
+    C --> UI : Làm mới danh sách
+  else Đủ điều kiện
+    S -> D : approveRegistration(id, decision, reason)
+    D -> DB : usp_DuyetDangKy(id, decision, reason, OUT status, message)
+    alt Phê duyệt
+      DB -> DB : Đơn DA_DUYET; giường DANG_O; tạo LUU_TRU\nCập nhật SINH_VIEN và PHONG
+      D -> DB : Tạo hợp đồng dự thảo; lưu người duyệt / audit (đề xuất)
+    else AF-1: Từ chối có lý do
+      DB -> DB : Đơn TU_CHOI; giường TRONG
+      D -> DB : Lưu người duyệt / audit (đề xuất)
+    end
+    D -> DB : Ghi sự kiện gửi kết quả vào outbox; commit (đề xuất)
+    DB --> D : Kết quả bền vững
+    D --> S : SUCCESS
+    S --> C : Duyệt / từ chối thành công
+    C --> UI : Kết quả và trạng thái gửi thông báo
+    ref over S,N : <<include>> Gửi thông báo kết quả (REQ-005; tránh mã UC-03 bị trùng)
+    S -> N : Gửi kết quả kèm hướng dẫn / lý do
+    alt Gửi thành công
+      N --> SV : Email/SMS kết quả nhận phòng / từ chối
+    else EF-2: Email/SMS mất kết nối
+      N -> N : Lưu trạng thái chờ; retry từ outbox
+      N --> UI : Duyệt thành công; thông báo đang chờ gửi bù
+    end
+  end
+end
+@enduml

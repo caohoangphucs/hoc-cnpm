@@ -1,0 +1,461 @@
+[
+  {
+    "id": "TC-04-01",
+    "uc": "UC-04",
+    "rule": "BR-03/04",
+    "setup": "SV mới NAM;  đợt mở;  giường tòa NAM TRONG;  2 ảnh hợp lệ",
+    "action": "Gửi đăng ký",
+    "expected": "CHO_DUYET/GIU_CHO;  hết hạn=tạo+48 h;  audit1",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-04-02",
+    "uc": "UC-04",
+    "rule": "BR-04",
+    "setup": "2 SV hợp lệ;  cùng giường TRONG",
+    "action": "20 request đồng thời",
+    "expected": "1 đơn thành công; 19 x409;  không giường kép",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-04-03",
+    "uc": "UC-04",
+    "rule": "BR-04",
+    "setup": "1 SV; 2 giường TRONG",
+    "action": "2 đăng ký đồng thời",
+    "expected": "1 đơn CHO_DUYET",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-04-04",
+    "uc": "UC-04",
+    "rule": "BR-03",
+    "setup": "Hold hết hạn đúng now",
+    "action": "Chạy expiry và gọi duyệt",
+    "expected": "HUY/TRONG;  duyệt409;  không LUU_TRU",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-04-05",
+    "uc": "UC-04",
+    "rule": "BR-04",
+    "setup": "SV NAM,  tòa NU hoặc đợt đóng",
+    "action": "Gửi đơn",
+    "expected": "422;  không tạo đơn/hold",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-04-06",
+    "uc": "UC-04",
+    "rule": "BR-17",
+    "setup": "Ảnh >5 MB hoặc PNG giả/script",
+    "action": "Upload rồi submit",
+    "expected": "413/415;  không có hồ sơ hợp lệ/đơn",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-04-07",
+    "uc": "UC-04",
+    "rule": "BR-04",
+    "setup": "SV đã có LUU_TRU DANG_O",
+    "action": "Gửi đơn",
+    "expected": "409;  không tạo đơn",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-12-01",
+    "uc": "UC-12",
+    "rule": "BR-05",
+    "setup": "Đơn còn hạn/hồ sơ VALID/giường GIU_CHO",
+    "action": "Admin duyệt",
+    "expected": "DA_DUYET, giường DANG_O, SV/phòng đồng bộ, 1 LUU_TRU/contract",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-12-02",
+    "uc": "UC-12",
+    "rule": "BR-05",
+    "setup": "Đơn chờ",
+    "action": "Admin từ chối có lý do",
+    "expected": "TU_CHOI;  giường TRONG;  không lưu trú",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-12-03",
+    "uc": "UC-12",
+    "rule": "BR-05",
+    "setup": "Giường KHOA hoặc hồ sơ thiếu",
+    "action": "Duyệt",
+    "expected": "409/422;  không đổi trạng thái",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-12-04",
+    "uc": "UC-12",
+    "rule": "BR-05",
+    "setup": "Đơn chờ;  inject lỗi insert contract",
+    "action": "Duyệt",
+    "expected": "Rollback toàn bộ;  vẫn CHO_DUYET/GIU_CHO",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-12-05",
+    "uc": "UC-12",
+    "rule": "BR-17",
+    "setup": "SMTP timeout",
+    "action": "Duyệt",
+    "expected": "Quyết định commit; outbox retry/DEAD;  không duyệt lại",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-17-01",
+    "uc": "UC-17",
+    "rule": "BR-06/07",
+    "setup": "Phòng500000;  điện100→120 giá3500;  nước10→12 giá15000; 2 SV, 1 SV giảm50%",
+    "action": "Preview/phát hành",
+    "expected": "Tổng475000;  giảm125000;  các line và snapshot khớp",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-17-02",
+    "uc": "UC-17",
+    "rule": "BR-08",
+    "setup": "Thiếu meter hoặc mới<cũ",
+    "action": "Preview/ghi chỉ số",
+    "expected": "Cảnh báo/422;  không phát hành",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-17-03",
+    "uc": "UC-17",
+    "rule": "BR-08",
+    "setup": "2 request cùng phòng/kỳ",
+    "action": "Phát hành đồng thời",
+    "expected": "1 hóa đơn/chi tiết;  request khác 409",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-17-04",
+    "uc": "UC-17",
+    "rule": "BR-08",
+    "setup": "Preview version 1;  đổi giá/draft version 2",
+    "action": "Phát hành version 1",
+    "expected": "409;  không lưu hóa đơn sai snapshot",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-17-05",
+    "uc": "UC-17",
+    "rule": "BR-07",
+    "setup": "SV có2 chính sách;  giá đổi sau ngày đầu kỳ",
+    "action": "Phát hành",
+    "expected": "Chọn giảm cao nhất, không cộng; giá đúng ngày đầu kỳ",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-17-06",
+    "uc": "UC-17",
+    "rule": "BR-08",
+    "setup": "Kỳ đã phát hành",
+    "action": "Ghi meter cùng kỳ",
+    "expected": "409;  snapshot không đổi",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-08-01",
+    "uc": "UC-08",
+    "rule": "BR-09/10",
+    "setup": "Hóa đơn còn nợ475000; PENDING",
+    "action": "IPN sandbox success đúng tiền/ref/chữ ký",
+    "expected": "SUCCESS; paid tăng475000 một lần;  biên lai/outbox",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-08-02",
+    "uc": "UC-08",
+    "rule": "BR-10",
+    "setup": "Phiên SUCCESS",
+    "action": "Lặp IPN 20 lần",
+    "expected": "ACKalready;  paid không đổi;  không thêm ledger",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-08-03",
+    "uc": "UC-08",
+    "rule": "BR-10",
+    "setup": "PENDING",
+    "action": "IPN sai chữ ký hoặc sai tiền/partner",
+    "expected": "Không gạch nợ;  lỗi ghi request Id",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-08-04",
+    "uc": "UC-08",
+    "rule": "BR-09",
+    "setup": "PENDING",
+    "action": "Return URLsuccess nhưng chưa IPN",
+    "expected": "UI pending; paid không đổi",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-08-05",
+    "uc": "UC-08",
+    "rule": "BR-09",
+    "setup": "Phiên pending;  SV hủy/timeout",
+    "action": "Hủy ở provider",
+    "expected": "Nợ giữ nguyên; đối soát có trạng thái",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-08-06",
+    "uc": "UC-08",
+    "rule": "BR-10",
+    "setup": "Phiên hết hạn;  nợ đã trả bằng phiên khác",
+    "action": "IPN success muộn",
+    "expected": "NEEDS_REVIEW;  không tăng paid vượt tổng",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-08-07",
+    "uc": "UC-08",
+    "rule": "BR-09",
+    "setup": "2 hóa đơn thuộc cùng SV,  tổng600000",
+    "action": "Gộp và IPN success",
+    "expected": "1 phiên, 2 phân bổ;  tổngpaid tăng600000 đúng mỗi hóa đơn",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-22-01",
+    "uc": "UC-22",
+    "rule": "BR-11",
+    "setup": "Phiếu DANG_XU_LY;  tồn50",
+    "action": "Hoàn thành, xuất1",
+    "expected": "HOAN_THANH;  tồn49; 1 phiếu xuất/lịch sử",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-22-02",
+    "uc": "UC-22",
+    "rule": "BR-11",
+    "setup": "Tồn1; 2 phiếu cùng dùng1",
+    "action": "Hoàn thành đồng thời",
+    "expected": "1 thành công; 1 x409; tồn0",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-22-03",
+    "uc": "UC-22",
+    "rule": "BR-11",
+    "setup": "Phiếu chưa hoàn thành;  tồn50",
+    "action": "Xuất51 hoặc lượng<=0",
+    "expected": "409/422;  tồn và phiếu không đổi",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-22-04",
+    "uc": "UC-22",
+    "rule": "BR-11",
+    "setup": "Phiếu HOAN_THANH",
+    "action": "Gọi lại cùng key",
+    "expected": "Không xuất/cộng lịch sử lần hai",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-22-05",
+    "uc": "UC-22",
+    "rule": "BR-11/17",
+    "setup": "Thiếu hàng hoặc cần bảo hành",
+    "action": "Tạo đề nghị mua/hẹn và thử notificationfail",
+    "expected": "Không tăng tồn;  lịch/hồ sơ giữ;  outboxretry",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-25-01",
+    "uc": "UC-25",
+    "rule": "BR-12",
+    "setup": "Clock Việt Nam23:00:00; thẻ valid",
+    "action": "Quét VAO",
+    "expected": "RA_VAO1; VI_PHAM0",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-25-02",
+    "uc": "UC-25",
+    "rule": "BR-12",
+    "setup": "Clock 23:00:01/00:30/04:59:59",
+    "action": "Quét VAO từng fixture",
+    "expected": "Mỗi event tạo1 vi phạm liên kết đúng log",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-25-03",
+    "uc": "UC-25",
+    "rule": "BR-12",
+    "setup": "Clock05:00:00 hoặc type RA lúc23:30",
+    "action": "Quét",
+    "expected": "Không vi phạm trễ",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-25-04",
+    "uc": "UC-25",
+    "rule": "BR-12",
+    "setup": "Thẻrevoked/hết hạn hoặc không lưu trú",
+    "action": "Quét VAO",
+    "expected": "409; không mở barrier/ghi log vào hợp lệ",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-25-05",
+    "uc": "UC-25",
+    "rule": "BR-12",
+    "setup": "1 event Id; barrier timeout",
+    "action": "Retry cùng event Id",
+    "expected": "1 log/vi phạm; barrier FAILED/nhắc bảo vệ",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-25-06",
+    "uc": "UC-25",
+    "rule": "BR-12",
+    "setup": "Khách được duyệt trong hạn/khách hết hạn",
+    "action": "Checkin khách",
+    "expected": "Valid ghi riêng; expired bị chặn; không ghi là SV",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-14-01",
+    "uc": "UC-14",
+    "rule": "BR-13",
+    "setup": "SV 2 vi phạm kỳ A+1 kỳ B",
+    "action": "Xem ngưỡng",
+    "expected": "Kỳ A count2; không cờ3; không khóa tự động",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-14-02",
+    "uc": "UC-14",
+    "rule": "BR-13",
+    "setup": "SV 3 vi phạm xác nhận cùng kỳ",
+    "action": "Admin xử lý có minh chứng",
+    "expected": "Cờ>=3; DA_XU_LY; quyết định/audit/người xử lý",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-14-03",
+    "uc": "UC-14",
+    "rule": "BR-13",
+    "setup": "Thiếu minh chứng hoặc inject lỗi giữa nhóm2 SV",
+    "action": "Xử lý",
+    "expected": "422 hoặc rollback nhóm; không quyết định dở dang",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-14-04",
+    "uc": "UC-14",
+    "rule": "BR-13",
+    "setup": "SV có quyết định",
+    "action": "Khiếu nại, Admin chấp nhận",
+    "expected": "Lưu khiếu nại+revision mới; không xóa quyết định cũ",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-30-01",
+    "uc": "UC-30",
+    "rule": "BR-14",
+    "setup": "Hoạt động còn1 chỗ; 2 SV",
+    "action": "20 request đồng thời",
+    "expected": "1 đăng ký thành công; occupied không vượt capacity",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-30-02",
+    "uc": "UC-30",
+    "rule": "BR-14",
+    "setup": "SV có A10:00-11:00",
+    "action": "Đăng ký B10:30-12:00 và C11:00-12:00",
+    "expected": "B409; Cđược phép",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-30-03",
+    "uc": "UC-30",
+    "rule": "BR-15",
+    "setup": "Đăng ký, clock cáchstart đúng 12 h",
+    "action": "Hủy 2 lần cùng key",
+    "expected": "CANCELLED; hoàn1 chỗ",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-30-04",
+    "uc": "UC-30",
+    "rule": "BR-15",
+    "setup": "Cáchstart11 h59 m",
+    "action": "Hủy",
+    "expected": "409; không hoànchỗ",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-30-05",
+    "uc": "UC-30",
+    "rule": "BR-15",
+    "setup": "Đăng ký QR valid",
+    "action": "Quét QRrồi Adminconfirm2 lần",
+    "expected": "Quét chỉ ATTENDED; confirm1 EARN",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-30-06",
+    "uc": "UC-30",
+    "rule": "BR-16",
+    "setup": "SV 57 điểm chưa quyđổi",
+    "action": "Quyđổi5 Đ RL rồi thêm 1",
+    "expected": "Trừ50, còn7; tổng5; thêm 1 bị409",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-30-07",
+    "uc": "UC-30",
+    "rule": "BR-16",
+    "setup": "Transfer PENDING",
+    "action": "CTSVtimeout/retry/reject",
+    "expected": "Mộtdebit; retrycùng ID; reject1 compensation",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-30-08",
+    "uc": "UC-30",
+    "rule": "BR-16",
+    "setup": "Cócompleted vàcancelled",
+    "action": "Cấpgiấy, ký, verify, rồirevoke",
+    "expected": "PDFchỉcompleted; chữkývalid; QRrevoked sau thu hồi",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-04-08",
+    "uc": "UC-04",
+    "rule": "BR-01/17",
+    "setup": "SV khác chủ hồ sơ;  không CSRF;  sessionidle15 m",
+    "action": "Truy cập tài nguyên/submit",
+    "expected": "404/403/401 tương ứng; không dữ liệu lộ",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-12-06",
+    "uc": "UC-12",
+    "rule": "BR-17",
+    "setup": "SV hoặc Admin chưa2 FA",
+    "action": "Gọi quyết định",
+    "expected": "403/401; không thay đổi",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "TC-08-08",
+    "uc": "UC-08",
+    "rule": "BR-10/17",
+    "setup": "Cùng Idempotency Key khácbody",
+    "action": "Gửi lại",
+    "expected": "409; không phiên mới",
+    "status": "NOT_RUN"
+  }
+]

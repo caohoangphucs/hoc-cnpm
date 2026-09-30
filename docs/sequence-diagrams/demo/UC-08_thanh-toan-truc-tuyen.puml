@@ -1,0 +1,95 @@
+@startuml UC-08_thanh-toan-truc-tuyen
+title
+UC-08 — Thanh toán hóa đơn trực tuyến
+REQ-004, REQ-005 • Thiết kế demo theo SRS cũ
+end title
+hide footbox
+autonumber
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 13
+skinparam backgroundColor #FFFFFF
+skinparam sequenceMessageAlign left
+skinparam maxMessageSize 85
+skinparam sequenceParticipantBackgroundColor #EAF2F8
+skinparam sequenceGroupBackgroundColor #F8FAFC
+actor "Sinh viên" as A
+boundary "Giao diện" as UI
+control "PaymentServlet / IPN\n<<đề xuất>>" as C
+control "PaymentService\n<<đề xuất>>" as S
+participant "InvoiceDAO + PaymentDAO\n(PaymentDAO đề xuất)" as D
+database "PostgreSQL\nSP / dữ liệu" as DB
+participant "Cổng VNPay / MoMo / Ngân hàng" as G
+participant "Thông báo / Outbox\n<<đề xuất>>" as N
+note over C,DB
+Đã có InvoiceDAO.confirmPayment và usp_XacNhanThanhToan, chưa có PaymentServlet/IPN.
+SP hiện yêu cầu giao dịch tồn tại và chưa chống gọi lặp; không coi return URL là bằng chứng thanh toán.
+Các Service và bước ghi là thiết kế đích; xem bảng khoảng cách triển khai.
+end note
+ref over UI,C : Tiền điều kiện: đăng nhập, kiểm tra quyền phía server; Admin/Kế toán có 2FA
+A -> UI : Xem hóa đơn; chọn một hoặc nhiều hóa đơn
+UI -> C : Yêu cầu tóm tắt hóa đơn của sinh viên
+C -> S : tongHopHoaDon(sinhVienTuSession, ids)
+S -> D : Đọc hóa đơn và dư nợ từ DB
+D -> DB : HOA_DON thuộc phạm vi sinh viên được phép
+DB --> S : Các hóa đơn và số tiền còn phải trả
+S --> UI : Tổng tiền, hạn nộp và phương thức
+A -> UI : Chọn phương thức; Thanh toán ngay
+UI -> C : ids, method, khóa yêu cầu chống gửi trùng
+C -> S : taoPhienThanhToan(...)
+S -> S : Kiểm tra quyền sở hữu; tính tiền từ DB
+alt Không có nợ / phương thức không hợp lệ
+  S --> UI : Không tạo giao dịch; yêu cầu chọn lại
+else Hợp lệ
+  opt AF-3: Thanh toán gộp
+    S -> S : Phân bổ số tiền từng hóa đơn; một mã giao dịch gộp
+    note right of S : Cần bảng liên kết giao dịch–hóa đơn;\nschema hiện chỉ 1 giao dịch → 1 hóa đơn.
+  end
+  S -> D : Tạo giao dịch PENDING duy nhất, hạn 15 phút (đề xuất)
+  D -> DB : Lưu mã, tiền, phương thức và phân bổ; commit
+  DB --> S : Mã giao dịch
+  S -> G : Tạo yêu cầu thanh toán theo hợp đồng tích hợp
+  alt AF-1: Ví điện tử
+    G --> UI : URL/deep link VNPay/MoMo
+  else AF-2: Chuyển khoản VietQR
+    G --> UI : QR động, tài khoản nhận và nội dung chuẩn
+  end
+  A -> G : Xác thực giao dịch trên app ngân hàng/ví
+  alt EF-1: Hủy hoặc cổng báo giao dịch thất bại
+    G -> C : Kết quả thất bại đã xác thực
+    C -> S : Ghi trạng thái thất bại nếu còn PENDING
+    S -> D : Kết thúc phiên; giữ nguyên dư nợ
+    D -> DB : THANH_TOAN FAILED; hóa đơn chưa được gạch nợ
+    S --> UI : Thanh toán chưa hoàn tất; cho thử lại
+  else EF-2: Hết 15 phút chưa xác nhận
+    S -> D : Đánh dấu phiên hết hạn (cần thêm mô hình trạng thái)
+    D -> DB : Giải phóng phiên; không thay đổi dư nợ
+    S --> UI : Phiên hết hạn; tạo phiên mới
+    note over S,G : IPN đến muộn vẫn phải đối soát trạng thái thực tế;\nkhông bỏ qua tiền đã thu và không tự tạo giao dịch thu lần hai.
+  else Cổng xác nhận đã thu tiền
+    G -> C : IPN/Webhook(mã, số tiền, kết quả, chữ ký)
+    C -> S : Xác minh chữ ký theo nhà cung cấp và đối chiếu dữ liệu
+    alt Chữ ký / số tiền / mã giao dịch không khớp
+      S --> C : Từ chối; không gạch nợ
+      C --> G : Phản hồi lỗi theo giao thức cổng
+    else Hợp lệ
+      S -> D : Khóa giao dịch và hóa đơn trong transaction (đề xuất)
+      D -> DB : Đọc trạng thái mới nhất FOR UPDATE
+      alt IPN trùng; giao dịch đã SUCCESS
+        DB --> D : Kết quả đã lưu; không cộng DaThanhToan lần nữa
+      else Chưa xử lý thành công
+        D -> DB : usp_XacNhanThanhToan(ref, method, amount, confirmer, OUT status, message)
+        DB -> DB : THANH_TOAN SUCCESS; tăng DaThanhToan\nHóa đơn DA_TT / TT_MOT_PHAN
+        D -> DB : Ghi outbox biên lai; commit (đề xuất)
+      end
+      DB --> S : Kết quả bền vững
+      S --> C : Xác nhận đã xử lý
+      C --> G : ACK theo giao thức cổng
+      S -> N : <<include>> Gửi biên lai / email sau commit
+      N -> N : Retry nếu gửi lỗi
+      UI -> C : Kiểm tra trạng thái giao dịch
+      C -> S : Đọc trạng thái đã xác nhận
+      S --> UI : Biên lai và trạng thái thực tế
+    end
+  end
+end
+@enduml

@@ -1,0 +1,130 @@
+@startuml
+!pragma layout smetana
+skinparam classAttributeIconSize 0
+left to right direction
+title Thiết kế lớp demo 8 UC — PostgreSQL 16 (chưa triển khai)
+package "Presentation" {
+ class JSPViews
+ class AuthFilter {
+  +requireRole(role)
+  +requireOwnership(resource)
+  +verifyCsrf(request)
+ }
+ class DemoApiServlet {
+  +parseAndValidate(request)
+  +respond(result)
+ }
+}
+package "Điều phối đề xuất" {
+ class BookingService {
+ +book()
+ +decide()
+}
+ class InvoiceService {
+ +preview()
+ +issue()
+}
+ class PaymentService {
+ +createSession()
+ +handleIpn()
+}
+ class RepairService {
+ +assign()
+ +complete()
+}
+ class GateService {
+ +record()
+ +approveVisitor()
+}
+ class DisciplineService {
+ +decide()
+ +respondAppeal()
+}
+ class CommunityService {
+ +register()
+ +cancel()
+ +confirm()
+ +convert()
+ +certificate()
+}
+ class TransactionRunner {
+ +executeWithConnection(operation)
+}
+}
+package "DAO / JDBC" {
+ class RoomDAO
+ class InvoiceDAO
+ class PaymentDAO
+ class MaintenanceDAO
+ class SecurityDAO
+ class DisciplineDAO
+ class CommunityDAO
+ class DBContext {
+ +getConnection() : Connection
+}
+}
+package "Adapters đề xuất" {
+ interface PaymentGateway {
+ +create()
+ +verifyCallback()
+ +query()
+}
+ class VnpayAdapter
+ class MomoAdapter
+ class OutboxWorker {
+ +lease()
+ +send()
+ +retry()
+}
+ interface NotificationAdapter
+ interface CTSVAdapter
+ interface BarrierAdapter
+ interface CertificateSigner
+}
+class PostgreSQL16 <<database>> {
+ +procedures : PL/pgSQL
+ +rowLocks : FOR UPDATE
+ +constraints : FK, UNIQUE, CHECK
+}
+JSPViews --> DemoApiServlet
+DemoApiServlet --> AuthFilter
+DemoApiServlet --> BookingService
+DemoApiServlet --> InvoiceService
+DemoApiServlet --> PaymentService
+DemoApiServlet --> RepairService
+DemoApiServlet --> GateService
+DemoApiServlet --> DisciplineService
+DemoApiServlet --> CommunityService
+BookingService --> RoomDAO
+InvoiceService --> InvoiceDAO
+PaymentService --> PaymentDAO
+PaymentService --> PaymentGateway
+RepairService --> MaintenanceDAO
+GateService --> SecurityDAO
+DisciplineService --> DisciplineDAO
+CommunityService --> CommunityDAO
+BookingService ..> TransactionRunner
+PaymentService ..> TransactionRunner
+CommunityService ..> TransactionRunner
+TransactionRunner --> DBContext
+DBContext --> PostgreSQL16
+RoomDAO --> PostgreSQL16
+InvoiceDAO --> PostgreSQL16
+PaymentDAO --> PostgreSQL16
+MaintenanceDAO --> PostgreSQL16
+SecurityDAO --> PostgreSQL16
+DisciplineDAO --> PostgreSQL16
+CommunityDAO --> PostgreSQL16
+VnpayAdapter ..|> PaymentGateway
+MomoAdapter ..|> PaymentGateway
+OutboxWorker --> PostgreSQL16
+OutboxWorker --> NotificationAdapter
+OutboxWorker --> CTSVAdapter
+OutboxWorker --> BarrierAdapter
+OutboxWorker --> CertificateSigner
+note bottom of TransactionRunner
+ Mỗi nghiệp vụ nhiều bảng dùng cùng Connection.
+ Service điều phối; khóa/cập nhật liên bảng nằm trong SP.
+ Không gọi mạng khi đang giữ transaction.
+end note
+@enduml

@@ -1,0 +1,89 @@
+@startuml UC-04_dang-ky-phong
+title
+UC-04 — Đăng ký phòng trực tuyến
+REQ-001 • Thiết kế demo theo SRS cũ
+end title
+hide footbox
+autonumber
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 13
+skinparam backgroundColor #FFFFFF
+skinparam sequenceMessageAlign left
+skinparam maxMessageSize 85
+skinparam sequenceParticipantBackgroundColor #EAF2F8
+skinparam sequenceGroupBackgroundColor #F8FAFC
+actor "Sinh viên" as A
+boundary "Giao diện" as UI
+control "StudentServlet" as C
+control "BookingService\n<<đề xuất>>" as S
+participant "RoomDAO" as D
+database "PostgreSQL\nSP / dữ liệu" as DB
+
+note over C,DB
+Đã có: /student/rooms, /student/book-bed; usp_DatGiuong.
+SRS giữ chỗ 48 giờ; SP hiện giữ 3 ngày. Upload và audit chưa có.
+Các Service và bước ghi là thiết kế đích; xem bảng khoảng cách triển khai.
+end note
+ref over UI,C : Tiền điều kiện: đăng nhập, kiểm tra quyền phía server; Admin/Kế toán có 2FA
+== Tra cứu và chọn giường ==
+A -> UI : Chọn tòa nhà, loại phòng phù hợp giới tính
+UI -> C : Tải sơ đồ phòng và giường trống
+C -> S : traCuuPhong(boLoc, sinhVienTuSession)
+S -> D : getAvailableRooms(); getBedsByRoom(roomId)
+D -> DB : Đọc vw_PhongConCho, PHONG, GIUONG
+DB --> D : Phòng và trạng thái giường
+D --> S : Danh sách
+S --> C : Sơ đồ chỉ gồm lựa chọn hợp lệ
+C --> UI : Sơ đồ / trạng thái không có phòng trống
+A -> UI : Chọn giường; nhập thông tin; tải CCCD 2 mặt, thẻ SV
+opt AF-1: Diện chính sách
+  A -> UI : Chọn diện ưu tiên và tải giấy chứng nhận
+  UI -> UI : Đính kèm minh chứng ưu tiên
+end
+opt AF-2: Chọn lại giường trước khi gửi
+  A -> UI : Hủy lựa chọn và chọn giường trống khác
+end
+opt EF-1: Rời trang khi chưa hoàn tất
+  UI --> A : Cảnh báo dữ liệu chưa lưu
+  alt Ở lại
+    UI -> UI : Giữ dữ liệu form
+  else Rời khỏi
+    break Hủy bản nháp; chưa giữ giường
+      UI -> UI : Xóa bản nháp và tệp tạm
+    end
+  end
+end
+== Hoàn tất đăng ký ==
+A -> UI : Cam kết nội quy; nhấn Hoàn tất
+UI -> UI : Loading; khóa nút gửi
+UI -> C : Gửi bedId, hồ sơ và minh chứng
+C -> S : dangKy(sinhVienTuSession, hoSo)
+S -> S : Kiểm tra đợt mở, chưa có hợp đồng; giới tính; cam kết
+alt EF-3: Tệp không phải JPG/PNG hoặc > 5MB; dữ liệu không hợp lệ
+  S --> C : Lỗi trường cụ thể; không ghi hồ sơ
+  C --> UI : Yêu cầu sửa / tải lại tệp
+else Hợp lệ
+  S -> D : Lưu hồ sơ mã hóa và đặt giường trong một transaction (đề xuất)
+  D -> DB : Ghi hồ sơ; gọi usp_DatGiuong(sv, giuong, OUT id, status, message)
+  DB -> DB : Dọn giữ chỗ hết hạn; kiểm tra đăng ký hiện hữu\nKhóa GIUONG FOR UPDATE
+  alt EF-2: Giường vừa bị giữ / đang dùng
+    DB --> D : ERROR_50001; rollback phần hồ sơ mới
+    D --> S : Giữ chỗ thất bại
+    S --> C : Làm mới sơ đồ và chọn giường khác
+    C --> UI : Cảnh báo tranh chấp giường
+  else Đã có đăng ký chờ / đã duyệt
+    DB --> D : ERROR_50002; không tạo thêm đơn
+    D --> S : Đăng ký hiện hữu
+    S --> C : Hiển thị đơn hiện tại
+    C --> UI : Không đăng ký trùng
+  else Giường trống
+    DB -> DB : GIUONG = GIU_CHO; đơn = CHO_DUYET\nNgày hết hạn = 48 giờ theo SRS (cần sửa SP)
+    DB -> DB : Ghi audit và commit hồ sơ + giữ chỗ (đề xuất)
+    DB --> D : SUCCESS, registrationId
+    D --> S : Mã đơn
+    S --> C : Đăng ký thành công
+    C --> UI : Hiển thị mã đơn và thời hạn giữ chỗ
+  end
+end
+UI -> UI : Kết thúc loading; cho phép thao tác tiếp
+@enduml
