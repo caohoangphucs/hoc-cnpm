@@ -1,4 +1,4 @@
-name: Build & Auto Deploy CNPM
+name: CI/CD Pipeline - CNPM (KTX Smart Hub)
 
 on:
   push:
@@ -7,8 +7,20 @@ on:
     branches: [ main ]
 
 jobs:
-  build-and-test:
+  database-schema-seed-and-build:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: RootPassword2026!
+          MYSQL_DATABASE: CNPM_KTX
+          MYSQL_USER: cnpm_user
+          MYSQL_PASSWORD: CnpmUserPassword2026!
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -20,5 +32,30 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Build with Maven (Cache dependencies)
+      - name: 1. Apply Table Schema (01_schema.sql)
+        run: |
+          echo "Applying database schema..."
+          mysql -h 127.0.0.1 -u root -pRootPassword2026! CNPM_KTX < database/01_schema.sql
+          echo "Schema updated successfully."
+
+      - name: 2. Load Seed Data (02_seed.sql)
+        run: |
+          echo "Loading seed data..."
+          mysql -h 127.0.0.1 -u root -pRootPassword2026! CNPM_KTX < database/02_seed.sql
+          echo "Seed data loaded successfully."
+
+      - name: 3. Verify Database Integrity & Counts
+        run: |
+          echo "Verifying tables and record counts..."
+          mysql -h 127.0.0.1 -u root -pRootPassword2026! CNPM_KTX -e "
+            SELECT 'SINH_VIEN' AS TableName, COUNT(*) AS Total FROM SINH_VIEN
+            UNION ALL
+            SELECT 'GIUONG', COUNT(*) FROM GIUONG
+            UNION ALL
+            SELECT 'HOA_DON', COUNT(*) FROM HOA_DON
+            UNION ALL
+            SELECT 'RA_VAO', COUNT(*) FROM RA_VAO;
+          "
+
+      - name: 4. Build with Maven
         run: mvn clean package -DskipTests
