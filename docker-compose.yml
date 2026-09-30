@@ -1,0 +1,31 @@
+services:
+  cnpm-db:
+    image: mysql:8.0
+    container_name: cnpm-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: cnpmrootpassword123
+      MYSQL_DATABASE: cnpm_db
+      MYSQL_USER: cnpm_user
+      MYSQL_PASSWORD: cnpm_pass_2026
+    ports:
+      - "33061:3306"
+    volumes:
+      - cnpm_db_data:/var/lib/mysql
+      - ./database:/docker-entrypoint-initdb.d:ro
+
+  cnpm-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cnpm-web
+    restart: unless-stopped
+    depends_on:
+      - cnpm-db
+    ports:
+      - "8091:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  cnpm_db_data:
