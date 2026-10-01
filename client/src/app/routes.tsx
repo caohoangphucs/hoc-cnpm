@@ -1,16 +1,12 @@
 import { Link, Route, Routes } from 'react-router'
+import OverviewPage from '@/features/overview/OverviewPage'
 
 export default function AppRoutes() {
   return (
     <Routes>
       <Route
         path="/"
-        element={
-          <main>
-            <h1>KTX Smart Hub</h1>
-            <p>Hệ thống quản lý ký túc xá.</p>
-          </main>
-        }
+        element={<OverviewPage />}
       />
       <Route
         path="*"
