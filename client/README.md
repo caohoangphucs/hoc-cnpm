@@ -4,7 +4,19 @@ Thư mục giao diện chính của KTX Smart Hub, lựa chọn **React + TypeSc
 
 ## Trạng thái hiện tại
 
-Đã khởi tạo React + TypeScript bằng template Vite `react-ts`, cấu hình React Router, ESLint, alias `@/`, biến môi trường, proxy dev và hàm gọi API dùng chung. Route `/` hiện là trang khởi đầu; route không tồn tại có trang 404. Các màn hình nghiệp vụ và thiết kế Material Design 3 sẽ được triển khai sau.
+Đã khởi tạo React + TypeScript bằng template Vite `react-ts`, cấu hình React Router, ESLint, alias `@/`, biến môi trường, proxy dev và hàm gọi API dùng chung. Đã có khung ứng dụng theo 5 vai trò, điều hướng thích ứng và theme theo Material Design 3. Các màn hình nghiệp vụ hiện là khung nội dung, chưa gọi API hay thực hiện thao tác nghiệp vụ.
+
+### Khung giao diện và điều hướng
+
+- `/` chuyển đến `/student`. Các không gian: `/student`, `/admin`, `/accountant`, `/technician`, `/security`.
+- Cấu hình menu tập trung tại `src/app/navigation.ts`, theo chức năng trong Phần II của `TODO.md`. Route và thẻ truy cập nhanh dùng cùng cấu hình này.
+- `AppShell` giữ bố cục; các route con render qua `Outlet`. `FeatureFrame` là vùng chờ để thay bằng trang nghiệp vụ ở những nhánh tiếp theo.
+- Trên 960px: drawer cố định rộng 280px. Từ 960px trở xuống: mở drawer modal bằng nút menu trên app bar. Mô hình này bám theo mẫu Admin/Sinh viên người dùng cung cấp.
+- Có active state/`aria-current`, skip link, focus vào nội dung khi chuyển trang, đóng drawer bằng Escape và phục hồi focus. Theme khởi đầu theo hệ điều hành; nút sáng/tối trên thanh trên lưu lựa chọn vào trình duyệt; tôn trọng reduced motion.
+- Kiểm tra từng vai trò qua các đường dẫn `/student`, `/admin`, `/accountant`, `/technician`, `/security`. Các route hiện chưa bảo vệ bằng session; bước auth sẽ lấy vai trò từ backend và thêm route guard.
+- Theme nằm tại `src/theme/tokens.css`, `global.css`, `layout.css`, `theme.ts`; component dùng chung gồm `Icon`, `PageHeader`, `ThemeToggle`. Palette xanh dương `#00658f`, nền xám lạnh, menu pill và viền/bóng card dựa trên hai mẫu HTML/CSS Admin/Sinh viên do người dùng cung cấp. Google Sans/Roboto tải từ Google Fonts theo link trong mẫu Admin; có fallback hệ thống khi không tải được font. Các SVG filled dùng lại path từ mẫu cho những biểu tượng tương ứng. Chưa thêm thư viện UI hoặc dependencies mới.
+
+Đã kiểm tra khung layout trên dev và production preview: route theo 5 vai trò, responsive từ 320 đến 1600px, active state, drawer/Tab/Escape/focus, trang 404, theme sáng/tối và reduced motion. Lint, typecheck, build đều đạt. Sau khi chỉnh theo mẫu, đối chiếu lại font, sidebar, app bar và card ở desktop/mobile. Đây là kiểm tra khung giao diện, chưa kiểm thử API hoặc xác thực.
 
 Backend mới nằm trong server/, dùng Spring Boot/JAR và PostgreSQL. API JSON đích dưới /api/v1; các endpoint nghiệp vụ/auth chưa triển khai. Nginx proxy cùng origin và /api/health kiểm readiness thật.
 
@@ -123,10 +135,10 @@ Vite mặc định tạo bản build trong `dist/`. Preview dùng để kiểm t
 client/
 ├── public/           # Tài nguyên được phục vụ trực tiếp
 ├── src/
-│   ├── app/          # App.tsx và routes.tsx
+│   ├── app/          # App, routes, navigation; layout/ và pages/
 │   ├── features/     # Chỗ dành cho các nhóm nghiệp vụ
 │   ├── shared/       # api/client.ts; components, hooks, utils, types còn trống
-│   ├── theme/        # global.css cơ bản
+│   ├── theme/        # tokens.css, global.css và layout.css
 │   ├── assets/       # Chỗ dành cho tài nguyên import vào code
 │   ├── main.tsx      # React root và BrowserRouter
 │   └── vite-env.d.ts # Kiểu biến môi trường

@@ -1,0 +1,62 @@
+/* Palette xanh dương theo mẫu admin-duyet-phong / student-tra-cuu-phong.
+   Dùng semantic roles M3; type/motion/elevation là lựa chọn của giao diện web. */
+:root {
+  color-scheme: light;
+  --md-sys-color-primary: #00658f;
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #c7e7ff;
+  --md-sys-color-on-primary-container: #001e2e;
+  --md-sys-color-secondary-container: #d2e5f5;
+  --md-sys-color-on-secondary-container: #0b1d28;
+  --md-sys-color-tertiary-container: #e9ddff;
+  --md-sys-color-on-tertiary-container: #1f1635;
+  --md-sys-color-surface: #fbfcfe;
+  --md-sys-color-surface-container-lowest: #ffffff;
+  --md-sys-color-surface-container-low: #f5f6f8;
+  --md-sys-color-surface-container: #eff0f3;
+  --md-sys-color-surface-container-high: #e9eaed;
+  --md-sys-color-on-surface: #191c1e;
+  --md-sys-color-on-surface-variant: #41484d;
+  --md-sys-color-outline: #71787e;
+  --md-sys-color-outline-variant: #c1c7ce;
+  --md-sys-color-scrim: #000000;
+  --md-sys-shape-corner-small: 8px;
+  --md-sys-shape-corner-medium: 12px;
+  --md-sys-shape-corner-large: 16px;
+  --md-sys-shape-corner-extra-large: 28px;
+  --md-sys-shape-corner-full: 9999px;
+  --app-font: 'Roboto', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --app-font-brand: 'Google Sans', var(--app-font);
+  --app-type-headline: 700 clamp(1.375rem, 2.5vw, 1.625rem)/1.35 var(--app-font-brand);
+  --app-type-title: 600 1.125rem/1.5 var(--app-font-brand);
+  --app-type-title-small: 600 1rem/1.5 var(--app-font-brand);
+  --app-type-body: 400 0.875rem/1.6 var(--app-font);
+  --app-type-label: 500 0.875rem/1.4 var(--app-font);
+  --app-duration: 150ms;
+  --app-sidebar-width: 280px;
+  --app-elevation-1: 0 1px 3px 1px rgb(0 0 0 / 10%), 0 1px 2px rgb(0 0 0 / 15%);
+  --app-elevation-2: 0 2px 6px 2px rgb(0 0 0 / 10%), 0 1px 2px rgb(0 0 0 / 18%);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --md-sys-color-primary: #85cfff;
+  --md-sys-color-on-primary: #00344d;
+  --md-sys-color-primary-container: #004c6e;
+  --md-sys-color-on-primary-container: #c7e7ff;
+  --md-sys-color-secondary-container: #374956;
+  --md-sys-color-on-secondary-container: #d2e5f5;
+  --md-sys-color-tertiary-container: #4b4163;
+  --md-sys-color-on-tertiary-container: #e9ddff;
+  --md-sys-color-surface: #111416;
+  --md-sys-color-surface-container-lowest: #0c0f11;
+  --md-sys-color-surface-container-low: #191c1e;
+  --md-sys-color-surface-container: #1d2022;
+  --md-sys-color-surface-container-high: #272a2d;
+  --md-sys-color-on-surface: #e1e2e5;
+  --md-sys-color-on-surface-variant: #c1c7ce;
+  --md-sys-color-outline: #8b9198;
+  --md-sys-color-outline-variant: #41484d;
+  --app-elevation-1: 0 1px 3px 1px rgb(0 0 0 / 30%), 0 1px 2px rgb(0 0 0 / 40%);
+  --app-elevation-2: 0 2px 6px 2px rgb(0 0 0 / 35%), 0 1px 2px rgb(0 0 0 / 45%);
+}
