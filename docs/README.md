@@ -47,3 +47,5 @@ mã đặc tả SRS. Chọn 8 UC không xóa các yêu cầu còn lại.
   [Bảo vệ](other/Persona/Persona_Phu4_BaoVe.docx).
 
 Các DOCX/drawio trong main/other là nguồn/lịch sử; bộ demo Markdown/PlantUML mô tả Spring Boot đích và mapping legacy, không sửa nguyên bản SRS.
+
+- [CI/CD: kiểm tra mỗi push, deploy develop và rollback](main/CI_CD.md)

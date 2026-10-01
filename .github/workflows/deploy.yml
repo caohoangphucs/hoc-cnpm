@@ -1,10 +1,13 @@
-name: CI - PostgreSQL, Maven and Container Smoke Test
+name: CI - PostgreSQL, Legacy DB Repair and Container Smoke Test
 
 on:
   push:
-    branches: [ develop ]
+    branches: [ "**" ]
   pull_request:
     branches: [ develop ]
+
+permissions:
+  contents: read
 
 jobs:
   database-schema-seed-and-build:
@@ -110,13 +113,83 @@ jobs:
             --data-urlencode 'password=ci-invalid-password' \
             http://127.0.0.1:8080/auth/login > /tmp/cnpm-login.html
           grep -q 'không chính xác' /tmp/cnpm-login.html
+          for entry in admin:admin sv001:student ketoan1:accounting kythuat1:maintenance baove1:security; do
+            account=${entry%%:*}
+            role=${entry##*:}
+            status=$(curl --silent --show-error --cookie-jar /tmp/cnpm-cookie \
+              --output /tmp/cnpm-auth.html --write-out '%{http_code}' \
+              --data-urlencode "username=$account" --data-urlencode 'password=123456' \
+              http://127.0.0.1:8080/auth/login)
+            test "$status" = 302
+            status=$(curl --silent --show-error --cookie /tmp/cnpm-cookie \
+              --output /tmp/cnpm-dashboard.html --write-out '%{http_code}' \
+              "http://127.0.0.1:8080/$role/dashboard")
+            test "$status" = 200
+            echo "$account login and dashboard passed"
+          done
           if docker logs cnpm-ci 2>&1 | grep -E 'SEVERE|Exception|ERROR'; then
             echo "Runtime errors detected"
             exit 1
           fi
+
+      - name: Export the verified image for deployment
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        run: docker save cnpm-ci:latest | gzip > cnpm-image.tar.gz
+
+      - name: Upload deployment image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cnpm-image-${{ github.sha }}
+          path: cnpm-image.tar.gz
+          retention-days: 3
+          compression-level: 0
 
       - name: Runtime logs and cleanup
         if: always()
         run: |
           docker logs cnpm-ci 2>&1 || true
           docker rm -f cnpm-ci || true
+
+  legacy-mysql-login-regression:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ci-only-root-password
+          MYSQL_DATABASE: cnpm_db
+        ports:
+          - 33060:3306
+        options: >-
+          --health-cmd="mysqladmin ping --host=127.0.0.1 --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify deployed legacy MySQL collation repair
+        env:
+          MYSQL_PWD: ci-only-root-password
+        run: bash tests/legacy-mysql-login.sh
+
+  deploy:
+    needs: [database-schema-seed-and-build, legacy-mysql-login-regression]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    runs-on: [self-hosted, linux, x64, cnpm-deploy]
+    permissions:
+      contents: read
+      actions: read
+    concurrency:
+      group: cnpm-production-deployment
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: cnpm-image-${{ github.sha }}
+          path: deploy-artifact
+      - name: Deploy verified commit with health checks and rollback
+        env:
+          DEPLOY_SHA: ${{ github.sha }}
+        run: bash scripts/deploy-server.sh "$DEPLOY_SHA" deploy-artifact/cnpm-image.tar.gz
