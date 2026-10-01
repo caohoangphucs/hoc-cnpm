@@ -23,3 +23,12 @@ Thumbs.db
 .settings/
 .classpath
 .project
+
+# Generated Python/Java files and editor temporary files
+__pycache__/
+*.py[cod]
+*.class
+*.swp
+*.swo
+~$*
+.~lock.*#
