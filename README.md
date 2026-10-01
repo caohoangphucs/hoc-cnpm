@@ -1,112 +1,90 @@
-# HỆ THỐNG QUẢN LÝ KÝ TÚC XÁ (KTX SMART HUB) - ĐỒ ÁN CNPM
+# KTX Smart Hub
 
-- **Production URL:** [https://cnpm.caohoangphuc.id.vn](https://cnpm.caohoangphuc.id.vn)
-- **Tech Stack đích:** Spring Boot4.1.1, Java17, Thymeleaf/Bootstrap5, Spring Security, Spring JDBC/HikariCP và PostgreSQL16. [Kiến trúc/chuyển đổi](docs/demo/SPRING_BOOT.md).
-- **Mã nguồn hiện tại:** Servlet/JSP WAR legacy; đợt này cập nhật tài liệu, chưa chuyển code.
-- **Kiến trúc:** 3 Tầng chuẩn hóa (Presentation Layer $\rightarrow$ Business/Service Layer $\rightarrow$ Data Access / Stored Procedures & Triggers).
+Hệ thống quản lý ký túc xá, phạm vi demo **8 UC**: UC-04, UC-12, UC-17, UC-08, UC-22, UC-25, UC-14 và UC-30.
 
----
+- Backend: **Spring Boot 4.1.1 / Java17**, Spring JDBC, JPA read model và PostgreSQL16.
+- Frontend: **React / TypeScript / Vite**, Nginx phục vụ SPA và proxy API cùng origin.
+- [Production](https://cnpm.caohoangphuc.id.vn) · [Thiết kế](docs/demo/README.md) · [CI/CD](docs/main/CI_CD.md).
 
-## PHẠM VI DEMO ĐÃ CHỐT
+## Trạng thái triển khai
 
-Demo dùng 8 UC trọng tâm theo SRS cũ: **UC-04, UC-08, UC-30, UC-12,
-UC-17, UC-22, UC-25, UC-14**. Xem [bộ demo](docs/demo/README.md),
-[Sequence Diagram](docs/sequence-diagrams/README.md) và [mục lục tài liệu](docs/README.md).
-Mã UC trong bảng phân công cũ bên dưới là bộ mã triển khai ban đầu;
-đối chiếu bằng tên nghiệp vụ và REQ, không dùng làm mã đặc tả demo.
+Đã thay nền Servlet/JSP bằng Spring Boot executable JAR, cấu hình DataSource, 27 entity theo schema hiện hành, repository đọc và JDBC function/9 procedure, DTO theo OpenAPI và các test nền. Frontend hiện là khung tổng quan chức năng với trạng thái kết nối thật.
 
-## PHÂN CÔNG LEGACY 5 THÀNH VIÊN & 8 USE CASES
+Các Service/Controller nghiệp vụ, đăng nhập HTTP/2FA và giao diện 8 UC **chưa triển khai**. Ngoài health, backend đang từ chối truy cập HTTP. Mật khẩu seed `123456` chỉ phục vụ dữ liệu demo và test DB; chưa có màn hình đăng nhập trên client. Không coi frontend scaffold hay CI xanh là nghiệm thu 8 UC. TODO giữ nguyên.
 
-| STT | Thành Viên | Vai Trò & Phân Hệ | Thực Thể Phụ Trách | Use Cases & Nghiệp Vụ Chính |
-|---|---|---|---|---|
-| **1** | **TV1 (Lead)** | Hạ Tầng, DevOps, CSDL & Kỹ Thuật | `VAT_TU`, `XUAT_VAT_TU`, `YEU_CAU_SUA_CHUA`, `AUDIT_LOG` | Toàn bộ Schema/SP/Trigger, Connection Pool (`DBContext`), Module Kỹ thuật (`/maintenance`), xuất kho vật tư (`usp_HoanThanhSuaChua`). |
-| **2** | **TV2** | Auth, Sinh Viên, Bảo Vệ, Thống Kê | `TAI_KHOAN`, `SINH_VIEN`, `RA_VAO`, `VI_PHAM` | **UC-01** (Đăng nhập 5 vai trò), **UC-08** (Báo cáo doanh thu & tỷ lệ lấp đầy `vw_DoanhThuThang`), Module Bảo vệ quét thẻ ra vào & phạt trễ sau 23h (`usp_GhiNhanRaVao`). |
-| **3** | **TV3** | Cơ Sở Vật Chất & Đăng Ký Ở | `TOA_NHA`, `LOAI_PHONG`, `PHONG`, `GIUONG`, `DANG_KY_PHONG`, `LUU_TRU` | **UC-02** (Quản lý phòng/giường), **UC-03** (Sinh viên đặt giữ giường chống tranh chấp `usp_DatGiuong`), **UC-04** (Admin duyệt đăng ký `usp_DuyetDangKy` + Trigger gán giường). |
-| **4** | **TV4** | Điện Nước & Hóa Đơn | `DON_GIA_DICH_VU`, `CHI_SO_DIEN_NUOC`, `HOA_DON`, `CHI_TIET_HOA_DON` | **UC-05** (Ghi chỉ số điện nước `usp_GhiChiSoDienNuoc`), **UC-06** (Phát hành hóa đơn tự động `usp_PhatHanhHoaDon`). |
-| **5** | **TV5** | Thanh Toán & Giao Diện Lead | `THANH_TOAN` | **UC-07** (Thanh toán trực tuyến VNPAY/Tiền mặt `usp_XacNhanThanhToan`), Khung layout chung, UI Responsive. |
+## Cấu trúc
 
----
+| Thư mục | Nội dung |
+|---|---|
+| `server/src/main/java/` | Spring Boot, config, entity/read repository, procedure repository, DTO |
+| `server/src/main/resources/` | Cấu hình ứng dụng và profile production |
+| `server/src/test/java/` | JUnit unit test và integration test PostgreSQL |
+| `server/pom.xml`, `server/Dockerfile` | Build/test và đóng gói backend JAR |
+| `client/src/`, `client/tests/` | Frontend React và test trạng thái kết nối |
+| `client/Dockerfile`, `client/nginx.conf` | Build SPA và reverse proxy |
+| `database/` | Schema/seed PostgreSQL chuẩn; không chạy lại trên DB có dữ liệu |
+| `scripts/` | Reset DB demo và deploy cặp backend/frontend |
+| `docs/` | SRS, đặc tả, sơ đồ, truy vết và test case thiết kế |
 
-## QUY TẮC PHÁT TRIỂN, SỬ DỤNG NHÁNH & COMMIT (BẮT BUỘC CHO TOÀN BỘ DỰ ÁN)
-
-> 📖 **Xem chi tiết toàn bộ:** [Quy Chuẩn Git Workflow, Commit & Push Code](docs/main/GIT_WORKFLOW.md)
-
-### ⛔ QUY TẮC BẢO VỆ NHÁNH `main` (CẤM TUYỆT ĐỐI COMMIT TRỰC TIẾP)
-- **NGHIÊM CẤM TẤT CẢ THÀNH VIÊN commit hoặc push trực tiếp vào nhánh `main`**.
-- Nhánh `main` chỉ nhận merge từ nhánh `develop` thông qua Pull Request (PR) sau khi đã kiểm thử ổn định.
-- **Thời điểm duy nhất được merge vào `main`:**
-  1. Khi đã hoàn tất và kiểm thử trơn tru toàn bộ các Use Cases trên `develop`.
-  2. Khi chốt đợt Release / Nộp bài / Demo chấm điểm cuối kỳ.
-  3. Khi Lead cập nhật tài liệu hoặc cấu hình nền móng chung của toàn dự án.
-
-### 🌿 CẤU TRÚC NHÁNH & QUY TRÌNH LÀM VIỆC
-1. **Mô hình nhánh chuẩn (Branching Strategy):**
-   - `develop`: Nhánh tích hợp chính (Staging & Continuous Deployment lên https://cnpm.caohoangphuc.id.vn). Toàn bộ tính năng mới bắt buộc tạo PR vào `develop`.
-   - `main`: Nhánh Release / Production chính thức (chốt nộp bài cuối kỳ).
-   - `feat/<tên-bạn>-<chức-năng>` / `fix/<tên-bạn>-<lỗi>`: Nhánh làm việc cá nhân (Ví dụ: `feat/dat-vnpay`, `feat/linh-auth`, `fix/dat-invoice-calc`).
-   - Sử dụng script tạo nhánh nhanh tự động:
-     ```powershell
-     .\scripts\git-branch.ps1 -Type feat -Author dat -Feature vnpay
-     ```
-
-2. **Quy tắc viết Commit Message (Conventional Commits kèm #UC-XX):**
-   - **Bắt buộc gắn mã Use Case (`#UC-XX`)** vào cuối message để phục vụ chấm điểm Traceability theo rubric C6-D1.
-   - Cú pháp: `<type>(<scope>): <mô tả ngắn> #UC-XX`
-   - Ví dụ chuẩn:
-     - `feat(booking): sinh vien dat giuong chong tranh chap #UC-03`
-     - `feat(payment): them nut thanh toan vnpay sandbox #UC-07`
-     - `feat(auth): dang nhap 5 phan he phan quyen #UC-01`
-     - `fix(invoice): sua loi am tien dien khi nhap sai #UC-06`
-     - `docs(api): cap nhat sequence diagram luong dat giuong #UC-03`
-
-3. **Cơ sở dữ liệu (Database) đã có sẵn:**
-   - Dữ liệu và database được quản lý tự động bởi Docker container.
-   - Reset DB demo: `.\scripts\reset-db.ps1 -ResetDemo` hoặc `bash scripts/reset-db.sh --reset-demo`; xem [PostgreSQL](docs/demo/POSTGRESQL.md).
-   - Thêm bảng hoặc update logic chỉ tạo file SQL mới trong thư mục `/database/` (ví dụ: `/database/02_update_vnpay.sql`). Không xóa hoặc làm gián đoạn DB.
-
-4. **Tiện ích phát triển nhanh (Hot-reload UI):**
-   - Đã cấu hình `docker-compose.override.yml`: Hướng dẫn legacy: khi sửa file JSP, CSS, JS trong `src/main/webapp`, bạn chỉ cần **bấm F5 trên trình duyệt** là thấy kết quả ngay mà không cần rebuild container.
-
-5. **CI tự động:**
-   - Khi commit/push hoặc merge PR vào `develop`, GitHub Actions điều phối runner trên server để kiểm tra schema/seed PostgreSQL, chạy `mvn clean verify`, kiểm tra WAR không chứa migration, build Docker và smoke test Tomcat/kết nối DB. Build/kiểm thử dùng Docker và cache tại server, không chuyển image/artifact qua GitHub. Push vào `develop` tự deploy image đã qua CI trên cùng server, kiểm health và rollback khi lỗi. Xem [CI/CD](docs/main/CI_CD.md).
-
----
-
-## TÀI KHOẢN TRẢI NGHIỆM DEMO (5 VAI TRÒ)
-
-| Vai Trò | Username | Mật Khẩu | Quyền Hạn & Màn Hình |
-|---|---|---|---|
-| **Admin** | `admin` | `123456` | Quản trị toàn hệ thống, duyệt đăng ký giường (`/admin/dashboard`) |
-| **Sinh Viên** | `sv001` (hoặc `sv002`) | `123456` | Xem sơ đồ phòng, đặt giữ giường, xem hóa đơn, gửi báo hỏng (`/student/dashboard`) |
-| **Kế Toán** | `ketoan1` | `123456` | Nhập chỉ số điện nước, phát hành hóa đơn, thu tiền mặt (`/accounting/dashboard`) |
-| **Kỹ Thuật** | `kythuat1` | `123456` | Quản lý kho vật tư, xử lý báo hỏng và xuất kho (`/maintenance/dashboard`) |
-| **Bảo Vệ** | `baove1` | `123456` | Quét thẻ sinh viên ra vào, tự động ghi nhận vi phạm sau 23h (`/security/dashboard`) |
-
----
-
-## HƯỚNG DẪN DOCKER LEGACY (CHƯA CHUYỂN SPRING BOOT)
+## Chạy local
 
 ```bash
-# 1. Khởi động DB và ứng dụng
+cp .env.example .env
 docker compose up -d --build
-
-# 2. Truy cập ứng dụng local
-http://localhost:8091
+# Frontend: http://localhost:8091
+# Readiness backend qua Nginx: http://localhost:8091/api/health
 ```
 
-> Chuẩn kết nối và reset demo: [PostgreSQL 16](docs/demo/POSTGRESQL.md). Bộ docs không xác nhận ứng dụng đã chạy đủ 8 UC.
+PostgreSQL host port mặc định54321. Backend chỉ mở8080 trong network Compose; frontend mở8091. Với volume DB mới, entrypoint nạp01/02; volume hiện hữu không tự cập nhật schema. Reset demo xóa dữ liệu và yêu cầu flag:
 
-## CẤU TRÚC PHỤC VỤ TRIỂN KHAI
+```bash
+bash scripts/reset-db.sh --reset-demo
+```
 
-| Đường dẫn | Nội dung |
-|---|---|
-| `src/main/` | Mã Java và giao diện hiện hành |
-| `src/test/java/` | Vị trí dành cho unit test khi triển khai |
-| `tests/java/PostgresProcedureSmoke.java` | Kiểm JDBC/procedure trên DB test riêng |
-| `database/` | Schema và seed PostgreSQL chuẩn |
-| `scripts/` | Reset demo, tạo nhánh và deploy |
-| `docs/demo/`, `docs/sequence-diagrams/` | Đặc tả và thiết kế 8 UC để viết code |
-| `docs/main/`, `docs/other/` | SRS, tài liệu toàn hệ thống và nguồn tham khảo |
-| `.github/workflows/` | CI/CD chạy trên server |
+Chạy ngoài Docker khi phát triển:
 
-Build output `target/` và file tạm của editor được ignore. Ảnh ERD hiện hành dùng [ERD27](docs/main/ERD_Full_27Tables.png); sơ đồ lớp dùng [bộ class diagram demo](docs/demo/class-diagrams/README.md).
+```bash
+# Export DB_* hoặc SPRING_DATASOURCE_* phù hợp trước khi chạy backend.
+mvn -f server/pom.xml spring-boot:run
+cd client
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+Vite proxy `/api` đến localhost8080; Nginx triển khai dùng cùng origin nên không cần CORS khác domain.
+
+## Cách viết backend đơn giản
+
+Repository gọi SQL là class Java thông thường, được tạo bằng constructor trong
+`DatabaseConfiguration`. Kiểm tra tham số dùng các hàm `requiredText`, `positive`,
+`optionalText`; không cần `@Repository`, `@Validated` hay `@Transactional` trên các class này.
+Tham số sai phát sinh `IllegalArgumentException`; DTO sai vẫn phát sinh
+`ConstraintViolationException` từ Validator được gọi trực tiếp.
+
+`DormitoryProcedureRepository` dùng `TransactionTemplate` và vẫn bắt buộc caller mở
+transaction JDBC trước khi ghi. Lỗi từ procedure đánh dấu transaction để rollback.
+Annotation JPA trên entity và validation trên DTO được giữ vì phục vụ ánh xạ database
+và hợp đồng API. Chưa thêm controller/service cho các UC.
+
+## Kiểm thử
+
+```bash
+mvn -f server/pom.xml clean verify
+# Chỉ dùng DB PostgreSQL16 test riêng, đã nạp schema/seed:
+mvn -f server/pom.xml -Pdb-integration verify
+cd client
+pnpm install --frozen-lockfile
+pnpm test
+pnpm build
+```
+
+Integration test rollback thay đổi nghiệp vụ; SERIAL vẫn có thể tiến và test cần fixture demo. Không chạy lên DB production. CI tự tạo DB/container/network/cổng test riêng. Chi tiết giới hạn test và deploy: [CI/CD](docs/main/CI_CD.md).
+
+## Quy trình phát triển
+
+```bash
+git switch -c feat/ten-chuc-nang
+git push -u origin feat/ten-chuc-nang
+```
+
+Làm việc trên nhánh riêng, PR vào develop; main dành cho release. Xem [Git workflow](docs/main/GIT_WORKFLOW.md). Mọi push/PR chạy CI trên server; chỉ push develop deploy hai image đúng SHA đã qua kiểm thử, với rollback và bảo toàn DB.

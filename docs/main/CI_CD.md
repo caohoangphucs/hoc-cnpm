@@ -1,30 +1,26 @@
-# CI/CD: PostgreSQL và deploy develop
+# CI/CD trên server: backend và frontend
 
-Workflow: `.github/workflows/deploy.yml`.
+Workflow `.github/workflows/deploy.yml` chạy bằng runner `hoc-cnpm-deploy` với labels self-hosted/linux/x64/cnpm-deploy. Mọi push và PR vào develop chạy CI; chỉ push develop chạy bước deploy sau khi các bước trước thành công.
 
-## Trigger và điều kiện
+## Build và test
 
-Mọi push trên mọi nhánh chạy CI; PR vào develop cũng chạy CI. Job `database-schema-seed-and-build` phải thành công trước CD. Chỉ push vào develop chạy bước deploy trong cùng job; nhánh khác/PR không deploy. Merge PR tạo commit develop và kích hoạt quy trình này.
+1. Tạo PostgreSQL16 test riêng, nạp schema/seed bằng ON_ERROR_STOP; kiểm 27 bảng.
+2. Build stage `server/Dockerfile`: Maven/JDK17 chạy clean verify, JUnit unit test DTO/validation và xử lý status procedure.
+3. JUnit integration test Spring Boot trên DB test: validate/read đủ27 entity, timezone, function đăng nhập/BCrypt5roles, cả9procedure, ID/QR OUT, yêu cầu transaction, lỗi status và rollback nguyên tử.
+4. Build image backend executable JAR và frontend; frontend dùng pnpm lockfile, chạy ESLint, Node test, typecheck TypeScript và Vite production build. Nginx phục vụ SPA/proxy.
+5. Khởi động cả hai trên network test với alias cnpm-server; kiểm readiness qua `/api/health`, trang chủ, JS asset, SPA fallback, nginx -t và log backend.
+6. Develop deploy trực tiếp cặp image vừa test. Không xuất/upload/download image artifact qua GitHub; Maven/pnpm/Docker cache nằm trên server. GitHub vẫn checkout mã nguồn và lưu trạng thái/log.
 
-Mỗi push kiểm tra commit đầu nhánh; nếu push nhiều commit một lần, GitHub Actions không tự chạy riêng từng commit trung gian. CI thất bại sẽ chặn CD.
-
-## Kiểm tra trước deploy
-
-- PostgreSQL16 schema/seed với ON_ERROR_STOP, 27 bảng, 9 procedure và fixture.
-- Maven clean verify; WAR không chứa framework/file quản lý schema tự động.
-- JDBC gọi function đăng nhập bằng SELECT và CALL/OUT của cả 9 procedure, rollback dữ liệu test.
-- Build Docker, trang chủ, đăng nhập/dashboard cả 5 roles, sai mật khẩu/admin123 và hash hỏng bị từ chối; kiểm log runtime.
-
-Toàn bộ CI và CD chạy trên server của dự án. Maven/JDK17 chạy trong Docker build stage, dùng cache dependency và layer tại server. Image runtime có tag và label SHA bất biến; bước deploy dùng trực tiếp image vừa kiểm tra trên cùng máy. Không export, upload hoặc download image/artifact qua GitHub. GitHub chỉ điều phối workflow, checkout mã nguồn và nhận log/trạng thái. Các ca kiểm thử SRS chưa tự động hóa không được coi là đã chạy bởi CI.
+Các test hiện là nền DB/DTO và frontend health; chưa có test HTTP login/dashboard hoặc E2E8UC cho nền mới vì các endpoint nghiệp vụ chưa được triển khai. Test59ca trong docs là thiết kế, không phải59ca đã chạy. CI xanh không đồng nghĩa nghiệm thu nghiệp vụ.
 
 ## Deploy và rollback
 
-Runner `hoc-cnpm-deploy`, nhãn `cnpm-deploy`, chạy bằng service systemd dưới user phuc. Mọi CI và CD dùng runner này; không dùng máy build GitHub-hosted. Container PostgreSQL test, network và cổng host được cấp riêng cho từng run, không dùng DB production. Runner xử lý từng job tuần tự; script deploy có lock bổ sung. Không dùng SSH key cá nhân trong GitHub Actions.
+Chỉ push `develop` sau khi toàn bộ test thành công mới deploy. Runner build image ngay trên server, không upload/download image qua GitHub.
 
-Server dùng PostgreSQL16, volume `cnpm_production_pg_data`, network `cnpm-production`. Cấu hình DB nằm trong `/home/phuc/deployments/hoc-cnpm/runtime.env` quyền 0600, ngoài checkout Git.
+Production dùng `docker-compose.prod.yml` cho hai service Spring Boot và Nginx/React. PostgreSQL hiện hữu nằm ngoài Compose này; không nạp lại schema/seed hoặc thay volume DB. `docker-compose.yml` dùng cho môi trường local.
 
-`scripts/deploy-server.sh` kiểm schema 27 bảng sẵn có, lấy lock, lưu container trước, chạy image mới cổng8091, kiểm HTTP/kết nối DB/log. Nếu lỗi, khôi phục container trước và báo job thất bại. Thành công ghi SHA ở `/home/phuc/deployments/hoc-cnpm/deployed-sha` và nhãn container `cnpm.commit`.
+`scripts/deploy-server.sh SHA cnpm-server-ci:SHA cnpm-client-ci:SHA` kiểm image đúng commit, lưu cặp image trước rồi chạy `docker compose up -d --no-build --pull never`. Kiểm `/api/health` và trang chủ; nếu lỗi, Compose chạy lại cặp image trước. Không còn đổi tên và giữ container sau mỗi lần deploy.
 
-CD không khởi tạo, reset, nạp seed hay chuyển đổi DB. Schema có dữ liệu cập nhật bằng SQL thủ công đã backup/review trước deploy. Reset chỉ dành cho local/demo với flag tường minh.
+Cấu hình riêng trên server tại `/home/phuc/deployments/hoc-cnpm`: `runtime.env` chứa kết nối DB, `release.env` chứa hai image đang chạy, `previous-release.env` chứa bản trước. Các file này không commit. Network có sẵn `cnpm-production`; frontend mở cổng8091, backend8080 chỉ trong network.
 
-GitHub hiện từ chối branch protection cho repo private trên gói tài khoản này (403, cần Pro hoặc public); không đổi visibility/gói. CI chạy mọi push và CD vẫn bị chặn khi CI thất bại; chưa thể chặn merge ở cấp branch policy.
+Chuyển container cũ sang Compose chỉ thực hiện một lần, giữ bản cũ đến khi kiểm health thành công. Những lần deploy tiếp theo đều dùng cùng một luồng Compose. TODO chưa đánh dấu hoàn thành; CI xanh chỉ xác nhận phạm vi test hiện có.

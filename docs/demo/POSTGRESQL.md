@@ -11,7 +11,7 @@
 | CI PostgreSQL service trên host | 127.0.0.1 | cấp động cho từng run | cnpm_db / cnpm_user |
 | CD trên server | cnpm-postgres | 5432 | runtime.env riêng |
 
-Compose đọc `.env` với PORT_WEB, PORT_DB, DB_NAME, DB_USER, DB_PASS; truyền cấu hình đồng bộ cho DB/app và chờ PostgreSQL healthy. Override chỉ mount JSP phục vụ hot reload, không đổi cổng DB. PORT_DB là cổng host, không phải cổng container.
+Compose đọc `.env` với PORT_WEB, PORT_DB, DB_NAME, DB_USER, DB_PASS; truyền cấu hình đồng bộ cho DB/app và chờ PostgreSQL healthy. PORT_DB là cổng host, không phải cổng container.
 
 Java chạy host không tự đọc `.env`; cần export DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS. DBContext mặc định host localhost:54321, trong container cnpm-db:5432; CI/CD truyền giá trị tường minh. JDBC URL: `jdbc:postgresql://HOST:PORT/DB`. HikariCP đặt `escapeSyntaxCallMode=callIfNoReturn` và timezone Asia/Ho_Chi_Minh.
 
@@ -23,9 +23,6 @@ DB demo mới nạp 01 rồi 02 qua psql với ON_ERROR_STOP. Docker entrypoint 
 
 01_schema có DROP TABLE: chỉ dùng khi khởi tạo hoặc reset demo có chủ đích. Reset local/demo:
 
-```powershell
-.\scripts\reset-db.ps1 -ResetDemo
-```
 
 ```bash
 bash scripts/reset-db.sh --reset-demo
@@ -35,6 +32,6 @@ DB cần giữ dữ liệu phải backup, review SQL ALTER/CREATE OR REPLACE the
 
 ## Giới hạn và kiến trúc đích
 
-Runtime hiện tại là Servlet/JSP WAR. Đích Spring Boot dùng DataSource auto-configured, HikariCP, JdbcTemplate và @Transactional, giữ PostgreSQL16; xem [Spring Boot](SPRING_BOOT.md).
+Runtime mới dùng Spring Boot/JAR trong server/, DataSource auto-configured, HikariCP, JdbcTemplate và @Transactional, giữ PostgreSQL16; xem [Spring Boot](SPRING_BOOT.md).
 
 CI đã có kiểm schema/seed, JDBC OUT, build Docker và smoke test 5 roles. Các test thiết kế cho 8 UC, sandbox/IPN, phân quyền đầy đủ và cạnh tranh chưa được coi là đã nghiệm thu E2E. Các khác biệt nghiệp vụ còn lại được quản lý theo QUY_TAC_NGHIEP_VU.md và KIEM_THU.md.
