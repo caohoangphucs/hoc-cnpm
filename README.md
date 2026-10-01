@@ -1,7 +1,7 @@
 # HỆ THỐNG QUẢN LÝ KÝ TÚC XÁ (KTX SMART HUB) - ĐỒ ÁN CNPM
 
 - **Production URL:** [https://cnpm.caohoangphuc.id.vn](https://cnpm.caohoangphuc.id.vn)
-- **Tech Stack đích:** Spring Boot4.1.1, Java17, Thymeleaf/Bootstrap5, Spring Security, Spring JDBC/HikariCP, Flyway và PostgreSQL16. [Kiến trúc/chuyển đổi](docs/demo/SPRING_BOOT.md).
+- **Tech Stack đích:** Spring Boot4.1.1, Java17, Thymeleaf/Bootstrap5, Spring Security, Spring JDBC/HikariCP và PostgreSQL16. [Kiến trúc/chuyển đổi](docs/demo/SPRING_BOOT.md).
 - **Mã nguồn hiện tại:** Servlet/JSP WAR legacy; đợt này cập nhật tài liệu, chưa chuyển code.
 - **Kiến trúc:** 3 Tầng chuẩn hóa (Presentation Layer $\rightarrow$ Business/Service Layer $\rightarrow$ Data Access / Stored Procedures & Triggers).
 
@@ -67,8 +67,8 @@ Mã UC trong bảng phân công cũ bên dưới là bộ mã triển khai ban �
 4. **Tiện ích phát triển nhanh (Hot-reload UI):**
    - Đã cấu hình `docker-compose.override.yml`: Hướng dẫn legacy: khi sửa file JSP, CSS, JS trong `src/main/webapp`, bạn chỉ cần **bấm F5 trên trình duyệt** là thấy kết quả ngay mà không cần rebuild container.
 
-5. **CI/CD Tự Động:**
-   - Khi commit/push hoặc merge PR vào `develop`, GitHub Actions tự động kích hoạt pipeline kiểm tra schema CSDL, nạp seed data mẫu và build đóng gói war tự động deploy lên `https://cnpm.caohoangphuc.id.vn`.
+5. **CI tự động:**
+   - Khi commit/push hoặc merge PR vào `develop`, GitHub Actions kiểm tra schema/seed PostgreSQL, chạy `mvn clean verify`, kiểm tra WAR không chứa migration, build Docker và smoke test Tomcat/kết nối DB. Workflow hiện chưa có bước deploy lên server.
 
 ---
 

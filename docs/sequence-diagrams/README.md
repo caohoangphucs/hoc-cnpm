@@ -40,3 +40,5 @@ java -Djava.awt.headless=true -jar /path/to/plantuml.jar -charset UTF-8 -tsvg do
 Dùng PlantUML **1.2026.2** để tái tạo bản SVG đã kiểm tra. Sequence Diagram
 không cần Graphviz. JAR là công cụ ngoài repository, không cần đưa vào Git.
 Sơ đồ đầy đủ 28 yêu cầu chức năng vẫn là phần mở rộng trong TODO.
+
+PNG đi kèm mỗi nguồn PUML đã render đầy đủ trực tiếp, đồng bộ SVG và nhãn Controller/Repository Spring Boot. Không chụp viewport trình duyệt.

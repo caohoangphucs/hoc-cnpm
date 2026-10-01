@@ -20,8 +20,8 @@ API, dữ liệu/SP, tích hợp, test và nghiệm thu được liên kết t�
 - [Danh sách yêu cầu](main/DanhSach_YeuCau_Nhom3.xlsx).
 - [Use Case Diagram](main/UseCaseDiagram_QuanLyKTX.png).
 - [Screen Flow](main/ScreenFlow_QuanLyKTX.drawio).
-- [ERD](main/ERD_QuanLyKTX.drawio): mô hình trong tài liệu;
-  đối chiếu [schema PostgreSQL triển khai](../database/01_schema.sql) có 19 bảng.
+- [ERD hiện hành27bảng](main/ERD_Full_27Tables.png) — [nguồn PlantUML](main/ERD_Full_27Tables.puml), đối chiếu [schema PostgreSQL](../database/01_schema.sql).
+- [ERD drawio lịch sử](main/ERD_QuanLyKTX.drawio) và [ERD19bảng lịch sử](main/ERD_Full_19Tables.png).
 - [Class Diagram SRS](main/ClassDiagram_11Classes_SRS.drawio) và
   [thuyết minh Class/ERD](main/ClassDiagram_ERD_ThuyetMinh.docx).
 - [Git workflow](main/GIT_WORKFLOW.md): nhánh riêng, PR vào develop.

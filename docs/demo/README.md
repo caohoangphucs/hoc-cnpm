@@ -41,8 +41,8 @@ Có nền mã/SQL không đồng nghĩa đã kiểm thử hay nghiệm thu.
 | UC-08 | InvoiceDAO.confirmPayment, usp_XacNhanThanhToan | Tạo PENDING; gateway/IPN sandbox; chữ ký/tiền; chống lặp; timeout/đối soát; biên lai; gộp hóa đơn |
 | UC-22 | MaintenanceServlet, MaintenanceDAO, usp_HoanThanhSuaChua | Tiếp nhận/gán người; ảnh; lịch hẹn/bảo hành; kiểm tra tồn; đề xuất mua; lịch sử; thông báo/link đánh giá |
 | UC-25 | SecurityServlet, SecurityDAO, usp_GhiNhanRaVao | Thẻ/QR; hợp đồng; mốc giờ/timezone; barrier; khách thăm; app/báo cáo |
-| UC-14 | VI_PHAM và getViolations() để xem | Chưa có module xử lý Admin; minh chứng; đếm theo học kỳ; quyết định/lịch sử; nhóm; khiếu nại; rollback |
-| UC-30 | Chưa có module/bảng nghiệp vụ | Hoạt động/chỉ tiêu; đăng ký; chống trùng lịch; QR; xác nhận/cộng điểm; hủy; CTSV; PDF chữ ký/QR |
+| UC-14 | VI_PHAM, getViolations(), usp_XuLyKyLuat | Chưa có module xử lý Admin; minh chứng; đếm theo học kỳ; quyết định/lịch sử; nhóm; khiếu nại; rollback |
+| UC-30 | Có4bảng công ích và usp_DangKyCongIch; chưa có UI/module Java | Hoạt động/chỉ tiêu; đăng ký; chống trùng lịch; QR; xác nhận/cộng điểm; hủy; CTSV; PDF chữ ký/QR |
 
 Các điểm phải xử lý trước demo ứng dụng:
 
@@ -54,7 +54,7 @@ Các điểm phải xử lý trước demo ứng dụng:
 - Nút thu tiền mặt tạo ref CASH-... nhưng chưa tạo giao dịch tương ứng;
   usp_XacNhanThanhToan cần giao dịch tồn tại. Không dùng nút này để chứng
   minh thanh toán online đã chạy.
-- Mở rộng DB bằng migration mới, dùng lại SP và transaction; không bỏ qua
+- Mở rộng DB bằng SQL cập nhật thủ công đã review, dùng lại SP và transaction; không bỏ qua
   nghiệp vụ SP bằng insert/update nhiều bảng trực tiếp trong DAO.
 
 ## Chuẩn bị
