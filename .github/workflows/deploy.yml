@@ -93,6 +93,8 @@ jobs:
         run: docker build --tag cnpm-ci:latest .
 
       - name: 7. Smoke test Tomcat and PostgreSQL connection
+        env:
+          PGPASSWORD: RootPassword2026!
         run: |
           docker run -d --name cnpm-ci --network host \
             -e DB_HOST=127.0.0.1 -e DB_PORT=5432 \
@@ -113,6 +115,24 @@ jobs:
             --data-urlencode 'password=ci-invalid-password' \
             http://127.0.0.1:8080/auth/login > /tmp/cnpm-login.html
           grep -q 'không chính xác' /tmp/cnpm-login.html
+          psql -h 127.0.0.1 -U cnpm_user -d cnpm_db -v ON_ERROR_STOP=1 -c \
+            "INSERT INTO TAI_KHOAN(TenDangNhap,MatKhauHash,HoTen,Email,VaiTro) VALUES ('ci-invalid-hash','not-a-bcrypt-hash','CI negative','negative-ci@example.test','ADMIN')"
+          status=$(curl --silent --show-error --output /tmp/cnpm-invalid-hash.html \
+            --write-out '%{http_code}' --data-urlencode username=ci-invalid-hash \
+            --data-urlencode password=123456 http://127.0.0.1:8080/auth/login)
+          test "$status" = 200
+          grep -q 'không chính xác' /tmp/cnpm-invalid-hash.html
+          psql -h 127.0.0.1 -U cnpm_user -d cnpm_db -v ON_ERROR_STOP=1 -c \
+            "DELETE FROM TAI_KHOAN WHERE TenDangNhap='ci-invalid-hash'"
+          # Neither the former fallback password nor arbitrary wrong passwords
+          # may authenticate a real account.
+          for password in admin123 ci-wrong-password; do
+            status=$(curl --silent --show-error --output /tmp/cnpm-invalid.html \
+              --write-out '%{http_code}' --data-urlencode username=admin \
+              --data-urlencode "password=$password" http://127.0.0.1:8080/auth/login)
+            test "$status" = 200
+            grep -q 'không chính xác' /tmp/cnpm-invalid.html
+          done
           for entry in admin:admin sv001:student ketoan1:accounting kythuat1:maintenance baove1:security; do
             account=${entry%%:*}
             role=${entry##*:}

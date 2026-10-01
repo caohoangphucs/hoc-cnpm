@@ -11,7 +11,7 @@ Workflow: `.github/workflows/deploy.yml`.
 
 ## CI kiểm tra
 
-PostgreSQL 16: schema/seed với ON_ERROR_STOP, 27 bảng/9 procedure, fixture có dữ liệu, Maven verify và WAR không chứa migration. Build Docker; kiểm trang chủ, truy vấn đăng nhập thất bại có kết nối DB, đăng nhập/dashboard cả 5 tài khoản demo và log runtime.
+PostgreSQL 16: schema/seed với ON_ERROR_STOP, 27 bảng/9 procedure, fixture có dữ liệu, Maven verify và WAR không chứa migration. Build Docker; kiểm trang chủ, truy vấn đăng nhập thất bại có kết nối DB, đăng nhập/dashboard cả 5 tài khoản demo và log runtime. Kiểm tài khoản thật với mật khẩu sai/admin123 và một fixture hash hỏng: tất cả phải bị từ chối, không fallback.
 
 MySQL 8: tái hiện lỗi collation của bản server cũ, áp dụng SQL sửa thủ công, kiểm username thường/Unicode/không tồn tại, bảo toàn số bản ghi và áp dụng lại an toàn. Đây là kiểm tra hotfix legacy; database đích vẫn là PostgreSQL.
 
@@ -37,3 +37,5 @@ Trước sửa đã backup toàn DB, routines, events, triggers. Các script kh�
 - `scripts/sql/repair-legacy-mysql-demo-passwords.sql`: chỉ thay hash seed sai đã biết cho 5 username demo; giữ mật khẩu đã được người dùng thay đổi.
 
 Checkout `/home/phuc/hoc-cnpm` và hai commit JPA riêng không bị overwrite; runner dùng checkout riêng. Các commit riêng đó cần PR/CI riêng trước khi tích hợp.
+
+GitHub hiện từ chối branch protection cho repo private trên gói tài khoản này (403, cần Pro hoặc public); không đổi visibility/gói. CI vẫn chạy mọi push và CD bị chặn nếu CI thất bại. Không thể cam kết merge bị GitHub chặn ở cấp branch policy.
