@@ -32,8 +32,8 @@
 
 ### 🌿 CẤU TRÚC NHÁNH & QUY TRÌNH LÀM VIỆC
 1. **Mô hình nhánh chuẩn (Branching Strategy):**
-   - `main`: Nhánh Release / Production (tự động kích hoạt CI/CD deploy lên https://cnpm.caohoangphuc.id.vn).
-   - `develop`: Nhánh tích hợp chính (Staging) của cả nhóm. Toàn bộ tính năng mới bắt buộc tạo PR vào `develop`.
+   - `develop`: Nhánh tích hợp chính (Staging & Continuous Deployment lên https://cnpm.caohoangphuc.id.vn). Toàn bộ tính năng mới bắt buộc tạo PR vào `develop`.
+   - `main`: Nhánh Release / Production chính thức (chốt nộp bài cuối kỳ).
    - `feat/<tên-bạn>-<chức-năng>` / `fix/<tên-bạn>-<lỗi>`: Nhánh làm việc cá nhân (Ví dụ: `feat/dat-vnpay`, `feat/linh-auth`, `fix/dat-invoice-calc`).
    - Sử dụng script tạo nhánh nhanh tự động:
      ```powershell
@@ -59,7 +59,7 @@
    - Đã cấu hình `docker-compose.override.yml`: Khi sửa file JSP, CSS, JS trong `src/main/webapp`, bạn chỉ cần **bấm F5 trên trình duyệt** là thấy kết quả ngay mà không cần rebuild container.
 
 5. **CI/CD Tự Động:**
-   - Khi PR merge vào `main`, GitHub Actions tự động kích hoạt build (sử dụng Docker Maven Cache layer) và tự deploy lên `https://cnpm.caohoangphuc.id.vn`.
+   - Khi commit/push hoặc merge PR vào `develop`, GitHub Actions tự động kích hoạt pipeline kiểm tra schema CSDL, nạp seed data mẫu và build đóng gói war tự động deploy lên `https://cnpm.caohoangphuc.id.vn`.
 
 ---
 
