@@ -11,7 +11,7 @@ Nhóm tài liệu cốt lõi phục vụ trực tiếp cho việc triển khai *
 - **Sơ đồ Use Case (Use Case Diagram):**
   - [`UseCaseDiagram_QuanLyKTX.png`](main/UseCaseDiagram_QuanLyKTX.png): Sơ đồ Use Case tổng thể toàn hệ thống (5 vai trò: Sinh viên, Admin, Kế toán, Kỹ thuật, Bảo vệ và các hệ thống liên kết).
 - **Sơ đồ Cơ sở Dữ liệu (ERD - 3NF):**
-  - [`ERD_QuanLyKTX_3NF.drawio`](main/ERD_QuanLyKTX_3NF.drawio) / [`ERD_QuanLyKTX.drawio`](main/ERD_QuanLyKTX.drawio): Sơ đồ thực thể quan hệ CSDL chuẩn hóa 3NF (10 bảng).
+  - [`ERD_QuanLyKTX.drawio`](main/ERD_QuanLyKTX.drawio): Sơ đồ thực thể quan hệ CSDL chuẩn hóa 3NF (10 bảng thực thể).
 - **Sơ đồ Lớp (Class Diagram):**
   - [`ClassDiagram_11Classes_SRS.drawio`](main/ClassDiagram_11Classes_SRS.drawio): Sơ đồ Class Diagram 11 lớp thực thể cốt lõi chuẩn SRS.
   - [`ClassDiagram_ERD_ThuyetMinh.docx`](main/ClassDiagram_ERD_ThuyetMinh.docx): Tài liệu thuyết minh chi tiết Class Diagram & ERD.
