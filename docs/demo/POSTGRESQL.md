@@ -24,24 +24,24 @@ Connection đặt `options=-c TimeZone=Asia/Ho_Chi_Minh`; kiểm tra `SHOW timez
 | .env.example | MySQL/cổng 33061/DB_ROOT_PASS | PostgreSQL, host port 54321, bỏ biến root MySQL |
 | docker-compose.override.yml | DB_PORT=3306 | 5432 trong mạng Compose |
 | DBContext.java | Host mặc định 5432; chưa có escapeSyntaxCallMode | Host 54321, container 5432; chế độ CALL và timezone |
-| AccountDAO.java | CALL function; fallback mật khẩu khi BCrypt lỗi | SELECT function; hash lỗi phải thất bại |
-| database/02_seed.sql | Hash demo cần xác minh/sửa | Migration chỉ thay hash mẫu đã biết, BCrypt hợp lệ cho 123456 |
+| AccountDAO.java | CALL function; chỉ BCrypt hợp lệ, hash lỗi thất bại | SELECT function; hash lỗi phải thất bại |
+| database/02_seed.sql | Hash demo đã sửa thành BCrypt hợp lệ | SQL thủ công chỉ thay hash mẫu đã biết, BCrypt hợp lệ cho 123456 |
 | scripts/reset-db.ps1 | cnpm-mysql/mysql CLI/root password | docker compose exec -T cnpm-db + psql, ON_ERROR_STOP=1; chờ healthy, nạp *.sql theo tên |
 | docker-compose.yml | PostgreSQL đúng, thông tin hardcode, chưa healthcheck | Biến môi trường đồng bộ, pg_isready, app chờ service_healthy |
-| .github/workflows/deploy.yml | Chỉ nạp 01/02 | Nạp migration có thứ tự; build và kiểm tra JDBC PostgreSQL |
+| .github/workflows/deploy.yml | Chỉ nạp 01/02 | Nạp01/02 trên DB test sạch; build và kiểm tra JDBC PostgreSQL |
 | usp_DatGiuong | Giữ 3 ngày | 48 giờ, kiểm tra thời hạn/khóa theo BR-03/04 |
 | usp_GhiNhanRaVao | >=23:00 | >23:00; giờ Việt Nam theo BR-12 |
 | usp_XacNhanThanhToan | Callback lặp có thể cộng tiền lại | BR-09/10, khóa và idempotency |
 
 **Các sửa runtime thử trong lượt rà soát đã được hoàn tác theo yêu cầu chỉ làm docs.** Bảng trên là công việc triển khai, không phải danh sách đã sửa code.
 
-## Khởi tạo và migration
+## Khởi tạo và cập nhật schema thủ công
 
-Quy trình legacy: database mới nạp 01_schema → 02_seed → migration theo tên. Đích Spring Boot quản lý schema bằng Flyway như SPRING_BOOT.md; không nạp đồng thời bằng Docker entrypoint. Docker entrypoint chỉ chạy trên volume mới; restart không tự nạp lại. 01_schema có DROP TABLE, chỉ dùng khởi tạo/reset DB local có chủ đích; không dùng làm migration production.
+Nguồn duy nhất: database/01_schema.sql và02_seed.sql. Không dùng Flyway, plugin migrate hay migration ở resources. Database demo mới nạp01 rồi02; Docker entrypoint chỉ chạy trên volume mới, restart không nạp lại.
 
-DB có dữ liệu: backup, kiểm tra constraint/dữ liệu hiện hữu, áp dụng từng migration mới bằng `psql -v ON_ERROR_STOP=1 --single-transaction -f FILE.sql`, ghi version/checksum. Không chạy lại 01/02. Migration thay SP dùng CREATE OR REPLACE, giữ chữ ký để DAO tương thích; đổi chữ ký phải cập nhật contract/API và kiểm tra caller. Index concurrent cần tách khỏi transaction.
+01_schema có DROP TABLE: chỉ khởi tạo/reset DB demo có chủ đích. DB cần giữ dữ liệu phải backup/preflight, chạy SQL ALTER/CREATE OR REPLACE đã review theo chênh lệch rồi kiểm hậu điều kiện; không chạy lại01/02. Dùng psql -v ON_ERROR_STOP=1 --single-transaction cho script phù hợp; index concurrent phải chạy riêng. Ghi script/checksum và người thực hiện trong biên bản triển khai.
 
-Khi script reset được sửa, cần cảnh báo xóa dữ liệu, yêu cầu xác nhận tại script, resolve đường dẫn từ thư mục repo và dừng ngay nếu docker/psql lỗi. PowerShell phải truyền UTF-8 để giữ tiếng Việt. Không dùng script reset hiện tại trước khi sửa.
+Script reset hiện tại vẫn còn lệnh MySQL; phải sửa trước khi dùng PostgreSQL. App Spring Boot đích đặt spring.sql.init.mode=never, không tự DDL/seed. Chi tiết [Spring Boot](SPRING_BOOT.md).
 
 ## Kiểm tra đã thực hiện
 
@@ -50,3 +50,5 @@ Khi script reset được sửa, cần cảnh báo xóa dữ liệu, yêu cầu 
 Một bản sửa JDBC tạm đã build thành công và kiểm tra function đăng nhập/BCrypt cùng 7 procedure có OUT; bản sửa đã hoàn tác. Kết quả chứng minh hướng sửa kỹ thuật, **không chứng minh code hiện tại chạy đúng**. Test chức năng 8 UC, IPN, phân quyền và cạnh tranh chưa chạy.
 
 Đích thay DBContext bằng DataSource auto-configured, HikariCP và JdbcTemplate; cấu hình SPRING_DATASOURCE_* và profiles, giữ PostgreSQL16. Baseline kiểm tra JDBC trước đây chỉ là kiểm tra legacy, chưa kiểm Spring Boot.
+
+Inventory tại a273bb0 đã cập nhật:27bảng/5view/1function/9procedure. Kiểm19bảng/7procedure ở phần trên là kết quả baseline cũ, không phải số lượng hiện tại.

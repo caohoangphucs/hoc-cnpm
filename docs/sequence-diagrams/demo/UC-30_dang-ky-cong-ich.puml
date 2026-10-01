@@ -22,7 +22,7 @@ actor "Admin BQL" as BQL
 participant "Thông báo / Outbox\n<<đề xuất>>" as N
 participant "Phòng CTSV" as CTSV
 note over C,DB
-Chưa có giao diện, Servlet/DAO và bảng hoạt động/điểm công ích.
+Đã có4bảng công ích và usp_DangKyCongIch; chưa có giao diện/module Java.
 Toàn bộ luồng này là thiết kế cần triển khai; không coi seed hiện tại đã hỗ trợ.
 Đích mới: Spring Boot @RestController → @Service @Transactional → @Repository/JdbcTemplate.
 Code nền còn Servlet/DAO legacy; các bước ghi là thiết kế cần triển khai.

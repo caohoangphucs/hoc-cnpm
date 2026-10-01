@@ -1,10 +1,13 @@
-name: CI/CD Pipeline - CNPM (KTX Smart Hub)
+name: CI - PostgreSQL, Legacy DB Repair and Container Smoke Test
 
 on:
   push:
-    branches: [ develop ]
+    branches: [ "**" ]
   pull_request:
     branches: [ develop ]
+
+permissions:
+  contents: read
 
 jobs:
   database-schema-seed-and-build:
@@ -66,5 +69,147 @@ jobs:
             SELECT 'RA_VAO', COUNT(*) FROM RA_VAO;
           "
 
-      - name: 4. Build with Maven
-        run: mvn clean package -DskipTests
+      - name: Assert expected PostgreSQL objects and fixtures
+        env:
+          PGPASSWORD: RootPassword2026!
+        run: |
+          test "$(psql -h 127.0.0.1 -U cnpm_user -d cnpm_db -Atc "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")" = 27
+          test "$(psql -h 127.0.0.1 -U cnpm_user -d cnpm_db -Atc "SELECT COUNT(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.prokind='p'")" = 9
+          for table in SINH_VIEN GIUONG HOA_DON RA_VAO; do
+            test "$(psql -h 127.0.0.1 -U cnpm_user -d cnpm_db -Atc "SELECT COUNT(*) FROM $table")" -gt 0
+          done
+
+      - name: 4. Verify with Maven
+        run: mvn --batch-mode clean verify
+
+      - name: 5. Check WAR has no migration artifacts
+        run: |
+          if unzip -l target/ROOT.war | grep -Ei 'flyway|db/migration/'; then
+            echo "Unexpected migration artifact in WAR"
+            exit 1
+          fi
+
+      - name: 6. Build runtime container
+        run: docker build --tag cnpm-ci:latest .
+
+      - name: 7. Smoke test Tomcat and PostgreSQL connection
+        env:
+          PGPASSWORD: RootPassword2026!
+        run: |
+          docker run -d --name cnpm-ci --network host \
+            -e DB_HOST=127.0.0.1 -e DB_PORT=5432 \
+            -e DB_NAME=cnpm_db -e DB_USER=cnpm_user \
+            -e DB_PASS='RootPassword2026!' cnpm-ci:latest
+          ready=false
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8080/ > /tmp/cnpm-index.html; then
+              ready=true
+              break
+            fi
+            sleep 2
+          done
+          test "$ready" = true
+          grep -q '<html' /tmp/cnpm-index.html
+          curl --fail --silent --show-error \
+            --data-urlencode 'username=ci-nonexistent-account' \
+            --data-urlencode 'password=ci-invalid-password' \
+            http://127.0.0.1:8080/auth/login > /tmp/cnpm-login.html
+          grep -q 'không chính xác' /tmp/cnpm-login.html
+          psql -h 127.0.0.1 -U cnpm_user -d cnpm_db -v ON_ERROR_STOP=1 -c \
+            "INSERT INTO TAI_KHOAN(TenDangNhap,MatKhauHash,HoTen,Email,VaiTro) VALUES ('ci-invalid-hash','not-a-bcrypt-hash','CI negative','negative-ci@example.test','ADMIN')"
+          status=$(curl --silent --show-error --output /tmp/cnpm-invalid-hash.html \
+            --write-out '%{http_code}' --data-urlencode username=ci-invalid-hash \
+            --data-urlencode password=123456 http://127.0.0.1:8080/auth/login)
+          test "$status" = 200
+          grep -q 'không chính xác' /tmp/cnpm-invalid-hash.html
+          psql -h 127.0.0.1 -U cnpm_user -d cnpm_db -v ON_ERROR_STOP=1 -c \
+            "DELETE FROM TAI_KHOAN WHERE TenDangNhap='ci-invalid-hash'"
+          # Neither the former fallback password nor arbitrary wrong passwords
+          # may authenticate a real account.
+          for password in admin123 ci-wrong-password; do
+            status=$(curl --silent --show-error --output /tmp/cnpm-invalid.html \
+              --write-out '%{http_code}' --data-urlencode username=admin \
+              --data-urlencode "password=$password" http://127.0.0.1:8080/auth/login)
+            test "$status" = 200
+            grep -q 'không chính xác' /tmp/cnpm-invalid.html
+          done
+          for entry in admin:admin sv001:student ketoan1:accounting kythuat1:maintenance baove1:security; do
+            account=${entry%%:*}
+            role=${entry##*:}
+            status=$(curl --silent --show-error --cookie-jar /tmp/cnpm-cookie \
+              --output /tmp/cnpm-auth.html --write-out '%{http_code}' \
+              --data-urlencode "username=$account" --data-urlencode 'password=123456' \
+              http://127.0.0.1:8080/auth/login)
+            test "$status" = 302
+            status=$(curl --silent --show-error --cookie /tmp/cnpm-cookie \
+              --output /tmp/cnpm-dashboard.html --write-out '%{http_code}' \
+              "http://127.0.0.1:8080/$role/dashboard")
+            test "$status" = 200
+            echo "$account login and dashboard passed"
+          done
+          if docker logs cnpm-ci 2>&1 | grep -E 'SEVERE|Exception|ERROR'; then
+            echo "Runtime errors detected"
+            exit 1
+          fi
+
+      - name: Export the verified image for deployment
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        run: docker save cnpm-ci:latest | gzip > cnpm-image.tar.gz
+
+      - name: Upload deployment image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cnpm-image-${{ github.sha }}
+          path: cnpm-image.tar.gz
+          retention-days: 3
+          compression-level: 0
+
+      - name: Runtime logs and cleanup
+        if: always()
+        run: |
+          docker logs cnpm-ci 2>&1 || true
+          docker rm -f cnpm-ci || true
+
+  legacy-mysql-login-regression:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ci-only-root-password
+          MYSQL_DATABASE: cnpm_db
+        ports:
+          - 33060:3306
+        options: >-
+          --health-cmd="mysqladmin ping --host=127.0.0.1 --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify deployed legacy MySQL collation repair
+        env:
+          MYSQL_PWD: ci-only-root-password
+        run: bash tests/legacy-mysql-login.sh
+
+  deploy:
+    needs: [database-schema-seed-and-build, legacy-mysql-login-regression]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    runs-on: [self-hosted, linux, x64, cnpm-deploy]
+    permissions:
+      contents: read
+      actions: read
+    concurrency:
+      group: cnpm-production-deployment
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: cnpm-image-${{ github.sha }}
+          path: deploy-artifact
+      - name: Deploy verified commit with health checks and rollback
+        env:
+          DEPLOY_SHA: ${{ github.sha }}
+        run: bash scripts/deploy-server.sh "$DEPLOY_SHA" deploy-artifact/cnpm-image.tar.gz

@@ -499,8 +499,8 @@
     "uc": "SPRING-BOOT",
     "rule": "BR-01/02/17",
     "setup": "Ứng dụng Spring Boot đích; fixture test riêng và PostgreSQL16 Testcontainers",
-    "action": "Flyway DB mới và DB đã baseline; migrationfailure",
-    "expected": "Không DROP dữ liệu cũ/seed prod; app dừng nếu migration lỗi",
+    "action": "Nạp01/02 trên DB test mới; cập nhật SQL thủ công trên bản sao DB cũ",
+    "expected": "SQL đúng hậu điều kiện; app startup không tự DDL/seed; DB cũ giữ dữ liệu",
     "status": "NOT_RUN"
   },
   {

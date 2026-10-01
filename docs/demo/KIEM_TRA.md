@@ -19,3 +19,18 @@ Ngày: 02/10/2026. Tài liệu trước trên develop `82b52a1`; cập nhật Sp
 Các lỗi code/cấu hình phát hiện được ghi trong POSTGRESQL.md để xử lý ở giai đoạn triển khai. Không dùng kết quả thử bản sửa tạm để tuyên bố code hiện tại đã kết nối/call đúng. Container kiểm tra riêng đã được dọn; không thay dữ liệu DB thật. File lock Word của người dùng giữ nguyên.
 
 Spring Boot: xác minh phiên bản/dependency/transaction/security theo tài liệu chính thức được dẫn trong SPRING_BOOT.md. 10 diagram render lại theo class Spring Boot; OpenAPI1.1.0 kiểm hợp lệ; toàn bộ test vẫn NOT_RUN, chưa có Boot runtime.
+
+## Sau khi bỏ migration và cập nhật ảnh
+
+- Gỡ dependency/plugin Flyway và2file V1/V2; Maven clean verify đạt, dependency tree/ROOT.war không còn Flyway/migration.
+- Schema/seed SQL giữ nguyên; quản lý bằng SQL thủ công, không chạy DDL/seed ở app startup.
+-8sequence+2class render PNG/SVG trực tiếp từ nguồn Spring Boot; không có scrollbar/cắt viewport.
+- ERD hiện hành27bảng dựng lại từ SQL, kiểm tên trường/kiểu/PK/FK/UQ; ERD19bảng là lịch sử. Render cả2nguồn, tổng12nguồn diagram.
+- Ảnh alias main/ClassDiagram,main/ERD,D10/SequenceDiagram được cập nhật từ nguồn chuẩn và ghi mapping tại docs/main/README.md.
+- Kiểm liên kết Markdown, SVG XML và PlantUML đạt; OpenAPI không đổi contract. Các lỗi sequence/fixture/UC30 trong review trước chưa sửa ở đợt này.
+
+## Hotfix DB và CI/CD (2026-10-02)
+
+Đã sao lưu và sửa collation tham số usp_DangNhap trên server MySQL cũ. Hash của 5 tài khoản demo khớp hash seed sai đã biết; sửa có điều kiện, không ghi đè mật khẩu đã đổi. Cả 5 tài khoản đăng nhập 302/dashboard 200, không có lỗi SQL mới. Seed PostgreSQL sửa hash mẫu/fixture và đồng bộ SERIAL cuối file.
+
+Preflight riêng đã copy 20 bảng nguồn/650 dòng (19 bảng dự án, 1 bảng ngoài schema lưu legacy_archive) vào PostgreSQL trong transaction; MySQL giữ nguyên. Đăng nhập/dashboard 5 roles và MySQL collation regression được kiểm tra trước push. CI chạy mọi push; CD develop cần cả hai job xanh, dùng image cùng SHA, health check/rollback và không replay schema/seed có dữ liệu. Xem [CI/CD](../main/CI_CD.md).
