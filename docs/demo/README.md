@@ -46,8 +46,7 @@ Có nền mã/SQL không đồng nghĩa đã kiểm thử hay nghiệm thu.
 
 Các điểm phải xử lý trước demo ứng dụng:
 
-- Auth chưa có 2FA; bổ sung kiểm tra quyền server. AccountDAO có fallback
-  mật khẩu mẫu khi BCrypt lỗi đã được bỏ; dùng BCrypt hợp lệ và từ chối hash hỏng.
+- Auth chưa có 2FA; bổ sung kiểm tra quyền server. AccountDAO chỉ dùng BCrypt hợp lệ và từ chối hash hỏng.
 - rooms.jsp sinh cố định 4 lựa chọn giường, chưa lọc theo trạng thái giường.
 - StudentServlet ghi báo hỏng bằng SQL trực tiếp và ID mặc định khi session
   thiếu: đưa xuống DAO, kiểm tra lưu trú thực tế.
@@ -59,8 +58,8 @@ Các điểm phải xử lý trước demo ứng dụng:
 
 ## Chuẩn bị
 
-1. Đọc POSTGRESQL.md trước: cấu hình hiện tại còn cổng MySQL và JDBC cần sửa.
-   Sau khi sửa ở giai đoạn code, chạy DB/app riêng và kiểm tra kết nối trước demo.
+1. Đọc POSTGRESQL.md: runtime và cấu hình dùng PostgreSQL 16.
+   Chạy DB/app riêng và kiểm tra kết nối trước demo.
 2. README công bố admin, sv001, ketoan1, kythuat1, baove1 với mật khẩu
    123456. Hash seed đã sửa và được kiểm tra; xác minh đăng nhập lại sau mỗi deploy.
 3. Seed sv001 → MSSV 21110001 đang ở A-102. **Không dùng ngay tài khoản
@@ -76,7 +75,7 @@ Các điểm phải xử lý trước demo ứng dụng:
    không đổi giờ hệ thống hay production. Quy tắc đúng 23:00/qua nửa đêm
    đã chốt theo BR-12 trong QUY_TAC_NGHIEP_VU.md.
 
-Script scripts/reset-db.ps1 hiện còn lệnh MySQL; phải sửa trước khi dùng reset PostgreSQL.
+Reset DB demo bằng `scripts/reset-db.ps1 -ResetDemo` hoặc `bash scripts/reset-db.sh --reset-demo`.
 Bộ tài liệu này không thực hiện reset hoặc thay dữ liệu chạy thật.
 
 ## Kịch bản demo

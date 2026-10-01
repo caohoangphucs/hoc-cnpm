@@ -336,7 +336,7 @@
     "badge": "C2: User Story Format",
     "q": "Cấu trúc tiêu chuẩn của một User Story trong phương pháp Agile thường có dạng nào sau đây?",
     "options": [
-      "Hệ thống phải thực thi [Hàm xử lý logic] tại [Tệp tin nguồn] để lưu dữ liệu vào cơ sở dữ liệu MySQL.",
+      "Hệ thống phải thực thi [Hàm xử lý logic] tại [Tệp tin nguồn] để lưu dữ liệu vào cơ sở dữ liệu PostgreSQL.",
       "Là [Hệ quản trị CSDL], tôi cần [Dung lượng ổ cứng lớn], để [Lưu trữ hàng triệu bản ghi nhật ký].",
       "Là một [Vai trò người dùng], tôi muốn [Hành động/Tính năng], để [Lợi ích/Giá trị thực tế nhận được].",
       "Vào ngày [Hạn chót], đội ngũ phát triển phải bàn giao [Module tính năng] cho bộ phận kiểm thử QA."
