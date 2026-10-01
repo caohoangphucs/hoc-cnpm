@@ -15,7 +15,7 @@ public class DBContext {
             // Tự động phát hiện môi trường chạy (Docker Container vs Local Host máy thật)
             boolean isRunningInDocker = new java.io.File("/.dockerenv").exists();
             String defaultHost = isRunningInDocker ? "cnpm-db" : "localhost";
-            String defaultPort = isRunningInDocker ? "3306" : "33061";
+            String defaultPort = isRunningInDocker ? "5432" : "5432";
 
             String host = System.getenv("DB_HOST") != null ? System.getenv("DB_HOST") : defaultHost;
             String port = System.getenv("DB_PORT") != null ? System.getenv("DB_PORT") : defaultPort;
@@ -23,10 +23,10 @@ public class DBContext {
             String user = System.getenv("DB_USER") != null ? System.getenv("DB_USER") : "cnpm_user";
             String pass = System.getenv("DB_PASS") != null ? System.getenv("DB_PASS") : "cnpm_pass_2026";
 
-            config.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + dbName + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh&characterEncoding=UTF-8");
+            config.setJdbcUrl("jdbc:postgresql://" + host + ":" + port + "/" + dbName);
             config.setUsername(user);
             config.setPassword(pass);
-            config.setDriverClassName("com.mysql.cj.jdbc.Driver");
+            config.setDriverClassName("org.postgresql.Driver");
             config.setMaximumPoolSize(15);
             config.setMinimumIdle(3);
             config.setIdleTimeout(30000);

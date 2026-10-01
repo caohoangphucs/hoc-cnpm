@@ -19,7 +19,7 @@
     <div class="col-md-3">
         <div class="card p-3 bg-white shadow-sm border-start border-4 border-warning">
             <div class="text-muted small">CƠ SỞ DỮ LIỆU</div>
-            <h3 class="fw-bold my-1 text-warning">MySQL 8.0</h3>
+            <h3 class="fw-bold my-1 text-warning">PostgreSQL 16</h3>
             <span class="small text-muted">Connection Pool Ready</span>
         </div>
     </div>

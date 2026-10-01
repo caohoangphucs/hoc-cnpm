@@ -1,17 +1,16 @@
 services:
   cnpm-db:
-    image: mysql:8.0
-    container_name: cnpm-mysql
+    image: postgres:16-alpine
+    container_name: cnpm-postgres
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: cnpmrootpassword123
-      MYSQL_DATABASE: cnpm_db
-      MYSQL_USER: cnpm_user
-      MYSQL_PASSWORD: cnpm_pass_2026
+      POSTGRES_DB: cnpm_db
+      POSTGRES_USER: cnpm_user
+      POSTGRES_PASSWORD: cnpm_pass_2026
     ports:
-      - "33061:3306"
+      - "54321:5432"
     volumes:
-      - cnpm_db_data:/var/lib/mysql
+      - cnpm_pg_data:/var/lib/postgresql/data
       - ./database:/docker-entrypoint-initdb.d:ro
 
   cnpm-app:
@@ -28,4 +27,4 @@ services:
       - "host.docker.internal:host-gateway"
 
 volumes:
-  cnpm_db_data:
+  cnpm_pg_data:
