@@ -1,13 +1,13 @@
 # Kiến trúc Spring Boot cho demo 8 UC
 
-Quyết định công nghệ ngày 02/10/2026: chuyển thiết kế đích sang **Spring Boot 4.1.1, Java 17, PostgreSQL 16**. Java 17 đáp ứng yêu cầu của phiên bản này; runtime chọn executable JAR với Tomcat 11 nhúng theo [system requirements](https://docs.spring.io/spring-boot/system-requirements.html). Các file Java/JSP/pom/Docker hiện tại vẫn là nền legacy, chưa chuyển đổi trong đợt docs.
+Quyết định công nghệ ngày 02/10/2026: chuyển thiết kế đích sang **Spring Boot 4.1.1, Java 17, PostgreSQL 16**. Java 17 đáp ứng yêu cầu của phiên bản này; runtime chọn executable JAR với Tomcat 11 nhúng theo [system requirements](https://docs.spring.io/spring-boot/system-requirements.html). Nền mới đã có trong server/ (JAR, entity/read repository/JDBC/DTO); client/ dùng React/TypeScript/Vite và Nginx. Service/Controller/auth HTTP/8UC vẫn cần triển khai.
 
 ## Stack và cách đóng gói
 
 | Thành phần | Thiết kế đích |
 |---|---|
 | Backend | Spring MVC: @RestController cho /api/v1; @Controller cho trang |
-| Giao diện | Thymeleaf + Bootstrap 5; templates dưới src/main/resources/templates, static dưới resources/static |
+| Giao diện | React/TypeScript/Vite trong client/, Nginx phục vụ SPA và proxy /api; backend trong server/ |
 | Phân quyền | Spring Security, session JSESSIONID, RBAC và ownership; 2FA cho ADMIN/KETOAN |
 | Validation/lỗi | Jakarta Bean Validation trên DTO, @RestControllerAdvice giữ Error schema hiện hành |
 | Dữ liệu | Spring JDBC JdbcTemplate/NamedParameterJdbcTemplate, HikariCP, pgJDBC; PostgreSQL procedure giữ nghiệp vụ nhiều bảng |
@@ -18,7 +18,7 @@ Quyết định công nghệ ngày 02/10/2026: chuyển thiết kế đích sang
 | Kiểm thử | Spring Boot Test/MockMvc + Spring Security Test; Testcontainers PostgreSQL16; không thay bằng H2 |
 | Giám sát | Actuator health/readiness và metrics; chỉ health tối thiểu public, metrics cần quyền/mạng nội bộ |
 
-Spring MVC hỗ trợ controller theo annotation và template engine trong [hướng dẫn web chính thức](https://docs.spring.io/spring-boot/reference/web/servlet.html). Dependency để triển khai: parent spring-boot-starter-parent 4.1.1; starters webmvc, thymeleaf, security, validation, jdbc, actuator; org.postgresql:postgresql runtime; starters test/webmvc-test/jdbc-test/security-test ở test scope và Testcontainers PostgreSQL. Boot BOM quản lý phiên bản thư viện; không giữ các version Servlet/Hikari/Hibernate từ pom legacy. Tên starter theo [danh mục chính thức](https://docs.spring.io/spring-boot/reference/using/build-systems.html).
+Spring MVC hỗ trợ controller theo annotation và template engine trong [hướng dẫn web chính thức](https://docs.spring.io/spring-boot/reference/web/servlet.html). Dependency để triển khai: parent spring-boot-starter-parent 4.1.1; starters webmvc, security, validation, jdbc, actuator; org.postgresql:postgresql runtime; starters test/webmvc-test/jdbc-test/security-test ở test scope và Testcontainers PostgreSQL. Boot BOM quản lý phiên bản thư viện; không giữ các version Servlet/Hikari/Hibernate từ pom legacy. Tên starter theo [danh mục chính thức](https://docs.spring.io/spring-boot/reference/using/build-systems.html).
 
 ## Cấu trúc module đích
 
@@ -36,7 +36,7 @@ Giữ package gốc vn.id.caohoangphuc.cnpm; KtxApplication đặt tại gốc �
 | CommunityServlet đề xuất — UC30 | CommunityController → CommunityService → CommunityRepository |
 | AuthServlet/AccountDAO | AuthController + SecurityFilterChain → AuthenticationManager/UserDetailsService → AccountRepository |
 
-Legacy được ghi trong bảng để đối chiếu; tên mới ở sequence/class là thiết kế đích, chưa tồn tại trong src. ViewController đưa model tối thiểu vào Thymeleaf; JSON/API và trang HTML dùng cùng Service, không nhân bản nghiệp vụ.
+Legacy được ghi trong bảng để đối chiếu; các Service/Controller ở sequence/class vẫn là thiết kế đích, chưa triển khai trong server/src. React gọi JSON/API cùng origin qua Nginx; không dùng JSP/Thymeleaf.
 
 ## Transaction và gọi PostgreSQL
 
@@ -52,7 +52,7 @@ SecurityFilterChain quản lý session/CSRF, ánh xạ role DB thành ROLE_ADMIN
 
 GET /api/v1/auth/session được phép trước login, trả authenticated=false và csrfToken để bootstrap. POST login vẫn phải có CSRF; sau login/2FA/logout client lấy token mới. Header thống nhất X-CSRF-TOKEN. Permit login/session không đồng nghĩa miễn CSRF. Custom JSON login dùng AuthenticationManager, SessionAuthenticationStrategy chống session fixation và lưu SecurityContext qua SecurityContextRepository; không chỉ đặt session.user như legacy. Theo [Spring Security persistence](https://docs.spring.io/spring-security/reference/7.0/servlet/authentication/persistence.html) và [CSRF](https://docs.spring.io/spring-security/reference/servlet/exploits/csrf.html).
 
-Chỉ ngoại lệ CSRF đúng /api/v1/payments/vnpay/ipn và /api/v1/payments/momo/ipn; permit callback nhưng adapter vẫn bắt buộc chữ ký/amount/ref/partner. Không disable CSRF toàn bộ API dùng cookie. Filter lỗi auth/CSRF/2FA phải trả JSON Error contract cho /api/v1, không redirect HTML; trang Thymeleaf mới redirect login. Role ADMIN/KETOAN trước 2FA chỉ được gọi session/2fa/logout. CORS cùng origin; chưa có nhu cầu frontend khác origin. Session idle15min, cookie HttpOnly/Secure ở HTTPS/SameSite=Lax, requestId xuyên filter/controller/service/repository.
+Chỉ ngoại lệ CSRF đúng /api/v1/payments/vnpay/ipn và /api/v1/payments/momo/ipn; permit callback nhưng adapter vẫn bắt buộc chữ ký/amount/ref/partner. Không disable CSRF toàn bộ API dùng cookie. Filter lỗi auth/CSRF/2FA phải trả JSON Error contract cho /api/v1, không redirect HTML; client điều phối màn hình login. Role ADMIN/KETOAN trước 2FA chỉ được gọi session/2fa/logout. CORS cùng origin; chưa có nhu cầu frontend khác origin. Session idle15min, cookie HttpOnly/Secure ở HTTPS/SameSite=Lax, requestId xuyên filter/controller/service/repository.
 
 ## Cấu hình đích
 
@@ -62,9 +62,9 @@ application.yml và profiles local/demo/test/prod sẽ được viết lúc code
 - spring.datasource.hikari.data-source-properties.escapeSyntaxCallMode=callIfNoReturn; options=-c TimeZone=Asia/Ho_Chi_Minh; maxPoolSize15, minimumIdle3, connectionTimeout10000ms.
 - server.port=8080 trong container; host mapping8091; server.servlet.session.timeout=15m; multipart max-file-size5MB, max-request-size26MB cho5ảnh và metadata; limit số file/MIME còn kiểm tại service.
 - spring.sql.init.mode=never; schema quản lý bằng SQL thủ công; app không khởi tạo/reset DB hoặc seed khi startup. Chỉ bật thông tin lỗi chi tiết ở log đã lọc, không trả ra HTTP.
-- Devtools và thymeleaf cache=false chỉ local; prod cache=true. Chuyển _header/_footer JSP thành Thymeleaf fragments. JSP mount/F5 trong Compose legacy không áp dụng cho JAR mới; local dùng boot run + rebuild resource hoặc restart devtools.
+- Backend dùng mvn -f server/pom.xml spring-boot:run; frontend dùng Vite dev server trong client/, proxy /api đến localhost8080. Không dùng JSP mount hoặc Thymeleaf.
 
-Không tự lấy image Tomcat10.1 legacy để chạy Boot4.1. Runtime container dùng Java17 chạy JAR; Dockerfile/Compose/CI sẽ chuyển trong giai đoạn code, chưa chỉnh ở đợt docs.
+Không tự lấy image Tomcat10.1 legacy để chạy Boot4.1. Runtime container dùng Java17 chạy JAR. Dockerfile riêng trong server/ và client/; Compose/CI điều phối cả hai.
 
 ## Quản lý schema bằng SQL
 
@@ -76,8 +76,16 @@ DB cần giữ dữ liệu: backup/preflight, chuẩn bị SQL ALTER/CREATE OR R
 
 1. Boot skeleton/JAR, security/DTO/advice/datasource; health fail khi DB unavailable.
 2. Repository gọi function và9procedure qua JdbcTemplate, Testcontainers PG16; chứng minh rollback/shared connection và status→exception.
-3. Chuyển Thymeleaf và8module theo từng đợt, giữ API/BR/SRS IDs; kiểm requestId, schema, session/CSRF/2FA.
+3. Triển khai React và8module theo từng đợt, giữ API/BR/SRS IDs; kiểm requestId, schema, session/CSRF/2FA.
 4. Kiểm DB mới nạp schema/seed và DB có dữ liệu được cập nhật SQL thủ công; no-drop DB cần giữ; startup không tự chạy DDL/seed.
 5. Docker/CI JAR, joblease/outbox,51case nghiệp vụ + test Spring ở KIEM_THU. Nghiệm thu mock/sandbox theo TICH_HOP.
 
-Không đánh dấu hoàn thành chuyển công nghệ bằng việc docs đã đổi tên class. Code hiện tại vẫn JSP/Servlet WAR; chưa có ứng dụng Spring Boot để build hoặc chạy.
+Không đánh dấu hoàn thành 8UC bằng entity/DTO hoặc scaffold. Nền Spring Boot và frontend đã có; API/UI nghiệp vụ và nghiệm thu vẫn còn phía trước.
+
+## Nền dữ liệu đã viết
+
+27 entity immutable ánh xạ đúng bảng/cột/kiểu ID hiện hành; FK hiện giữ bằng scalar ID để tránh tự tải graph. 27 read repository không có save/delete. JPA dùng jpaReadTransactionManager trên cùng pool, không trộn boundary JPA đọc với JDBC ghi. Write Service dùng transactionManager (JdbcTransactionManager) và gọi DormitoryProcedureRepository; repository yêu cầu MANDATORY và ném ProcedureRejectedException khi status lỗi. Gate VIOLATION_RECORDED là kết quả ghi nhận thành công có vi phạm.
+
+DTO record được tạo thành56DTO theo OpenAPI, gồm request/response/list; không có endpoint tự động chỉ vì đã có DTO. ID API đích (bigint/UUID), version, file/profile/payment session vẫn cần adapter/schema mở rộng. Entity chỉ dùng ID varchar/int4 hiện có; không bịa version hoặc UUID cho dữ liệu chưa có. Meter hiện đổi int64 sang int4 có kiểm overflow. Money DB dùng BigDecimal, timestamp without time zone dùng LocalDateTime; API RFC3339 dùng OffsetDateTime và cần mapping timezone tại Service.
+
+Health readiness có kiểm DB; chỉ health được public trong bước nền, các HTTP khác denyAll. Client scaffold chỉ tổng quan8UC và trạng thái kết nối, chưa có login/2FA. Không tự mở các endpoint nghiệp vụ khi chưa có Service/Security.

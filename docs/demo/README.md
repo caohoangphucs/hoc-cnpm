@@ -2,7 +2,7 @@
 
 Demo chọn **đúng 8 đặc tả trọng tâm trong SRS cũ**, bao phủ 5 vai trò và
 3 chuỗi nghiệp vụ: lưu trú, tài chính, vận hành/an ninh. Bộ tài liệu chốt
-đích Spring Boot 4.1.1 + Thymeleaf + PostgreSQL16; chưa xác nhận ứng dụng hiện tại chạy đủ 8 UC.
+đích Spring Boot 4.1.1 + React + PostgreSQL16; chưa xác nhận ứng dụng hiện tại chạy đủ 8 UC.
 
 Đọc [kiến trúc Spring Boot](SPRING_BOOT.md), [SRS nguồn](NGUON.md), [thiết kế xử lý 5 bước](THIET_KE_XU_LY.md),
 [PostgreSQL](POSTGRESQL.md), [quy tắc](QUY_TAC_NGHIEP_VU.md),
@@ -30,7 +30,7 @@ và thông báo là nghiệp vụ hỗ trợ. Các nhánh chính sách, khách t
 
 ## Khoảng cách triển khai
 
-Bảng dưới là nền legacy Java17/JSP/Servlet trên develop **0c08ae7**, chưa chuyển sang Spring Boot. Mapping class đích trong SPRING_BOOT.md.
+Bảng dưới lưu đối chiếu nền Servlet/JSP tại **0c08ae7**, không phải inventory code hiện hành. Nền mới đã nằm trong server/ và client/; Service/Controller và API/UI8UC chưa triển khai. Mapping đích trong SPRING_BOOT.md.
 Có nền mã/SQL không đồng nghĩa đã kiểm thử hay nghiệm thu.
 
 | UC | Nền hiện có | Cần hoàn thiện theo SRS |
@@ -46,8 +46,7 @@ Có nền mã/SQL không đồng nghĩa đã kiểm thử hay nghiệm thu.
 
 Các điểm phải xử lý trước demo ứng dụng:
 
-- Auth chưa có 2FA; bổ sung kiểm tra quyền server. AccountDAO có fallback
-  mật khẩu mẫu khi BCrypt lỗi đã được bỏ; dùng BCrypt hợp lệ và từ chối hash hỏng.
+- Auth chưa có 2FA; bổ sung kiểm tra quyền server. AccountDAO chỉ dùng BCrypt hợp lệ và từ chối hash hỏng.
 - rooms.jsp sinh cố định 4 lựa chọn giường, chưa lọc theo trạng thái giường.
 - StudentServlet ghi báo hỏng bằng SQL trực tiếp và ID mặc định khi session
   thiếu: đưa xuống DAO, kiểm tra lưu trú thực tế.
@@ -59,8 +58,8 @@ Các điểm phải xử lý trước demo ứng dụng:
 
 ## Chuẩn bị
 
-1. Đọc POSTGRESQL.md trước: cấu hình hiện tại còn cổng MySQL và JDBC cần sửa.
-   Sau khi sửa ở giai đoạn code, chạy DB/app riêng và kiểm tra kết nối trước demo.
+1. Đọc POSTGRESQL.md: runtime và cấu hình dùng PostgreSQL 16.
+   Chạy DB/app riêng và kiểm tra kết nối trước demo.
 2. README công bố admin, sv001, ketoan1, kythuat1, baove1 với mật khẩu
    123456. Hash seed đã sửa và được kiểm tra; xác minh đăng nhập lại sau mỗi deploy.
 3. Seed sv001 → MSSV 21110001 đang ở A-102. **Không dùng ngay tài khoản
@@ -76,7 +75,7 @@ Các điểm phải xử lý trước demo ứng dụng:
    không đổi giờ hệ thống hay production. Quy tắc đúng 23:00/qua nửa đêm
    đã chốt theo BR-12 trong QUY_TAC_NGHIEP_VU.md.
 
-Script scripts/reset-db.ps1 hiện còn lệnh MySQL; phải sửa trước khi dùng reset PostgreSQL.
+Reset DB demo bằng `bash scripts/reset-db.sh --reset-demo`.
 Bộ tài liệu này không thực hiện reset hoặc thay dữ liệu chạy thật.
 
 ## Kịch bản demo

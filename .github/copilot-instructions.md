@@ -1,10 +1,11 @@
-# GitHub Copilot & AI Instructions for KTX Smart Hub
+# Development context
 
-See full architecture and constraints in [AGENTS.md](../AGENTS.md) and [docs/GIT_WORKFLOW.md](../docs/GIT_WORKFLOW.md).
+Backend nằm trong `server/`: Spring Boot4.1.1, Java17, PostgreSQL16. Frontend nằm trong `client/`: React/TypeScript/Vite, Nginx proxy cùng origin. Xem [thiết kế](../docs/demo/SPRING_BOOT.md) và [Git workflow](../docs/main/GIT_WORKFLOW.md).
 
-## Key Guidelines:
-1. **Architecture:** 3-tier Jakarta EE 10 (Tomcat 10.1, Servlet 6.0, JSP 3.0, MySQL 8.0, HikariCP).
-2. **Business Logic:** Encapsulated in Stored Procedures in `database/01_schema.sql`. Do not bypass them in DAOs.
-3. **Hot-reload:** JSP views are mounted via `docker-compose.override.yml`. Refresh browser to see changes.
-4. **Git rules:** Branch naming `<type>/<author>-<feature>`, Conventional Commits. Never push to `main` or `develop`.
-5. **Language:** Respond in Vietnamese, concise and structured.
+- Dùng một DataSource/HikariCP. JPA entity/read repository chỉ đọc, schema validate; transaction ghi dùng Spring JDBC và stored procedure.
+- `DormitoryProcedureRepository` bắt buộc caller có JDBC transaction; status lỗi chuyển thành runtime exception để rollback. Không tạo pool, commit hoặc Connection riêng trong repository.
+- Entity ánh xạ schema hiện hành; DTO là contract API đích, không trả entity/hash/CCCD trực tiếp ra HTTP. Các bảng chưa có trong SQL không được giả lập thành entity hiện hành.
+- Service/Controller nghiệp vụ và auth/session/2FA chưa triển khai. Giữ quyền từ session và kiểm ownership khi viết Service; không tin actor/student identity từ body.
+- Không dùng migration tự động hoặc ddl-auto=create/update. Nguồn schema/seed duy nhất trong database/. Reset chỉ DB demo riêng.
+- CI/CD build/test/deploy cả server/client tại server, không chuyển image qua cloud. Không đánh dấu TODO hoàn thành chỉ vì đã có DTO/entity/scaffold.
+- Trao đổi tiếng Việt; làm việc trên nhánh riêng.
