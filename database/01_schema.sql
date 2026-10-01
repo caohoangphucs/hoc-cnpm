@@ -3,6 +3,12 @@
 -- SCHEMA, PROCEDURES, FUNCTIONS, TRIGGERS & SEED DATA (POSTGRESQL 16)
 -- =========================================================================
 
+DROP TABLE IF EXISTS QUY_DOI_DIEM CASCADE;
+DROP TABLE IF EXISTS SO_DIEM_CONG_ICH CASCADE;
+DROP TABLE IF EXISTS DANG_KY_CONG_ICH CASCADE;
+DROP TABLE IF EXISTS HOAT_DONG CASCADE;
+DROP TABLE IF EXISTS DOT_DANG_KY CASCADE;
+DROP TABLE IF EXISTS HOC_KY CASCADE;
 DROP TABLE IF EXISTS AUDIT_LOG CASCADE;
 DROP TABLE IF EXISTS XUAT_VAT_TU CASCADE;
 DROP TABLE IF EXISTS YEU_CAU_SUA_CHUA CASCADE;
@@ -252,6 +258,95 @@ CREATE TABLE AUDIT_LOG (
     DuLieuMoi JSONB NULL,
     NguoiThucHien VARCHAR(50) DEFAULT 'SYSTEM',
     ThoiGian TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- 20. HOC_KY & DOT_DANG_KY (Phục vụ UC-04, UC-12, UC-14, UC-30)
+CREATE TABLE HOC_KY (
+    MaHocKy VARCHAR(20) PRIMARY KEY,
+    TenHocKy VARCHAR(100) NOT NULL,
+    NgayBatDau DATE NOT NULL,
+    NgayKetThuc DATE NOT NULL,
+    TrangThai VARCHAR(20) DEFAULT 'ACTIVE' CHECK (TrangThai IN ('ACTIVE', 'CLOSED')),
+    CONSTRAINT CHK_HocKy_Dates CHECK (NgayBatDau <= NgayKetThuc)
+);
+
+CREATE TABLE DOT_DANG_KY (
+    MaDot SERIAL PRIMARY KEY,
+    MaHocKy VARCHAR(20) NOT NULL REFERENCES HOC_KY(MaHocKy) ON DELETE CASCADE,
+    TenDot VARCHAR(100) NOT NULL,
+    ThoiGianMo TIMESTAMP NOT NULL,
+    ThoiGianDong TIMESTAMP NOT NULL,
+    TrangThai VARCHAR(20) DEFAULT 'ACTIVE' CHECK (TrangThai IN ('ACTIVE', 'CLOSED')),
+    CONSTRAINT CHK_Dot_Dates CHECK (ThoiGianMo < ThoiGianDong)
+);
+
+-- 21. CHINH_SACH_GIAM_GIA & SINH_VIEN_CHINH_SACH (Phục vụ UC-17, REQ-008)
+CREATE TABLE CHINH_SACH_GIAM_GIA (
+    MaChinhSach VARCHAR(20) PRIMARY KEY,
+    TenChinhSach VARCHAR(150) NOT NULL,
+    TyLeGiam DECIMAL(5, 2) NOT NULL CHECK (TyLeGiam >= 0 AND TyLeGiam <= 100),
+    DieuKienApDung TEXT,
+    NgayBatDau DATE NOT NULL,
+    NgayKetThuc DATE,
+    TrangThai VARCHAR(20) DEFAULT 'DANG_AP_DUNG' CHECK (TrangThai IN ('DANG_AP_DUNG', 'HET_HAN'))
+);
+
+CREATE TABLE SINH_VIEN_CHINH_SACH (
+    MaSinhVien VARCHAR(20) NOT NULL REFERENCES SINH_VIEN(MaSinhVien) ON DELETE CASCADE,
+    MaChinhSach VARCHAR(20) NOT NULL REFERENCES CHINH_SACH_GIAM_GIA(MaChinhSach) ON DELETE RESTRICT,
+    NgayXacNhan DATE DEFAULT CURRENT_DATE,
+    NguoiXacNhan VARCHAR(50),
+    PRIMARY KEY (MaSinhVien, MaChinhSach)
+);
+
+-- 22. HOAT_DONG & CONG_ICH (Phục vụ UC-30, REQ-017, REQ-029, REQ-038)
+CREATE TABLE HOAT_DONG (
+    MaHoatDong VARCHAR(20) PRIMARY KEY,
+    MaHocKy VARCHAR(20) REFERENCES HOC_KY(MaHocKy) ON DELETE SET NULL,
+    TieuDe VARCHAR(255) NOT NULL,
+    MoTa TEXT,
+    ThoiGianBatDau TIMESTAMP NOT NULL,
+    ThoiGianKetThuc TIMESTAMP NOT NULL,
+    DiaDiem VARCHAR(255),
+    ChiTieu INT NOT NULL CHECK (ChiTieu > 0),
+    DaDangKy INT NOT NULL DEFAULT 0 CHECK (DaDangKy >= 0 AND DaDangKy <= ChiTieu),
+    DiemCongIch INT NOT NULL DEFAULT 10 CHECK (DiemCongIch > 0),
+    TrangThai VARCHAR(20) DEFAULT 'MO_DANG_KY' CHECK (TrangThai IN ('MO_DANG_KY', 'DONG_DANG_KY', 'HOAN_THANH', 'HUY')),
+    CONSTRAINT CHK_HoatDong_Time CHECK (ThoiGianBatDau < ThoiGianKetThuc)
+);
+
+CREATE TABLE DANG_KY_CONG_ICH (
+    MaDangKyCongIch SERIAL PRIMARY KEY,
+    MaHoatDong VARCHAR(20) NOT NULL REFERENCES HOAT_DONG(MaHoatDong) ON DELETE CASCADE,
+    MaSinhVien VARCHAR(20) NOT NULL REFERENCES SINH_VIEN(MaSinhVien) ON DELETE CASCADE,
+    NgayDangKy TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    MaQRToken VARCHAR(100) UNIQUE,
+    TrangThai VARCHAR(20) DEFAULT 'REGISTERED' CHECK (TrangThai IN ('REGISTERED', 'ATTENDED', 'COMPLETED', 'CANCELLED')),
+    NguoiXacNhan VARCHAR(50),
+    NgayXacNhan TIMESTAMP,
+    CONSTRAINT UQ_SV_HoatDong UNIQUE (MaHoatDong, MaSinhVien)
+);
+
+CREATE TABLE SO_DIEM_CONG_ICH (
+    MaGiaoDich SERIAL PRIMARY KEY,
+    MaSinhVien VARCHAR(20) NOT NULL REFERENCES SINH_VIEN(MaSinhVien) ON DELETE CASCADE,
+    MaHocKy VARCHAR(20) REFERENCES HOC_KY(MaHocKy) ON DELETE SET NULL,
+    MaDangKyCongIch INT REFERENCES DANG_KY_CONG_ICH(MaDangKyCongIch) ON DELETE SET NULL,
+    SoDiemThayDoi INT NOT NULL,
+    LoaiGiaoDich VARCHAR(20) NOT NULL CHECK (LoaiGiaoDich IN ('CONG_DIEM', 'QUY_DOI', 'DIEU_CHINH')),
+    GhiChu TEXT,
+    ThoiGian TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE QUY_DOI_DIEM (
+    MaQuyDoi SERIAL PRIMARY KEY,
+    MaSinhVien VARCHAR(20) NOT NULL REFERENCES SINH_VIEN(MaSinhVien) ON DELETE CASCADE,
+    MaHocKy VARCHAR(20) NOT NULL REFERENCES HOC_KY(MaHocKy),
+    DiemCongIchTieu INT NOT NULL CHECK (DiemCongIchTieu > 0),
+    DiemRenLuyenNhan INT NOT NULL CHECK (DiemRenLuyenNhan >= 1 AND DiemRenLuyenNhan <= 5),
+    NgayQuyDoi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    TrangThai VARCHAR(20) DEFAULT 'THANH_CONG' CHECK (TrangThai IN ('THANH_CONG', 'TU_CHOI'))
 );
 
 -- VIEWS
@@ -690,6 +785,95 @@ BEGIN
     ELSE
         p_Status := 'SUCCESS';
         p_Message := 'Ghi nhan ra vao thanh cong.';
+    END IF;
+END;
+$proc$;
+
+-- 9. usp_XuLyKyLuat (Phuc vu UC-14)
+CREATE OR REPLACE PROCEDURE usp_XuLyKyLuat(
+    IN p_MaViPham INT,
+    IN p_MucDo VARCHAR,
+    IN p_HinhThucXuLy VARCHAR,
+    IN p_NguoiXuLy VARCHAR,
+    OUT p_Status VARCHAR,
+    OUT p_Message VARCHAR
+)
+LANGUAGE plpgsql
+AS $proc$
+DECLARE
+    v_MaSinhVien VARCHAR(20);
+    v_TrangThaiVP VARCHAR(20);
+BEGIN
+    SELECT MaSinhVien, TrangThai INTO v_MaSinhVien, v_TrangThaiVP
+    FROM VI_PHAM WHERE MaViPham = p_MaViPham FOR UPDATE;
+
+    IF v_MaSinhVien IS NULL THEN
+        p_Status := 'ERROR_NOT_FOUND';
+        p_Message := 'Khong tim thay ban ghi vi pham.';
+    ELSE
+        UPDATE VI_PHAM
+        SET MucDo = p_MucDo,
+            HinhThucXuLy = p_HinhThucXuLy,
+            TrangThai = 'DA_XU_LY'
+        WHERE MaViPham = p_MaViPham;
+
+        INSERT INTO AUDIT_LOG(TenBang, HanhDong, DuLieuCu, DuLieuMoi, NguoiThucHien)
+        VALUES (
+            'VI_PHAM',
+            'UPDATE',
+            jsonb_build_object('MaViPham', p_MaViPham, 'TrangThai', v_TrangThaiVP),
+            jsonb_build_object('MaViPham', p_MaViPham, 'MucDo', p_MucDo, 'HinhThucXuLy', p_HinhThucXuLy, 'TrangThai', 'DA_XU_LY'),
+            p_NguoiXuLy
+        );
+
+        p_Status := 'SUCCESS';
+        p_Message := 'Xu ly ky luat vi pham thanh cong.';
+    END IF;
+END;
+$proc$;
+
+-- 10. usp_DangKyCongIch (Phuc vu UC-30)
+CREATE OR REPLACE PROCEDURE usp_DangKyCongIch(
+    IN p_MaSinhVien VARCHAR,
+    IN p_MaHoatDong VARCHAR,
+    OUT p_MaDangKy INT,
+    OUT p_MaQRToken VARCHAR,
+    OUT p_Status VARCHAR,
+    OUT p_Message VARCHAR
+)
+LANGUAGE plpgsql
+AS $proc$
+DECLARE
+    v_ChiTieu INT;
+    v_DaDangKy INT;
+    v_TrangThaiHD VARCHAR(20);
+BEGIN
+    IF EXISTS(SELECT 1 FROM DANG_KY_CONG_ICH WHERE MaHoatDong = p_MaHoatDong AND MaSinhVien = p_MaSinhVien AND TrangThai != 'CANCELLED') THEN
+        p_Status := 'ERROR_ALREADY_REGISTERED';
+        p_Message := 'Sinh vien da dang ky hoat dong nay truoc do.';
+    ELSE
+        SELECT ChiTieu, DaDangKy, TrangThai 
+        INTO v_ChiTieu, v_DaDangKy, v_TrangThaiHD
+        FROM HOAT_DONG WHERE MaHoatDong = p_MaHoatDong FOR UPDATE;
+
+        IF v_TrangThaiHD IS NULL OR v_TrangThaiHD != 'MO_DANG_KY' THEN
+            p_Status := 'ERROR_CLOSED';
+            p_Message := 'Hoat dong khong con mo dang ky.';
+        ELSIF v_DaDangKy >= v_ChiTieu THEN
+            p_Status := 'ERROR_FULL';
+            p_Message := 'Hoat dong da het chi tieu dang ky.';
+        ELSE
+            p_MaQRToken := CONCAT('QR-ACT-', p_MaHoatDong, '-', p_MaSinhVien, '-', EXTRACT(EPOCH FROM CURRENT_TIMESTAMP)::BIGINT);
+
+            INSERT INTO DANG_KY_CONG_ICH(MaHoatDong, MaSinhVien, MaQRToken, TrangThai)
+            VALUES (p_MaHoatDong, p_MaSinhVien, p_MaQRToken, 'REGISTERED')
+            RETURNING MaDangKyCongIch INTO p_MaDangKy;
+
+            UPDATE HOAT_DONG SET DaDangKy = DaDangKy + 1 WHERE MaHoatDong = p_MaHoatDong;
+
+            p_Status := 'SUCCESS';
+            p_Message := 'Dang ky hoat dong cong ich thanh cong.';
+        END IF;
     END IF;
 END;
 $proc$;

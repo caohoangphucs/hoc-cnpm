@@ -693,3 +693,39 @@ SELECT setval('ra_vao_maravao_seq', (SELECT COALESCE(MAX(MaRaVao), 1) FROM RA_VA
 SELECT setval('vi_pham_mavipham_seq', (SELECT COALESCE(MAX(MaViPham), 1) FROM VI_PHAM));
 SELECT setval('yeu_cau_sua_chua_mayeucau_seq', (SELECT COALESCE(MAX(MaYeuCau), 1) FROM YEU_CAU_SUA_CHUA));
 SELECT setval('xuat_vat_tu_maxuat_seq', (SELECT COALESCE(MAX(MaXuat), 1) FROM XUAT_VAT_TU));
+
+-- =========================================================================
+-- =========================================================================
+-- SEED DATA BO SUNG CHO HOC KY, CHINH SACH, CONG ICH (UC-14, UC-17, UC-30)
+-- =========================================================================
+
+INSERT INTO HOC_KY (MaHocKy, TenHocKy, NgayBatDau, NgayKetThuc, TrangThai) VALUES
+('HK1-2026', 'Hoc ky 1 (Nam hoc 2026 - 2027)', '2026-09-01', '2027-01-15', 'ACTIVE'),
+('HK2-2026', 'Hoc ky 2 (Nam hoc 2026 - 2027)', '2027-02-01', '2027-06-30', 'CLOSED');
+
+INSERT INTO DOT_DANG_KY (MaHocKy, TenDot, ThoiGianMo, ThoiGianDong, TrangThai) VALUES
+('HK1-2026', 'Dot 1: Dang ky KTX Sinh vien khoa moi 2026', '2026-08-15 08:00:00', '2026-09-05 23:59:59', 'ACTIVE'),
+('HK1-2026', 'Dot 2: Dang ky bo sung phong trong', '2026-09-10 08:00:00', '2026-09-20 23:59:59', 'CLOSED');
+
+INSERT INTO CHINH_SACH_GIAM_GIA (MaChinhSach, TenChinhSach, TyLeGiam, DieuKienApDung, NgayBatDau, NgayKetThuc, TrangThai) VALUES
+('CS-HO-NGHEO', 'Mien giam dien Ho ngheo / Can ngheo', 50.00, 'Co so ho ngheo hoac giay xac nhan dia phuong', '2026-01-01', '2026-12-31', 'DANG_AP_DUNG'),
+('CS-CON-THUONG-BINH', 'Mien giam dien Con thuong binh / Liet si', 70.00, 'Co the thuong binh hoac giay chung nhan liet si cua phu huynh', '2026-01-01', '2026-12-31', 'DANG_AP_DUNG'),
+('CS-VUNG-SAU', 'Ho tro sinh vien vung sau vung xa / Hai dao', 30.00, 'Ho khau thuong tru tai khu vuc 1', '2026-01-01', '2026-12-31', 'DANG_AP_DUNG');
+
+INSERT INTO SINH_VIEN_CHINH_SACH (MaSinhVien, MaChinhSach, NgayXacNhan, NguoiXacNhan) VALUES
+('21110001', 'CS-HO-NGHEO', '2026-09-01', 'admin'),
+('21110002', 'CS-CON-THUONG-BINH', '2026-09-01', 'admin'),
+('21110005', 'CS-VUNG-SAU', '2026-09-02', 'admin');
+
+INSERT INTO HOAT_DONG (MaHoatDong, MaHocKy, TieuDe, MoTa, ThoiGianBatDau, ThoiGianKetThuc, DiaDiem, ChiTieu, DaDangKy, DiemCongIch, TrangThai) VALUES
+('ACT-01', 'HK1-2026', 'Chu nhat xanh - Ve sinh khuon vien KTX', 'Thu gom rac thai, don dep ve sinh khuon vien san bong va bon hoa KTX', '2026-10-10 07:30:00', '2026-10-10 11:30:00', 'Khuon vien trung tam KTX', 50, 2, 10, 'MO_DANG_KY'),
+('ACT-02', 'HK1-2026', 'Ho tro Tan sinh vien nhap hoc va nhan phong KTX', 'Huong dan duong di, ho tro van chuyen hanh ly cho tan sinh vien dot nhap hoc', '2026-10-15 07:00:00', '2026-10-15 17:00:00', 'Sanh Toa A va Toa B', 30, 1, 15, 'MO_DANG_KY'),
+('ACT-03', 'HK1-2026', 'Tap huan ky nang PCCC va Thoat hiem KTX', 'Tham gia khoa thuc hanh dap lua va ky nang thoat hiem toa nha cao tang', '2026-10-20 14:00:00', '2026-10-20 17:00:00', 'Hoi truong Toa C', 100, 0, 10, 'MO_DANG_KY');
+
+INSERT INTO DANG_KY_CONG_ICH (MaHoatDong, MaSinhVien, MaQRToken, TrangThai) VALUES
+('ACT-01', '21110001', 'QR-ACT-ACT-01-21110001-1727800000', 'REGISTERED'),
+('ACT-01', '21110003', 'QR-ACT-ACT-01-21110003-1727800001', 'COMPLETED'),
+('ACT-02', '21110002', 'QR-ACT-ACT-02-21110002-1727800002', 'REGISTERED');
+
+INSERT INTO SO_DIEM_CONG_ICH (MaSinhVien, MaHocKy, MaDangKyCongIch, SoDiemThayDoi, LoaiGiaoDich, GhiChu) VALUES
+('21110003', 'HK1-2026', 2, 10, 'CONG_DIEM', 'Hoan thanh hoat dong Chu nhat xanh ACT-01');
