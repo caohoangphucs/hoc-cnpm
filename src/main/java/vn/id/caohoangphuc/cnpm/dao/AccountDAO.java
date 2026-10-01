@@ -3,7 +3,7 @@ package vn.id.caohoangphuc.cnpm.dao;
 import org.mindrot.jbcrypt.BCrypt;
 import vn.id.caohoangphuc.cnpm.config.DBContext;
 
-import java.sql.CallableStatement;
+import java.sql.PreparedStatement;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.util.HashMap;
@@ -12,9 +12,9 @@ import java.util.Map;
 public class AccountDAO {
 
     public static Map<String, Object> login(String username, String password) {
-        String sql = "{CALL usp_DangNhap(?)}";
+        String sql = "SELECT * FROM usp_DangNhap(?)";
         try (Connection conn = DBContext.getConnection();
-             CallableStatement cs = conn.prepareCall(sql)) {
+             PreparedStatement cs = conn.prepareStatement(sql)) {
             cs.setString(1, username);
             try (ResultSet rs = cs.executeQuery()) {
                 if (rs.next()) {
