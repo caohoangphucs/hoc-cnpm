@@ -12,8 +12,13 @@ public class DBContext {
     static {
         try {
             HikariConfig config = new HikariConfig();
-            String host = System.getenv("DB_HOST") != null ? System.getenv("DB_HOST") : "cnpm-db";
-            String port = System.getenv("DB_PORT") != null ? System.getenv("DB_PORT") : "3306";
+            // Tự động phát hiện môi trường chạy (Docker Container vs Local Host máy thật)
+            boolean isRunningInDocker = new java.io.File("/.dockerenv").exists();
+            String defaultHost = isRunningInDocker ? "cnpm-db" : "localhost";
+            String defaultPort = isRunningInDocker ? "3306" : "33061";
+
+            String host = System.getenv("DB_HOST") != null ? System.getenv("DB_HOST") : defaultHost;
+            String port = System.getenv("DB_PORT") != null ? System.getenv("DB_PORT") : defaultPort;
             String dbName = System.getenv("DB_NAME") != null ? System.getenv("DB_NAME") : "cnpm_db";
             String user = System.getenv("DB_USER") != null ? System.getenv("DB_USER") : "cnpm_user";
             String pass = System.getenv("DB_PASS") != null ? System.getenv("DB_PASS") : "cnpm_pass_2026";

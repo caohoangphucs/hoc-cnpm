@@ -1,0 +1,17 @@
+# ==============================================================================
+# DOCKER COMPOSE OVERRIDE (MÔI TRƯỜNG PHÁT TRIỂN LOCAL - DEV MODE)
+# Docker Compose tự động load file này cùng docker-compose.yml khi chạy 'docker compose up'
+# ==============================================================================
+
+services:
+  cnpm-app:
+    environment:
+      - DB_HOST=cnpm-db
+      - DB_PORT=3306
+      - DB_NAME=cnpm_db
+      - DB_USER=cnpm_user
+      - DB_PASS=cnpm_pass_2026
+    volumes:
+      # Hot-Reload JSP Views: Sửa file JSP chỉ cần F5 trên trình duyệt, không cần rebuild container
+      - ./src/main/webapp/WEB-INF/views:/usr/local/tomcat/webapps/ROOT/WEB-INF/views
+      - ./src/main/webapp/index.jsp:/usr/local/tomcat/webapps/ROOT/index.jsp
