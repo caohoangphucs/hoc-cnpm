@@ -2,9 +2,7 @@ package vn.id.caohoangphuc.cnpm.persistence.auth;
 
 import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Repository;
 
-@Repository
 public class AccountCredentialsRepository {
     private final JdbcTemplate jdbc;
     public AccountCredentialsRepository(JdbcTemplate jdbc) { this.jdbc = jdbc; }
@@ -15,6 +13,6 @@ public class AccountCredentialsRepository {
                 rs.getString("VaiTro"), rs.getString("TrangThai"), rs.getString("MaSinhVien"),
                 rs.getString("MaPhongHienTai")), username);
         if (rows.size() > 1) throw new IllegalStateException("Duplicate username result");
-        return rows.stream().findFirst();
+        return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
 }
