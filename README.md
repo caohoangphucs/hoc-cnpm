@@ -10,7 +10,7 @@ Hệ thống quản lý ký túc xá, phạm vi demo **8 UC**: UC-04, UC-12, UC-
 
 Đã thay nền Servlet/JSP bằng Spring Boot executable JAR, cấu hình DataSource, 27 entity theo schema hiện hành, repository đọc và JDBC function/9 procedure, DTO theo OpenAPI và các test nền. Frontend hiện là khung tổng quan chức năng với trạng thái kết nối thật.
 
-Các Service/Controller nghiệp vụ, đăng nhập HTTP/2FA và giao diện 8 UC **chưa triển khai**. Ngoài health, backend đang từ chối truy cập HTTP. Mật khẩu seed `123456` chỉ phục vụ dữ liệu demo và test DB; chưa có màn hình đăng nhập trên client. Không coi frontend scaffold hay CI xanh là nghiệm thu 8 UC. TODO giữ nguyên.
+Tầng Java service/repository cho 8 UC đã được bổ sung; quy tắc nghiệp vụ nằm trong service Java, còn repository chỉ đọc/ghi SQL đơn giản. Tầng controller/API, đăng nhập HTTP/2FA và giao diện nghiệp vụ **chưa triển khai**, vì vậy ngoài health các thao tác vẫn chưa được mở qua HTTP. Adapter thanh toán và ký chứng nhận cũng cần tích hợp cấu hình provider trước khi dùng. Mật khẩu seed `123456` chỉ phục vụ dữ liệu demo và test DB. Không coi frontend scaffold hay CI xanh là nghiệm thu end-to-end 8 UC.
 
 ## Cấu trúc
 

@@ -51,7 +51,7 @@ class DatabaseFoundationIT {
         var repositories = context.getBeansOfType(ReadRepository.class);
         assertEquals(27, repositories.size());
         for (var repository : repositories.values()) assertNotNull(repository.findAll(PageRequest.of(0,1)));
-        assertEquals(27, jdbc.queryForObject("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'", Integer.class));
+        assertEquals(27, jdbc.queryForObject("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' AND table_name NOT LIKE 'svc_%'", Integer.class));
     }
     @Test void connectionsUseIntendedTimezone() {
         assertEquals("Asia/Ho_Chi_Minh", jdbc.queryForObject("SHOW TimeZone",String.class));
