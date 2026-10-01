@@ -22,9 +22,18 @@
 
 > 📖 **Xem chi tiết toàn bộ:** [Quy Chuẩn Git Workflow, Commit & Push Code](docs/main/GIT_WORKFLOW.md)
 
-1. **Cấu trúc nhánh chuẩn (Branching Strategy):**
-   - `main`: Nhánh Release / Production (tự động deploy lên https://cnpm.caohoangphuc.id.vn).
-   - `develop`: Nhánh tích hợp chính (Staging) của toàn nhóm. Toàn bộ tính năng mới bắt buộc tạo PR vào `develop`.
+### ⛔ QUY TẮC BẢO VỆ NHÁNH `main` (CẤM TUYỆT ĐỐI COMMIT TRỰC TIẾP)
+- **NGHIÊM CẤM TẤT CẢ THÀNH VIÊN commit hoặc push trực tiếp vào nhánh `main`**.
+- Nhánh `main` chỉ nhận merge từ nhánh `develop` thông qua Pull Request (PR) sau khi đã kiểm thử ổn định.
+- **Thời điểm duy nhất được merge vào `main`:**
+  1. Khi đã hoàn tất và kiểm thử trơn tru toàn bộ 6–8 Use Cases trên `develop`.
+  2. Khi chốt đợt Release / Nộp bài / Demo chấm điểm cuối kỳ.
+  3. Khi Lead cập nhật tài liệu hoặc cấu hình nền móng chung của toàn dự án.
+
+### 🌿 CẤU TRÚC NHÁNH & QUY TRÌNH LÀM VIỆC
+1. **Mô hình nhánh chuẩn (Branching Strategy):**
+   - `main`: Nhánh Release / Production (tự động kích hoạt CI/CD deploy lên https://cnpm.caohoangphuc.id.vn).
+   - `develop`: Nhánh tích hợp chính (Staging) của cả nhóm. Toàn bộ tính năng mới bắt buộc tạo PR vào `develop`.
    - `feat/<tên-bạn>-<chức-năng>` / `fix/<tên-bạn>-<lỗi>`: Nhánh làm việc cá nhân (Ví dụ: `feat/dat-vnpay`, `feat/linh-auth`, `fix/dat-invoice-calc`).
    - Sử dụng script tạo nhánh nhanh tự động:
      ```powershell
