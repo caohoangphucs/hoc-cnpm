@@ -26,6 +26,8 @@ Nhóm tài liệu cốt lõi phục vụ trực tiếp cho việc triển khai *
 - **Đặc tả Yêu cầu phần mềm:**
   - [`SRS_HeThongQuanLyKTX_v3.docx`](main/SRS_HeThongQuanLyKTX_v3.docx): Bản đặc tả yêu cầu SRS chính thức toàn hệ thống.
   - [`DanhSach_YeuCau_Nhom3.xlsx`](main/DanhSach_YeuCau_Nhom3.xlsx): Danh sách phân loại yêu cầu chức năng & phi chức năng.
+- **Kế hoạch & To-Do List:**
+  - [`TODO.md`](../TODO.md): Danh sách to-do task hoàn thiện tài liệu toàn bộ hệ thống (kèm tài liệu đính kèm chi tiết).
 - **Quy chuẩn Git & Commit:**
   - [`GIT_WORKFLOW.md`](main/GIT_WORKFLOW.md): Quy chuẩn phân nhánh (`main`, `develop`, `feat/...`), cấm commit trực tiếp trên `main`, commit message kèm mã `#UC-XX`.
 
