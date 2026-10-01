@@ -6,6 +6,10 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import vn.id.caohoangphuc.cnpm.persistence.auth.AccountCredentialsRepository;
 
 @Configuration
 public class SecurityConfiguration {
@@ -18,12 +22,11 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    org.springframework.security.core.userdetails.UserDetailsService userDetailsService(
-            vn.id.caohoangphuc.cnpm.persistence.auth.AccountCredentialsRepository repository) {
+    UserDetailsService userDetailsService(AccountCredentialsRepository repository) {
         return username -> {
             var account = repository.findByUsername(username).orElseThrow(() ->
-                new org.springframework.security.core.userdetails.UsernameNotFoundException("Invalid credentials"));
-            return org.springframework.security.core.userdetails.User.withUsername(account.username())
+                new UsernameNotFoundException("Invalid credentials"));
+            return User.withUsername(account.username())
                 .password(account.passwordHash()).roles(account.role())
                 .disabled(!"ACTIVE".equals(account.status())).build();
         };
