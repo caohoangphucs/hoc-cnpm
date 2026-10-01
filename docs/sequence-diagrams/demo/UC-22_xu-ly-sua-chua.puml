@@ -13,7 +13,7 @@ skinparam maxMessageSize 85
 skinparam sequenceParticipantBackgroundColor #EAF2F8
 skinparam sequenceGroupBackgroundColor #F8FAFC
 actor "Nhân viên kỹ thuật" as A
-boundary "Thymeleaf / Bootstrap" as UI
+boundary "React / TypeScript" as UI
 control "RepairController" as C
 control "RepairService\n<<đề xuất>>" as S
 participant "RepairRepository" as D

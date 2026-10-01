@@ -13,7 +13,7 @@ skinparam maxMessageSize 85
 skinparam sequenceParticipantBackgroundColor #EAF2F8
 skinparam sequenceGroupBackgroundColor #F8FAFC
 actor "Admin BQL" as A
-boundary "Thymeleaf / Bootstrap" as UI
+boundary "React / TypeScript" as UI
 control "DisciplineController\n<<đề xuất>>" as C
 control "DisciplineService\n<<đề xuất>>" as S
 participant "DisciplineRepository\n<<đề xuất>>" as D
