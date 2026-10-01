@@ -20,21 +20,29 @@
 
 ## QUY TẮC PHÁT TRIỂN & SỬ DỤNG NHÁNH (BẮT BUỘC)
 
+> 📖 **Xem chi tiết toàn bộ:** [Quy Chuẩn Git Workflow, Commit & Push Code](docs/GIT_WORKFLOW.md)
+
 1. **Tạo nhánh theo module / chức năng:**
    - **TUYỆT ĐỐI KHÔNG commit/push trực tiếp vào nhánh `main` hay `develop`**.
-   - Đặt tên nhánh: `feat/<tên-bạn>-<module>` (Ví dụ: `feat/linh-auth`, `feat/gam-rooms`, `feat/khoa-invoices`, `feat/dat-vnpay`).
-   - Sửa lỗi: `fix/<tên-bạn>-<tên-lỗi>`.
-   - Tạo PR vào `develop` sau khi test xong.
+   - Cú pháp: `<loại>/<tên-bạn>-<chức-năng>` (Ví dụ: `feat/dat-vnpay`, `feat/linh-auth`, `fix/dat-invoice-calc`).
+   - Sử dụng script tạo nhánh nhanh tự động:
+     ```powershell
+     .\scripts\git-branch.ps1 -Type feat -Author dat -Feature vnpay
+     ```
 
-2. **Cơ sở dữ liệu (Database) đã có sẵn:**
+2. **Quy tắc viết Commit Message (Conventional Commits):**
+   - Cú pháp: `<type>(<scope>): <mô tả ngắn>`
+   - Ví dụ: `feat(payment): them nut thanh toan vnpay sandbox`, `fix(invoice): sua loi am tien dien`.
+
+3. **Cơ sở dữ liệu (Database) đã có sẵn:**
    - Dữ liệu và database được quản lý tự động bởi Docker container.
+   - Reset và nạp lại CSDL mẫu 1-click bằng lệnh: `.\scripts\reset-db.ps1`.
    - Thêm bảng hoặc update logic chỉ tạo file SQL mới trong thư mục `/database/` (ví dụ: `/database/02_update_vnpay.sql`). Không xóa hoặc làm gián đoạn DB.
 
-3. **Không sửa các file hệ thống:**
-   - Các file: `Dockerfile`, `docker-compose.yml`, `.github/workflows/` đã chuẩn hóa.
-   - **Thành viên chỉ tập trung chỉnh sửa mã nguồn trong `src/`**.
+4. **Tiện ích phát triển nhanh (Hot-reload UI):**
+   - Đã cấu hình `docker-compose.override.yml`: Khi sửa file JSP, CSS, JS trong `src/main/webapp`, bạn chỉ cần **bấm F5 trên trình duyệt** là thấy kết quả ngay mà không cần rebuild container.
 
-4. **CI/CD Tự Động:**
+5. **CI/CD Tự Động:**
    - Khi PR merge vào `main`, GitHub Actions tự động kích hoạt build (sử dụng Docker Maven Cache layer) và tự deploy lên `https://cnpm.caohoangphuc.id.vn`.
 
 ---
