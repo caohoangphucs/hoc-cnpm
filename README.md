@@ -47,8 +47,8 @@ Chạy ngoài Docker khi phát triển:
 # Export DB_* hoặc SPRING_DATASOURCE_* phù hợp trước khi chạy backend.
 mvn -f server/pom.xml spring-boot:run
 cd client
-npm ci
-npm run dev
+pnpm install --frozen-lockfile
+pnpm dev
 ```
 
 Vite proxy `/api` đến localhost8080; Nginx triển khai dùng cùng origin nên không cần CORS khác domain.
@@ -60,9 +60,9 @@ mvn -f server/pom.xml clean verify
 # Chỉ dùng DB PostgreSQL16 test riêng, đã nạp schema/seed:
 mvn -f server/pom.xml -Pdb-integration verify
 cd client
-npm ci
-npm test
-npm run build
+pnpm install --frozen-lockfile
+pnpm test
+pnpm build
 ```
 
 Integration test rollback thay đổi nghiệp vụ; SERIAL vẫn có thể tiến và test cần fixture demo. Không chạy lên DB production. CI tự tạo DB/container/network/cổng test riêng. Chi tiết giới hạn test và deploy: [CI/CD](docs/main/CI_CD.md).

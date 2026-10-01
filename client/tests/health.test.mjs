@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { checkReadiness } from '../src/api/health.mjs';
+import { checkReadiness } from '../src/shared/api/health.mjs';
 
 test('checks the same-origin proxy and accepts only UP', async () => {
   const result = await checkReadiness(async (url, options) => {
