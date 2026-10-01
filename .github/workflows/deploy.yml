@@ -84,7 +84,7 @@ jobs:
           curl --fail --silent "$base/activities" | grep -q 'KTX Smart Hub'
           docker exec "$CI_CLIENT" nginx -t
           if docker logs "$CI_SERVER" 2>&1 | grep -E 'ERROR|APPLICATION FAILED TO START'; then exit 1; fi
-      - name: Deploy verified develop backend and frontend with rollback
+      - name: Deploy verified develop images with Docker Compose
         if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
         run: bash scripts/deploy-server.sh "$CI_SHA" "cnpm-server-ci:$CI_SHA" "cnpm-client-ci:$CI_SHA"
       - name: Logs and isolated container cleanup
