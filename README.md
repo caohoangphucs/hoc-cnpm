@@ -61,14 +61,14 @@ Mã UC trong bảng phân công cũ bên dưới là bộ mã triển khai ban �
 
 3. **Cơ sở dữ liệu (Database) đã có sẵn:**
    - Dữ liệu và database được quản lý tự động bởi Docker container.
-   - Script `.\scripts\reset-db.ps1` còn lệnh MySQL; cần sửa theo [chuẩn PostgreSQL](docs/demo/POSTGRESQL.md) trước khi reset.
+   - Reset DB demo: `.\scripts\reset-db.ps1 -ResetDemo` hoặc `bash scripts/reset-db.sh --reset-demo`; xem [PostgreSQL](docs/demo/POSTGRESQL.md).
    - Thêm bảng hoặc update logic chỉ tạo file SQL mới trong thư mục `/database/` (ví dụ: `/database/02_update_vnpay.sql`). Không xóa hoặc làm gián đoạn DB.
 
 4. **Tiện ích phát triển nhanh (Hot-reload UI):**
    - Đã cấu hình `docker-compose.override.yml`: Hướng dẫn legacy: khi sửa file JSP, CSS, JS trong `src/main/webapp`, bạn chỉ cần **bấm F5 trên trình duyệt** là thấy kết quả ngay mà không cần rebuild container.
 
 5. **CI tự động:**
-   - Khi commit/push hoặc merge PR vào `develop`, GitHub Actions kiểm tra schema/seed PostgreSQL, chạy `mvn clean verify`, kiểm tra WAR không chứa migration, build Docker và smoke test Tomcat/kết nối DB. Push vào `develop` tự deploy image đã qua CI bằng runner trên server, kiểm health và rollback khi lỗi. Xem [CI/CD](docs/main/CI_CD.md).
+   - Khi commit/push hoặc merge PR vào `develop`, GitHub Actions điều phối runner trên server để kiểm tra schema/seed PostgreSQL, chạy `mvn clean verify`, kiểm tra WAR không chứa migration, build Docker và smoke test Tomcat/kết nối DB. Build/kiểm thử dùng Docker và cache tại server, không chuyển image/artifact qua GitHub. Push vào `develop` tự deploy image đã qua CI trên cùng server, kiểm health và rollback khi lỗi. Xem [CI/CD](docs/main/CI_CD.md).
 
 ---
 

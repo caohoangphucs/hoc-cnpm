@@ -4,11 +4,18 @@ services:
     container_name: cnpm-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: cnpm_db
-      POSTGRES_USER: cnpm_user
-      POSTGRES_PASSWORD: cnpm_pass_2026
+      POSTGRES_DB: ${DB_NAME:-cnpm_db}
+      POSTGRES_USER: ${DB_USER:-cnpm_user}
+      POSTGRES_PASSWORD: ${DB_PASS:-cnpm_pass_2026}
+      TZ: Asia/Ho_Chi_Minh
+      PGTZ: Asia/Ho_Chi_Minh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     ports:
-      - "54321:5432"
+      - "${PORT_DB:-54321}:5432"
     volumes:
       - cnpm_pg_data:/var/lib/postgresql/data
       - ./database:/docker-entrypoint-initdb.d:ro
@@ -19,10 +26,18 @@ services:
       dockerfile: Dockerfile
     container_name: cnpm-web
     restart: unless-stopped
+    environment:
+      DB_HOST: cnpm-db
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-cnpm_db}
+      DB_USER: ${DB_USER:-cnpm_user}
+      DB_PASS: ${DB_PASS:-cnpm_pass_2026}
+      TZ: Asia/Ho_Chi_Minh
     depends_on:
-      - cnpm-db
+      cnpm-db:
+        condition: service_healthy
     ports:
-      - "8091:8080"
+      - "${PORT_WEB:-8091}:8080"
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
