@@ -11,6 +11,12 @@
 .wl-summary dd { margin: 8px 0 0; font: var(--app-type-headline); overflow-wrap: anywhere; }
 .wl-toolbar { display: flex; flex-wrap: wrap; align-items: start; gap: 16px; padding: 24px; }
 .wl-toolbar > .m3-field { flex: 1 1 240px; }
+.wl-toolbar > .m3-field .field-control { display: grid; gap: 8px; border: 0; border-radius: 0; background: transparent; }
+.wl-toolbar > .m3-field .field-control label { position: static; padding: 0; font: var(--app-type-label); color: var(--md-sys-color-on-surface); background: transparent; }
+.wl-toolbar > .m3-field .field-control input { min-height: 56px; padding: 12px 16px; border: 1px solid var(--md-sys-color-outline); border-radius: 8px; font: var(--app-type-body); background: var(--md-sys-color-surface-container-lowest); }
+.wl-toolbar > .m3-field .field-control:focus-within { box-shadow: none; outline: none; }
+.wl-toolbar > .m3-field .field-control input:focus { border-color: var(--md-sys-color-primary); box-shadow: inset 0 0 0 1px var(--md-sys-color-primary); }
+.wl-toolbar > .m3-field .field-control input:focus-visible { outline: 2px solid var(--md-sys-color-primary); outline-offset: 3px; }
 .wl-toolbar > .wl-field { flex: 1 1 160px; }
 .wl-card-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 20px 24px; }
 .wl-card-heading > p { color: var(--md-sys-color-on-surface-variant); }
