@@ -8,6 +8,7 @@ type NavigationProps = {
   className?: string
   label?: string
   onNavigate?: () => void
+  prefix?: string
 }
 
 export function Navigation({
@@ -16,13 +17,14 @@ export function Navigation({
   className = '',
   label = 'Điều hướng chính',
   onNavigate,
+  prefix = '',
 }: NavigationProps) {
   return (
     <nav className={`navigation ${className}`} aria-label={label}>
       {items.map((item) => (
         <NavLink
           key={item.path}
-          to={workspacePath(workspace, item)}
+          to={`${prefix}${workspacePath(workspace, item)}`}
           end
           className="nav-link state-layer"
           aria-label={item.label}

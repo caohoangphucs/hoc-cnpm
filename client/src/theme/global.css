@@ -1,6 +1,7 @@
 @import './tokens.css';
 @import './layout.css';
 @import './auth.css';
+@import './accounts.css';
 
 :root {
   font-family: var(--app-font);

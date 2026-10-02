@@ -9,7 +9,8 @@ import { asAuthError, type AuthError } from '@/features/auth/api'
 import { AuthFeedback } from '@/features/auth/AuthFeedback'
 import { Button } from '@/shared/components/Button'
 
-export function AppShell({ workspace }: { workspace: Workspace }) {
+export function AppShell({ workspace, preview = false }: { workspace: Workspace; preview?: boolean }) {
+  const prefix = preview ? '/preview' : ''
   const { logout } = useAuth()
   const [signingOut, setSigningOut] = useState(false)
   const [logoutError, setLogoutError] = useState<AuthError | null>(null)
@@ -18,7 +19,7 @@ export function AppShell({ workspace }: { workspace: Workspace }) {
   const drawerRef = useRef<HTMLDialogElement>(null)
   const lastPath = useRef(pathname)
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const current = workspace.navigation.find((item) => workspacePath(workspace, item) === pathname)
+  const current = workspace.navigation.find((item) => `${prefix}${workspacePath(workspace, item)}` === pathname)
   const title = current?.label ?? 'Không tìm thấy trang'
 
   useEffect(() => {
@@ -76,11 +77,11 @@ export function AppShell({ workspace }: { workspace: Workspace }) {
     <div className="app-shell">
       <a className="skip-link" href="#main-content">Đến nội dung chính</a>
       <aside className="sidebar" aria-label={`Không gian ${workspace.label}`}>
-        <Link className="brand" to={workspacePath(workspace)} aria-label="KTX Smart Hub — Tổng quan">
+        <Link className="brand" to={`${prefix}${workspacePath(workspace)}`} aria-label="KTX Smart Hub — Tổng quan">
           <span className="brand-mark"><Icon name="building" /></span>
           <span className="brand-name">KTX Smart Hub<strong>Hệ thống ký túc xá</strong></span>
         </Link>
-        <Navigation workspace={workspace} />
+        <Navigation workspace={workspace} prefix={prefix} />
         <div className="sidebar-footer">
           <span className="workspace-avatar"><Icon name="people" /></span>
           <div><strong>{workspace.label}</strong><p>Không gian làm việc</p></div>
@@ -101,14 +102,14 @@ export function AppShell({ workspace }: { workspace: Workspace }) {
               <Icon name="menu" />
             </button>
             <nav className="top-breadcrumbs" aria-label="Đường dẫn trang">
-              <Link to={workspacePath(workspace)}>{workspace.label}</Link>
+              <Link to={`${prefix}${workspacePath(workspace)}`}>{workspace.label}</Link>
               <span aria-hidden="true">/</span>
               <span aria-current="page">{title}</span>
             </nav>
           </div>
           <div className="top-bar-end">
             <ThemeToggle />
-            <Button variant="text" pending={signingOut} onClick={signOut} aria-label="Đăng xuất" className="shell-logout"><Icon name="logout" /><span>{signingOut ? 'Đang đăng xuất…' : 'Đăng xuất'}</span></Button>
+            {!preview && <Button variant="text" pending={signingOut} onClick={signOut} aria-label="Đăng xuất" className="shell-logout"><Icon name="logout" /><span>{signingOut ? 'Đang đăng xuất…' : 'Đăng xuất'}</span></Button>}
           </div>
         </header>
         <main ref={mainRef} id="main-content" className="workspace-content" tabIndex={-1}>
@@ -141,7 +142,7 @@ export function AppShell({ workspace }: { workspace: Workspace }) {
             <Icon name="close" />
           </button>
         </div>
-        <Navigation workspace={workspace} label="Tất cả mục điều hướng" onNavigate={closeDrawer} />
+        <Navigation workspace={workspace} prefix={prefix} label="Tất cả mục điều hướng" onNavigate={closeDrawer} />
       </dialog>
     </div>
   )
