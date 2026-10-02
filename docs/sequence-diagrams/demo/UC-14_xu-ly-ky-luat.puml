@@ -20,7 +20,7 @@ participant "DisciplineRepository\n<<đề xuất>>" as D
 database "PostgreSQL\nSP / dữ liệu" as DB
 actor "Sinh viên vi phạm" as SV
 note over C,DB
-Đã có bảng VI_PHAM và SecurityDAO.getViolations() để xem.
+Đã có VI_PHAM, SecurityDAO.getViolations() và usp_XuLyKyLuat cơ bản.
 Chưa có endpoint Admin xử lý, minh chứng, lịch sử quyết định và đếm theo học kỳ.
 Đích mới: Spring Boot @RestController → @Service @Transactional → @Repository/JdbcTemplate.
 Code nền còn Servlet/DAO legacy; các bước ghi là thiết kế cần triển khai.

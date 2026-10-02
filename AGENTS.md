@@ -8,7 +8,7 @@
 * **Mục tiêu:** Hệ thống quản lý toàn diện KTX: duyệt phòng, đặt giữ giường chống race-condition, tính toán phát hành hóa đơn tự động, báo hỏng xuất kho vật tư và kiểm soát an ninh ra vào sau 23h.
 * **Ngôn ngữ & Runtime đích:** Java17, Spring Boot4.1.1 executable JAR, Tomcat11 nhúng.
 * **Web đích:** Spring MVC @RestController/@Controller, Thymeleaf/Bootstrap5; Spring Security, DTO @Valid và @RestControllerAdvice.
-* **Database & Pool:** PostgreSQL 16, Spring JDBC/JdbcTemplate, HikariCP/DataSource auto-configured, Flyway; BCrypt qua Spring Security.
+* **Database & Pool:** PostgreSQL 16, Spring JDBC/JdbcTemplate, HikariCP/DataSource auto-configured; BCrypt qua Spring Security.
 * **Ảo hóa & CI/CD:** Docker multi-stage build, Docker Compose, GitHub Actions.
 
 ---
@@ -31,7 +31,8 @@ Khi hỗ trợ viết code hoặc refactor, AI **BẮT BUỘC** tuân thủ các
 
 3. **Bảo toàn các file hệ thống:**
    * **KHÔNG** chỉnh sửa `Dockerfile`, `docker-compose.yml`, `.github/workflows/deploy.yml` trừ khi có yêu cầu trực tiếp từ Tech Lead.
-   * Đích dùng Flyway versioned migrations tại resources/db/migration, nguồn/historical SQL trong database/. Không replay 01_schema có DROP trên DB cần giữ; không init đồng thời Flyway và Docker entrypoint. Khi chưa chuyển code, chỉ tạo SQL mới trong database/ theo quy trình legacy.
+   * Schema/seed PostgreSQL dùng `database/01_schema.sql` và `database/02_seed.sql`; không dùng framework migration. 01 có DROP chỉ dùng khởi tạo/reset DB demo có chủ đích. DB cần giữ dữ liệu cập nhật bằng SQL thủ công đã review/backup; không chạy lại 01/02 khi startup. Không tạo V1/V2 hoặc resources/db/migration.
+
 
 ---
 
@@ -43,7 +44,7 @@ Khi giải thích hoặc hướng dẫn cho lập trình viên, AI cần hướn
   * File `docker-compose.override.yml` đã mount thư mục JSP vào Tomcat container.
   * **Sửa JSP/HTML/CSS:** Chỉ cần lưu file và **bấm F5 trên trình duyệt** (không cần rebuild container).
 * **Reset Database sạch sẽ khi test:**
-  * `scripts/reset-db.ps1` hiện còn lệnh MySQL, cần sửa trước khi dùng cho PostgreSQL. Chuẩn kết nối/reset/migration: [docs/demo/POSTGRESQL.md](docs/demo/POSTGRESQL.md). Reset xóa dữ liệu local; không dùng cho DB cần giữ.
+  * `scripts/reset-db.ps1` hiện còn lệnh MySQL, cần sửa trước khi dùng cho PostgreSQL. Chuẩn kết nối/reset/schema: [docs/demo/POSTGRESQL.md](docs/demo/POSTGRESQL.md). Reset xóa dữ liệu local; không dùng cho DB cần giữ.
 * **Tài khoản test (mật khẩu công bố `123456`; cần sửa/xác minh hash seed trước khi demo):**
   * `admin` (Quản trị viên) | `sv001` (Sinh viên) | `ketoan1` (Kế toán) | `kythuat1` (Kỹ thuật) | `baove1` (Bảo vệ).
 

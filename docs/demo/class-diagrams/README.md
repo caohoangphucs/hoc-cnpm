@@ -6,6 +6,8 @@ Thiết kế đích cho 8 UC, phân biệt với Class Diagram lịch sử trong
 - [Mô hình miền](domain.svg) — [nguồn PlantUML](domain.puml): kiểu dữ liệu, liên kết và multiplicity.
 - [Dữ liệu/SP](../DU_LIEU_VA_SP.md), [quy tắc](../QUY_TAC_NGHIEP_VU.md), [API](../API_VA_PHAN_QUYEN.md).
 
-DTO request/response theo OpenAPI; Java money BigDecimal, id Long/UUID, timestamp Instant, date LocalDate, trạng thái enum. Enum và constraints phải dùng cùng tập giá trị trong DU_LIEU_VA_SP. Model không tự gọi DB; DAO không gọi provider. @Transactional Service và JdbcTransactionManager dùng cùng DataSource; JdbcTemplate chia sẻ Connection Spring quản lý. Controller/DTO/Security/Thymeleaf và migration theo SPRING_BOOT.md.
+DTO request/response theo OpenAPI; Java money BigDecimal, id Long/UUID, timestamp Instant, date LocalDate, trạng thái enum. Enum và constraints phải dùng cùng tập giá trị trong DU_LIEU_VA_SP. Model không tự gọi DB; DAO không gọi provider. @Transactional Service và JdbcTransactionManager dùng cùng DataSource; JdbcTemplate chia sẻ Connection Spring quản lý. Controller/DTO/Security/Thymeleaf và quản lý schema SQL thủ công theo SPRING_BOOT.md.
 
 Render bằng PlantUML với `!pragma layout smetana`, không cần Graphviz. Khi sửa nguồn kết xuất lại SVG và kiểm bố cục.
+
+Bản PNG trực tiếp: [kiến trúc](architecture.png), [mô hình miền](domain.png); SVG/PNG cùng nguồn, không có thành phần quản lý migration.

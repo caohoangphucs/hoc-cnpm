@@ -170,7 +170,7 @@ Admin giữ nguyên hoặc tạo phiên bản quyết định mới; không xóa
 **Bước 4 — Sequence Diagram:** [PlantUML](../sequence-diagrams/demo/UC-14_xu-ly-ky-luat.puml)
 · [SVG](../sequence-diagrams/demo/UC-14_xu-ly-ky-luat.svg).
 
-**Bước 5 — Lớp tham gia và phần bổ sung:** VI_PHAM có sẵn; DisciplineController/DisciplineService/DisciplineRepository/DisciplineDecisionDTO. Cần schema minh chứng, quyết định, học kỳ và khiếu nại.
+**Bước 5 — Lớp tham gia và phần bổ sung:** VI_PHAM và usp_XuLyKyLuat cơ bản có sẵn; DisciplineController/DisciplineService/DisciplineRepository/DisciplineDecisionDTO. Cần schema minh chứng, quyết định, học kỳ và khiếu nại.
 
 ## UC-30 Đăng ký công ích
 
@@ -196,4 +196,4 @@ PDF: chỉ hoạt động hoàn thành; chữ ký số BQL và QR kiểm chứng
 **Bước 4 — Sequence Diagram:** [PlantUML](../sequence-diagrams/demo/UC-30_dang-ky-cong-ich.puml)
 · [SVG](../sequence-diagrams/demo/UC-30_dang-ky-cong-ich.svg).
 
-**Bước 5 — Lớp tham gia và phần bổ sung:** CommunityController/CommunityService/CommunityRepository/CommunityRegistrationDTO/PointConversionService/CTSVAdapter/CertificateService. Cần bảng hoạt động/đăng ký/điểm/quy đổi/chứng nhận/outbox.
+**Bước 5 — Lớp tham gia và phần bổ sung:** CommunityController/CommunityService/CommunityRepository/CommunityRegistrationDTO/PointConversionService/CTSVAdapter/CertificateService. Đã có4bảng hoạt động/đăng ký/điểm/quy đổi; cần hoàn thiện constraints/SP và bổ sung chứng nhận/outbox.

@@ -19,3 +19,12 @@ Ngày: 02/10/2026. Tài liệu trước trên develop `82b52a1`; cập nhật Sp
 Các lỗi code/cấu hình phát hiện được ghi trong POSTGRESQL.md để xử lý ở giai đoạn triển khai. Không dùng kết quả thử bản sửa tạm để tuyên bố code hiện tại đã kết nối/call đúng. Container kiểm tra riêng đã được dọn; không thay dữ liệu DB thật. File lock Word của người dùng giữ nguyên.
 
 Spring Boot: xác minh phiên bản/dependency/transaction/security theo tài liệu chính thức được dẫn trong SPRING_BOOT.md. 10 diagram render lại theo class Spring Boot; OpenAPI1.1.0 kiểm hợp lệ; toàn bộ test vẫn NOT_RUN, chưa có Boot runtime.
+
+## Sau khi bỏ migration và cập nhật ảnh
+
+- Gỡ dependency/plugin Flyway và2file V1/V2; Maven clean verify đạt, dependency tree/ROOT.war không còn Flyway/migration.
+- Schema/seed SQL giữ nguyên; quản lý bằng SQL thủ công, không chạy DDL/seed ở app startup.
+-8sequence+2class render PNG/SVG trực tiếp từ nguồn Spring Boot; không có scrollbar/cắt viewport.
+- ERD hiện hành27bảng dựng lại từ SQL, kiểm tên trường/kiểu/PK/FK/UQ; ERD19bảng là lịch sử. Render cả2nguồn, tổng12nguồn diagram.
+- Ảnh alias main/ClassDiagram,main/ERD,D10/SequenceDiagram được cập nhật từ nguồn chuẩn và ghi mapping tại docs/main/README.md.
+- Kiểm liên kết Markdown, SVG XML và PlantUML đạt; OpenAPI không đổi contract. Các lỗi sequence/fixture/UC30 trong review trước chưa sửa ở đợt này.
