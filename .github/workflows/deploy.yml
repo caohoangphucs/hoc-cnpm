@@ -1,14 +1,11 @@
-name: Server CI/CD - PostgreSQL
-
+name: Server CI/CD - Spring Boot and Client
 on:
   push:
     branches: [ "**" ]
   pull_request:
     branches: [ develop ]
-
 permissions:
   contents: read
-
 jobs:
   database-schema-seed-and-build:
     runs-on: [self-hosted, linux, x64, cnpm-deploy]
@@ -20,120 +17,82 @@ jobs:
           POSTGRES_PASSWORD: RootPassword2026!
           POSTGRES_DB: cnpm_db
           POSTGRES_USER: cnpm_user
-        ports:
-          - 5432/tcp
+        ports: [5432/tcp]
         options: >-
           --health-cmd "pg_isready -h 127.0.0.1 -U cnpm_user -d cnpm_db"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 20
+          --health-interval 5s --health-timeout 5s --health-retries 20
     env:
       CI_SHA: ${{ github.sha }}
-      CI_CONTAINER: cnpm-ci-${{ github.run_id }}-${{ github.run_attempt }}
+      CI_SERVER: cnpm-ci-server-${{ github.run_id }}-${{ github.run_attempt }}
+      CI_CLIENT: cnpm-ci-client-${{ github.run_id }}-${{ github.run_attempt }}
       PGHOST: 127.0.0.1
       PGUSER: cnpm_user
       PGDATABASE: cnpm_db
       PGPASSWORD: RootPassword2026!
     steps:
       - uses: actions/checkout@v4
-
-      - name: Resolve isolated test network
+      - name: Resolve isolated test network and PostgreSQL port
         env:
           PG_SERVICE_ID: ${{ job.services.postgres.id }}
           PGPORT: ${{ job.services.postgres.ports['5432'] }}
         run: |
           network=$(docker inspect "$PG_SERVICE_ID" --format '{{range $name, $settings := .NetworkSettings.Networks}}{{$name}}{{end}}')
           host=$(docker inspect "$PG_SERVICE_ID" --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')
-          test -n "$network"
-          test -n "$host"
+          test -n "$network"; test -n "$host"
           printf 'CI_NETWORK=%s\nCI_DB_HOST=%s\nPGPORT=%s\n' "$network" "$host" "$PGPORT" >> "$GITHUB_ENV"
-
-      - name: Apply PostgreSQL schema and seed to isolated service
+      - name: Apply schema and seed to disposable PostgreSQL16
         run: |
           psql -v ON_ERROR_STOP=1 --single-transaction -f database/01_schema.sql
           psql -v ON_ERROR_STOP=1 --single-transaction -f database/02_seed.sql
           test "$(psql -Atc "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")" = 27
-          test "$(psql -Atc "SELECT COUNT(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.prokind='p'")" = 9
-          for table in SINH_VIEN GIUONG HOA_DON RA_VAO; do
-            test "$(psql -Atc "SELECT COUNT(*) FROM $table")" -gt 0
-          done
-
-      - name: Build and verify using local Docker cache and JDK 17
-        run: docker build --target build --tag "cnpm-build:$CI_SHA" .
-
-      - name: Verify PostgreSQL JDBC and all procedure OUT bindings
+      - name: Build backend and run JUnit unit tests
+        run: docker build --target build -t "cnpm-server-build:$CI_SHA" server
+      - name: Run Spring PostgreSQL integration tests
         run: |
           docker run --rm --network "$CI_NETWORK" \
-            -e DB_HOST="$CI_DB_HOST" -e DB_PORT=5432 \
-            -e DB_NAME=cnpm_db -e DB_USER=cnpm_user -e DB_PASS="$PGPASSWORD" \
-            -v "$PWD/tests/java:/ci-tests:ro" --entrypoint sh "cnpm-build:$CI_SHA" -c '
-              set -eu
-              classpath="/app/target/classes:/app/target/ROOT/WEB-INF/lib/*"
-              javac -cp "$classpath" -d /tmp/ci-test-classes /ci-tests/PostgresProcedureSmoke.java
-              java -cp "/tmp/ci-test-classes:$classpath" PostgresProcedureSmoke
-            '
-
-      - name: Check WAR contents
+            -e DB_HOST="$CI_DB_HOST" -e DB_PORT=5432 -e DB_NAME=cnpm_db \
+            -e DB_USER=cnpm_user -e DB_PASS="$PGPASSWORD" \
+            --entrypoint java "cnpm-server-build:$CI_SHA" \
+            -cp '/app/target/classes:/app/target/test-classes:/app/target/test-libs/*' \
+            org.junit.platform.console.ConsoleLauncher execute \
+            --select-class vn.id.caohoangphuc.cnpm.persistence.DatabaseFoundationIT --fail-if-no-tests
+      - name: Build immutable backend and frontend images locally
         run: |
-          docker run --rm --entrypoint sh "cnpm-build:$CI_SHA" -c '
-            set -eu
-            jar tf /app/target/ROOT.war > /tmp/war-files
-            if grep -Ei "flyway|db/migration/" /tmp/war-files; then
-              echo "Unexpected schema management files in WAR"
-              exit 1
-            fi
-          '
-
-      - name: Build immutable runtime image on this server
-        run: docker build --label "cnpm.commit=$CI_SHA" --tag "cnpm-ci:$CI_SHA" .
-
-      - name: Smoke test isolated app and all five roles
+          docker build --label "cnpm.commit=$CI_SHA" -t "cnpm-server-ci:$CI_SHA" server
+          docker build --label "cnpm.commit=$CI_SHA" -t "cnpm-client-ci:$CI_SHA" client
+      - name: Smoke test frontend Nginx and backend readiness together
         run: |
-          docker run -d --name "$CI_CONTAINER" --network "$CI_NETWORK" \
-            -p 127.0.0.1::8080 \
-            -e DB_HOST="$CI_DB_HOST" -e DB_PORT=5432 \
-            -e DB_NAME=cnpm_db -e DB_USER=cnpm_user -e DB_PASS="$PGPASSWORD" \
-            "cnpm-ci:$CI_SHA"
-          mapping=$(docker port "$CI_CONTAINER" 8080/tcp)
+          docker run -d --name "$CI_SERVER" --network "$CI_NETWORK" --network-alias cnpm-server \
+            -e DB_HOST="$CI_DB_HOST" -e DB_PORT=5432 -e DB_NAME=cnpm_db \
+            -e DB_USER=cnpm_user -e DB_PASS="$PGPASSWORD" "cnpm-server-ci:$CI_SHA"
+          docker run -d --name "$CI_CLIENT" --network "$CI_NETWORK" \
+            -p 127.0.0.1::80 "cnpm-client-ci:$CI_SHA"
+          mapping=$(docker port "$CI_CLIENT" 80/tcp)
           base="http://127.0.0.1:${mapping##*:}"
           ready=false
           for attempt in $(seq 1 60); do
-            if curl --fail --silent "$base/" > "$RUNNER_TEMP/cnpm-index.html"; then ready=true; break; fi
+            if curl --fail --silent "$base/api/health" > "$RUNNER_TEMP/cnpm-health.json" \
+                && grep -q '"status":"UP"' "$RUNNER_TEMP/cnpm-health.json"; then ready=true; break; fi
             sleep 2
           done
           test "$ready" = true
-          grep -q '<html' "$RUNNER_TEMP/cnpm-index.html"
-          psql -v ON_ERROR_STOP=1 -c "INSERT INTO TAI_KHOAN(TenDangNhap,MatKhauHash,HoTen,Email,VaiTro) VALUES ('ci-invalid-hash','broken-hash','CI negative','negative-ci@example.test','ADMIN')"
-          for entry in ci-nonexistent-account:invalid ci-invalid-hash:123456 admin:admin123 admin:ci-wrong-password; do
-            account=${entry%%:*}; password=${entry##*:}
-            status=$(curl --silent --show-error --output "$RUNNER_TEMP/cnpm-invalid.html" \
-              --write-out '%{http_code}' --data-urlencode "username=$account" \
-              --data-urlencode "password=$password" "$base/auth/login")
-            test "$status" = 200
-            grep -q 'không chính xác' "$RUNNER_TEMP/cnpm-invalid.html"
-          done
-          psql -v ON_ERROR_STOP=1 -c "DELETE FROM TAI_KHOAN WHERE TenDangNhap='ci-invalid-hash'"
-          for entry in admin:admin sv001:student ketoan1:accounting kythuat1:maintenance baove1:security; do
-            account=${entry%%:*}; role=${entry##*:}
-            status=$(curl --silent --show-error --cookie-jar "$RUNNER_TEMP/cnpm-cookie" \
-              --output "$RUNNER_TEMP/cnpm-auth.html" --write-out '%{http_code}' \
-              --data-urlencode "username=$account" --data-urlencode password=123456 "$base/auth/login")
-            test "$status" = 302
-            status=$(curl --silent --show-error --cookie "$RUNNER_TEMP/cnpm-cookie" \
-              --output "$RUNNER_TEMP/cnpm-dashboard.html" --write-out '%{http_code}' "$base/$role/dashboard")
-            test "$status" = 200
-            echo "$account login/dashboard PASS"
-          done
-          if docker logs "$CI_CONTAINER" 2>&1 | grep -E 'SEVERE|Exception|ERROR'; then exit 1; fi
-
-      - name: Deploy verified develop image locally with rollback
+          curl --fail --silent "$base/" > "$RUNNER_TEMP/cnpm-index.html"
+          grep -q 'KTX Smart Hub' "$RUNNER_TEMP/cnpm-index.html"
+          asset=$(sed -n 's/.*src="\([^"]*\/assets\/[^\"]*\)".*/\1/p' "$RUNNER_TEMP/cnpm-index.html")
+          test -n "$asset"
+          curl --fail --silent "$base$asset" > /dev/null
+          curl --fail --silent "$base/activities" | grep -q 'KTX Smart Hub'
+          docker exec "$CI_CLIENT" nginx -t
+          if docker logs "$CI_SERVER" 2>&1 | grep -E 'ERROR|APPLICATION FAILED TO START'; then exit 1; fi
+      - name: Deploy verified develop backend and frontend with rollback
         if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
-        run: bash scripts/deploy-server.sh "$CI_SHA" "cnpm-ci:$CI_SHA"
-
-      - name: Test container logs and cleanup
+        run: bash scripts/deploy-server.sh "$CI_SHA" "cnpm-server-ci:$CI_SHA" "cnpm-client-ci:$CI_SHA"
+      - name: Logs and isolated container cleanup
         if: always()
         run: |
-          if docker inspect "$CI_CONTAINER" >/dev/null 2>&1; then
-            docker logs "$CI_CONTAINER" 2>&1
-            docker rm -f "$CI_CONTAINER"
-          fi
+          for container in "$CI_CLIENT" "$CI_SERVER"; do
+            if docker inspect "$container" >/dev/null 2>&1; then
+              docker logs "$container" 2>&1
+              docker rm -f "$container"
+            fi
+          done

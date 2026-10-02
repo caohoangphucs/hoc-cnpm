@@ -6,7 +6,7 @@ Thư mục giao diện chính của KTX Smart Hub, lựa chọn **React + TypeSc
 
 Đã khởi tạo React + TypeScript bằng template Vite `react-ts`, cấu hình React Router, ESLint, alias `@/`, biến môi trường, proxy dev và hàm gọi API dùng chung. Route `/` hiện là trang khởi đầu; route không tồn tại có trang 404. Các màn hình nghiệp vụ và thiết kế Material Design 3 sẽ được triển khai sau.
 
-Backend hiện tại vẫn là Servlet/JSP WAR. Thiết kế đích là Spring Boot + PostgreSQL, API JSON dưới `/api/v1`. Một số tài liệu backend còn mô tả Thymeleaf; lựa chọn giao diện của client là React.
+Backend mới nằm trong server/, dùng Spring Boot/JAR và PostgreSQL. API JSON đích dưới /api/v1; các endpoint nghiệp vụ/auth chưa triển khai. Nginx proxy cùng origin và /api/health kiểm readiness thật.
 
 ## 1. Công nghệ và môi trường
 
@@ -22,9 +22,9 @@ Backend hiện tại vẫn là Servlet/JSP WAR. Thiết kế đích là Spring B
 
 Theo [hướng dẫn Vite](https://vite.dev/guide/), yêu cầu hiện tại là Node.js 20.19+ hoặc 22.12+. Chọn bản LTS còn được hỗ trợ tại [Node.js](https://nodejs.org/en/download); kiểm tra thêm yêu cầu của template khi setup.
 
-Kiểm tra môi trường trong PowerShell:
+Kiểm tra môi trường trong Bash:
 
-```powershell
+```bash
 node --version
 pnpm --version
 ```
@@ -33,7 +33,7 @@ pnpm --version
 
 Chạy từ thư mục gốc repository:
 
-```powershell
+```bash
 cd client
 pnpm install --frozen-lockfile
 ```
@@ -46,8 +46,8 @@ Chạy các lệnh pnpm của client trong `client/`. Dùng pnpm đã có trên 
 
 `.env.example` chứa cấu hình mẫu công khai. Mỗi máy tạo `.env.local` từ file mẫu, chạy trong `client/`:
 
-```powershell
-Copy-Item .env.example .env.local
+```bash
+cp .env.example .env.local
 ```
 
 Các biến đã được sử dụng trong code/cấu hình Vite:
@@ -55,7 +55,7 @@ Các biến đã được sử dụng trong code/cấu hình Vite:
 | Biến | Giá trị mẫu | Mục đích |
 |---|---|---|
 | `VITE_API_BASE_URL` | `/api/v1` | Prefix được `src/shared/api/client.ts` sử dụng |
-| `API_PROXY_TARGET` | `http://localhost:8091` | Backend local cho proxy dev, được `vite.config.ts` đọc |
+| `API_PROXY_TARGET` | `http://localhost:8080` | Backend local cho proxy dev, được `vite.config.ts` đọc |
 
 `8091` là cổng ứng dụng legacy trong Docker Compose hiện tại. Khi backend Spring Boot được triển khai, dùng đúng địa chỉ backend đang chạy; không mặc định API `/api/v1` đã tồn tại trên ứng dụng legacy.
 
@@ -67,7 +67,7 @@ Tham khảo [biến môi trường của Vite](https://vite.dev/guide/env-and-mo
 
 Chạy trong `client/`:
 
-```powershell
+```bash
 pnpm run dev
 ```
 
@@ -101,7 +101,7 @@ Các lệnh dưới đây đã có trong `package.json`, chạy trong `client/`:
 
 Sau setup, kiểm tra trước khi gửi PR:
 
-```powershell
+```bash
 pnpm run lint
 pnpm run typecheck
 pnpm run build
@@ -109,7 +109,7 @@ pnpm run build
 
 Sau khi build thành công:
 
-```powershell
+```bash
 pnpm run preview
 ```
 
@@ -149,7 +149,6 @@ Alias `@/` trỏ tới `src/` trong cả Vite và TypeScript. Các thư mục ch
 | Hiện tượng | Cách kiểm tra |
 |---|---|
 | Không tìm thấy `node` hoặc `pnpm` | Kiểm tra PATH của Node.js và pnpm đã có trên máy; mở lại terminal sau khi sửa PATH |
-| PowerShell chặn `pnpm.ps1` | Dùng `pnpm.cmd` thay cho `pnpm`; không cần đổi execution policy toàn máy |
 | Cảnh báo Node không tương thích | Đối chiếu phiên bản Node với yêu cầu Vite/template |
 | pnpm báo thiếu `package.json` | Kiểm tra đã ở `client/` và project đã được khởi tạo |
 | `pnpm install --frozen-lockfile` lỗi lockfile | Kiểm tra lockfile đã được commit và khớp `package.json`; sau khi đổi dependencies, cập nhật bằng `pnpm install` |
@@ -176,3 +175,7 @@ dist/
 ```
 
 Không commit dependencies đã cài, bản build, cấu hình môi trường riêng hoặc secret.
+
+## CI/CD và deploy
+
+client/Dockerfile dùng pnpm theo version/lockfile của dự án, chạy lint/test/typecheck/build và đóng gói SPA bằng Nginx. Root Compose phục vụ frontend port8091 và backend8080 nội bộ; không đổi API_BASE_URL sang một domain khác khi deploy. Trang tổng quan8UC là scaffold, chưa có màn hình nghiệp vụ. Xem [CI/CD](../docs/main/CI_CD.md).

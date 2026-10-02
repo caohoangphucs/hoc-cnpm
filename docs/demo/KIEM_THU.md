@@ -83,7 +83,7 @@ Nhánh thêm: duyệt hàng loạt phải có kết quả từng đơn và ưu t
 | SB-03 | GET session trước login; POST login thiếu CSRF/có CSRF; rotate token | Thiếu403, hợp lệ có session; token mới sau login/logout | NOT_RUN |
 | SB-04 | JdbcTemplate function và7 procedure, OUT/status lỗi; inject lỗi giữa transaction | Đúng typedDTO; DomainException rollback mọi bảng/outbox | NOT_RUN |
 | SB-05 | Nạp01/02 trên DB test mới; cập nhật SQL thủ công trên bản sao DB cũ | SQL đúng hậu điều kiện; app startup không tự DDL/seed; DB cũ giữ dữ liệu | NOT_RUN |
-| SB-06 | Mở 8 màn hình Thymeleaf, form/JSON/upload/static/fragments | Binding/validation/CSRF đầy đủ; không phụ thuộc JSPmount | NOT_RUN |
+| SB-06 | Mở 8 màn hình React, form/JSON/upload/static/fragments | Binding/validation/CSRF đầy đủ; không phụ thuộc JSPmount | NOT_RUN |
 | SB-07 | Gọi IPN không session và không CSRF; sai chữký | Callback hợp lệ được adapter xử lý; sai chữ ký không ghi tiền | NOT_RUN |
 | SB-08 | Worker 2 instance, crash sau gửi; Actuator/mạng public | Lease chống nhận đôi, idempotency không ghi lại; metrics được bảo vệ | NOT_RUN |
 

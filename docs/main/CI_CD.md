@@ -1,30 +1,29 @@
-# CI/CD: PostgreSQL và deploy develop
+# CI/CD trên server: backend và frontend
 
-Workflow: `.github/workflows/deploy.yml`.
+Workflow `.github/workflows/deploy.yml` chạy bằng runner `hoc-cnpm-deploy` với labels self-hosted/linux/x64/cnpm-deploy. Mọi push và PR vào develop chạy CI; chỉ push develop chạy bước deploy sau khi các bước trước thành công.
 
-## Trigger và điều kiện
+## Build và test
 
-Mọi push trên mọi nhánh chạy CI; PR vào develop cũng chạy CI. Job `database-schema-seed-and-build` phải thành công trước CD. Chỉ push vào develop chạy bước deploy trong cùng job; nhánh khác/PR không deploy. Merge PR tạo commit develop và kích hoạt quy trình này.
+1. Tạo PostgreSQL16 test riêng, nạp schema/seed bằng ON_ERROR_STOP; kiểm 27 bảng.
+2. Build stage `server/Dockerfile`: Maven/JDK17 chạy clean verify, JUnit unit test DTO/validation và xử lý status procedure.
+3. JUnit integration test Spring Boot trên DB test: validate/read đủ27 entity, timezone, function đăng nhập/BCrypt5roles, cả9procedure, ID/QR OUT, yêu cầu transaction, lỗi status và rollback nguyên tử.
+4. Build image backend executable JAR và frontend; frontend dùng pnpm lockfile, chạy ESLint, Node test, typecheck TypeScript và Vite production build. Nginx phục vụ SPA/proxy.
+5. Khởi động cả hai trên network test với alias cnpm-server; kiểm readiness qua `/api/health`, trang chủ, JS asset, SPA fallback, nginx -t và log backend.
+6. Develop deploy trực tiếp cặp image vừa test. Không xuất/upload/download image artifact qua GitHub; Maven/pnpm/Docker cache nằm trên server. GitHub vẫn checkout mã nguồn và lưu trạng thái/log.
 
-Mỗi push kiểm tra commit đầu nhánh; nếu push nhiều commit một lần, GitHub Actions không tự chạy riêng từng commit trung gian. CI thất bại sẽ chặn CD.
-
-## Kiểm tra trước deploy
-
-- PostgreSQL16 schema/seed với ON_ERROR_STOP, 27 bảng, 9 procedure và fixture.
-- Maven clean verify; WAR không chứa framework/file quản lý schema tự động.
-- JDBC gọi function đăng nhập bằng SELECT và CALL/OUT của cả 9 procedure, rollback dữ liệu test.
-- Build Docker, trang chủ, đăng nhập/dashboard cả 5 roles, sai mật khẩu/admin123 và hash hỏng bị từ chối; kiểm log runtime.
-
-Toàn bộ CI và CD chạy trên server của dự án. Maven/JDK17 chạy trong Docker build stage, dùng cache dependency và layer tại server. Image runtime có tag và label SHA bất biến; bước deploy dùng trực tiếp image vừa kiểm tra trên cùng máy. Không export, upload hoặc download image/artifact qua GitHub. GitHub chỉ điều phối workflow, checkout mã nguồn và nhận log/trạng thái. Các ca kiểm thử SRS chưa tự động hóa không được coi là đã chạy bởi CI.
+Các test hiện là nền DB/DTO và frontend health; chưa có test HTTP login/dashboard hoặc E2E8UC cho nền mới vì các endpoint nghiệp vụ chưa được triển khai. Test59ca trong docs là thiết kế, không phải59ca đã chạy. CI xanh không đồng nghĩa nghiệm thu nghiệp vụ.
 
 ## Deploy và rollback
 
-Runner `hoc-cnpm-deploy`, nhãn `cnpm-deploy`, chạy bằng service systemd dưới user phuc. Mọi CI và CD dùng runner này; không dùng máy build GitHub-hosted. Container PostgreSQL test, network và cổng host được cấp riêng cho từng run, không dùng DB production. Runner xử lý từng job tuần tự; script deploy có lock bổ sung. Không dùng SSH key cá nhân trong GitHub Actions.
+`scripts/deploy-server.sh SHA cnpm-server-ci:SHA cnpm-client-ci:SHA` kiểm SHA label của cả image, lock deploy và schema production trước khi đổi container.
 
-Server dùng PostgreSQL16, volume `cnpm_production_pg_data`, network `cnpm-production`. Cấu hình DB nằm trong `/home/phuc/deployments/hoc-cnpm/runtime.env` quyền 0600, ngoài checkout Git.
+- Backend `cnpm-server`: Spring Boot/JAR, chỉ8080 trong network cnpm-production.
+- Frontend `cnpm-web`: Nginx, port8091→80; proxy `/api` đến backend cùng origin.
+- DB `cnpm-postgres`: PostgreSQL16, volume cnpm_production_pg_data; không mở host port.
+- Secrets: `/home/phuc/deployments/hoc-cnpm/runtime.env`, quyền0600, ngoài checkout.
 
-`scripts/deploy-server.sh` kiểm schema 27 bảng sẵn có, lấy lock, lưu container trước, chạy image mới cổng8091, kiểm HTTP/kết nối DB/log. Nếu lỗi, khôi phục container trước và báo job thất bại. Thành công ghi SHA ở `/home/phuc/deployments/hoc-cnpm/deployed-sha` và nhãn container `cnpm.commit`.
+Lưu container trước cho cả hai, chạy cặp mới, kiểm readiness DB qua Nginx và trang chủ. Nếu lỗi, khôi phục cả backend/frontend; hỗ trợ lần chuyển đầu từ container web đơn. Thành công ghi SHA tại deployed-sha và nhãn cnpm.commit trên cả hai container. Không replay DDL/seed/reset production; Hibernate chỉ validate schema.
 
-CD không khởi tạo, reset, nạp seed hay chuyển đổi DB. Schema có dữ liệu cập nhật bằng SQL thủ công đã backup/review trước deploy. Reset chỉ dành cho local/demo với flag tường minh.
+Cập nhật DB cần backup/review SQL thủ công; schema sai khiến startup/deploy thất bại. Không dùng Flyway/Liquibase. Runner chạy từng job tuần tự, script có flock bổ sung. Mỗi push kiểm commit đầu nhánh, không tự kiểm từng commit trung gian trong một push nhiều commit.
 
-GitHub hiện từ chối branch protection cho repo private trên gói tài khoản này (403, cần Pro hoặc public); không đổi visibility/gói. CI chạy mọi push và CD vẫn bị chặn khi CI thất bại; chưa thể chặn merge ở cấp branch policy.
+GitHub hiện trả403 khi cấu hình branch protection cho repo private trên gói hiện tại. CD vẫn bị chặn khi CI thất bại; chưa có policy bắt buộc CI ở cấp merge. Không đổi visibility/gói tài khoản.

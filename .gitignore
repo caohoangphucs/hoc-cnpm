@@ -32,3 +32,7 @@ __pycache__/
 *.swo
 ~$*
 .~lock.*#
+
+# Client build and dependency cache
+client/node_modules/
+client/dist/
