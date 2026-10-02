@@ -94,4 +94,19 @@ docker compose up -d --build
 http://localhost:8091
 ```
 
-> Tài liệu triển khai demo dùng **PostgreSQL 16**: [chuẩn kết nối và các sai lệch cấu hình cần sửa](docs/demo/POSTGRESQL.md). Các hướng dẫn reset/cấu hình legacy phải được sửa ở đợt code; bộ docs không xác nhận ứng dụng đã chạy đủ 8 UC.
+> Chuẩn kết nối và reset demo: [PostgreSQL 16](docs/demo/POSTGRESQL.md). Bộ docs không xác nhận ứng dụng đã chạy đủ 8 UC.
+
+## CẤU TRÚC PHỤC VỤ TRIỂN KHAI
+
+| Đường dẫn | Nội dung |
+|---|---|
+| `src/main/` | Mã Java và giao diện hiện hành |
+| `src/test/java/` | Vị trí dành cho unit test khi triển khai |
+| `tests/java/PostgresProcedureSmoke.java` | Kiểm JDBC/procedure trên DB test riêng |
+| `database/` | Schema và seed PostgreSQL chuẩn |
+| `scripts/` | Reset demo, tạo nhánh và deploy |
+| `docs/demo/`, `docs/sequence-diagrams/` | Đặc tả và thiết kế 8 UC để viết code |
+| `docs/main/`, `docs/other/` | SRS, tài liệu toàn hệ thống và nguồn tham khảo |
+| `.github/workflows/` | CI/CD chạy trên server |
+
+Build output `target/` và file tạm của editor được ignore. Ảnh ERD hiện hành dùng [ERD27](docs/main/ERD_Full_27Tables.png); sơ đồ lớp dùng [bộ class diagram demo](docs/demo/class-diagrams/README.md).
