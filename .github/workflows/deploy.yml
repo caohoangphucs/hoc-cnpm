@@ -30,9 +30,7 @@ jobs:
     env:
       CI_SHA: ${{ github.sha }}
       CI_CONTAINER: cnpm-ci-${{ github.run_id }}-${{ github.run_attempt }}
-      PG_SERVICE_ID: ${{ job.services.postgres.id }}
       PGHOST: 127.0.0.1
-      PGPORT: ${{ job.services.postgres.ports[5432] }}
       PGUSER: cnpm_user
       PGDATABASE: cnpm_db
       PGPASSWORD: RootPassword2026!
@@ -40,12 +38,15 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Resolve isolated test network
+        env:
+          PG_SERVICE_ID: ${{ job.services.postgres.id }}
+          PGPORT: ${{ job.services.postgres.ports['5432'] }}
         run: |
           network=$(docker inspect "$PG_SERVICE_ID" --format '{{range $name, $settings := .NetworkSettings.Networks}}{{$name}}{{end}}')
           host=$(docker inspect "$PG_SERVICE_ID" --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')
           test -n "$network"
           test -n "$host"
-          printf 'CI_NETWORK=%s\nCI_DB_HOST=%s\n' "$network" "$host" >> "$GITHUB_ENV"
+          printf 'CI_NETWORK=%s\nCI_DB_HOST=%s\nPGPORT=%s\n' "$network" "$host" "$PGPORT" >> "$GITHUB_ENV"
 
       - name: Apply PostgreSQL schema and seed to isolated service
         run: |
