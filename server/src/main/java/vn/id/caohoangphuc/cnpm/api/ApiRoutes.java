@@ -16,7 +16,7 @@ public class ApiRoutes {
     public static final String BOOKINGS = "/api/v1/bookings";
 
     @Bean
-    RouterFunction<ServerResponse> apiRoutes(AuthController auth, BookingController bookings) {
+    RouterFunction<ServerResponse> apiRouter(AuthController auth, BookingController bookings) {
         return RouterFunctions.route()
                 .GET(AUTH_SESSION, auth::session)
                 .POST(AUTH_LOGIN, auth::login)
