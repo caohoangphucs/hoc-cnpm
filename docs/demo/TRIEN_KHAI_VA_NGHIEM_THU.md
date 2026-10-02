@@ -20,7 +20,7 @@ Service Java điều phối validation, quy tắc, khóa và transaction; reposi
 1. Backup dữ liệu và xác nhận phục hồi trên DB riêng; ghi schema version/checksum.
 2. Chạy preflight duplicate active residency/registration, tiền âm/trạng thái sai, liên kết orphan; sửa bằng kế hoạch dữ liệu có log, không xóa âm thầm.
 3. Tạo bảng/cột nullable trước, backfill có giới hạn batch; kiểm count và FK, rồi thêm NOT NULL/CHECK/unique/index. Timestamp cũ chuyển bằng AT TIME ZONE 'Asia/Ho_Chi_Minh', không giả là UTC.
-4. Chạy SQL cập nhật thủ công sau backup/preflight; không tạo procedure mới cho 8 UC; triển khai Spring Boot tương thích cột cũ/mới trước khi bật tính năng.
+4. Chạy SQL cập nhật thủ công sau backup/preflight; schema hiện hành không chứa procedure nghiệp vụ; triển khai Spring Boot tương thích cột cũ/mới trước khi bật tính năng.
 5. Chạy test, bật từng module. Rollback app trước; script khôi phục không drop chứng từ mới có dữ liệu. Giữ nguyên các thành phần legacy nếu còn phụ thuộc; lỗi dữ liệu dùng SQL điều chỉnh đã review, không replay seed.
 
 Đây là kế hoạch tài liệu; SQL cập nhật thật sẽ được viết ở giai đoạn code. Không chạy 01_schema trên DB có dữ liệu cần giữ.

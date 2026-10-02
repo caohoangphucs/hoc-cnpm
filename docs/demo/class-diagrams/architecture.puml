@@ -79,7 +79,6 @@ package "Integration / Jobs" {
  interface CertificateSigner
 }
 class PostgreSQL16 <<database>> {
- +legacyProcedures : unused by 8 UC
  +constraints : FK, UNIQUE, CHECK
 }
 ReactClient --> SecurityFilterChain
