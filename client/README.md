@@ -54,6 +54,8 @@ Backend đã expose session/login/logout theo contract trong `docs/demo/api/`. X
 
 ## 1. Công nghệ và môi trường
 
+Giao diện UC-12 đã có tại `/admin/bookings`: tìm/lọc/sắp ưu tiên, xem hồ sơ/minh chứng, kiểm tra hồ sơ/hạn giữ chỗ/giường, duyệt/từ chối có lý do và duyệt hàng loạt. `/preview/admin/bookings` dùng fixture, trạng thái lỗi/loading/empty và kết quả mô phỏng; chưa gọi API hoặc tạo lưu trú/hợp đồng thật. Preview của các vai trò dùng chung `/preview/:workspace/*`; các route thật giữ session/2FA guard.
+
 | Thành phần | Lựa chọn |
 |---|---|
 | Giao diện | React |

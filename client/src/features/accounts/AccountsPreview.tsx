@@ -24,7 +24,7 @@ const fixtures: readonly Account[] = [
   { id: 'demo-11', name: 'Lý Hoài Phương', username: 'kt.hoaiphuong', email: 'hoaiphuong@example.test', role: 'KETOAN', status: 'LOCKED', lastLoginAt: '2026-09-28T08:40:00+07:00', createdAt: '2026-07-01T08:00:00+07:00' },
   { id: 'demo-12', name: 'Đỗ Hải Sơn', username: 'bv.haison', email: 'haison@example.test', role: 'BAOVE', status: 'ACTIVE', lastLoginAt: '2026-10-02T22:00:00+07:00', createdAt: '2026-07-02T08:00:00+07:00' },
 ]
-function PreviewAccounts() {
+export function PreviewAccounts() {
   const [view, setView] = useState<AccountView>('data')
   const [revision, setRevision] = useState(0)
   return <>
