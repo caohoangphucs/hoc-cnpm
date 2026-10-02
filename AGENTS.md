@@ -45,7 +45,7 @@ Khi giải thích hoặc hướng dẫn cho lập trình viên, AI cần hướn
   * **Sửa JSP/HTML/CSS:** Chỉ cần lưu file và **bấm F5 trên trình duyệt** (không cần rebuild container).
 * **Reset Database sạch sẽ khi test:**
   * `scripts/reset-db.ps1` hiện còn lệnh MySQL, cần sửa trước khi dùng cho PostgreSQL. Chuẩn kết nối/reset/schema: [docs/demo/POSTGRESQL.md](docs/demo/POSTGRESQL.md). Reset xóa dữ liệu local; không dùng cho DB cần giữ.
-* **Tài khoản test (mật khẩu công bố `123456`; cần sửa/xác minh hash seed trước khi demo):**
+* **Tài khoản test (mật khẩu demo `123456`; seed dùng BCrypt hợp lệ):**
   * `admin` (Quản trị viên) | `sv001` (Sinh viên) | `ketoan1` (Kế toán) | `kythuat1` (Kỹ thuật) | `baove1` (Bảo vệ).
 
 ---

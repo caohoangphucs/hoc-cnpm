@@ -68,7 +68,7 @@ Mã UC trong bảng phân công cũ bên dưới là bộ mã triển khai ban �
    - Đã cấu hình `docker-compose.override.yml`: Hướng dẫn legacy: khi sửa file JSP, CSS, JS trong `src/main/webapp`, bạn chỉ cần **bấm F5 trên trình duyệt** là thấy kết quả ngay mà không cần rebuild container.
 
 5. **CI tự động:**
-   - Khi commit/push hoặc merge PR vào `develop`, GitHub Actions kiểm tra schema/seed PostgreSQL, chạy `mvn clean verify`, kiểm tra WAR không chứa migration, build Docker và smoke test Tomcat/kết nối DB. Workflow hiện chưa có bước deploy lên server.
+   - Khi commit/push hoặc merge PR vào `develop`, GitHub Actions kiểm tra schema/seed PostgreSQL, chạy `mvn clean verify`, kiểm tra WAR không chứa migration, build Docker và smoke test Tomcat/kết nối DB. Push vào `develop` tự deploy image đã qua CI bằng runner trên server, kiểm health và rollback khi lỗi. Xem [CI/CD](docs/main/CI_CD.md).
 
 ---
 

@@ -28,3 +28,9 @@ Spring Boot: xác minh phiên bản/dependency/transaction/security theo tài li
 - ERD hiện hành27bảng dựng lại từ SQL, kiểm tên trường/kiểu/PK/FK/UQ; ERD19bảng là lịch sử. Render cả2nguồn, tổng12nguồn diagram.
 - Ảnh alias main/ClassDiagram,main/ERD,D10/SequenceDiagram được cập nhật từ nguồn chuẩn và ghi mapping tại docs/main/README.md.
 - Kiểm liên kết Markdown, SVG XML và PlantUML đạt; OpenAPI không đổi contract. Các lỗi sequence/fixture/UC30 trong review trước chưa sửa ở đợt này.
+
+## Hotfix DB và CI/CD (2026-10-02)
+
+Đã sao lưu và sửa collation tham số usp_DangNhap trên server MySQL cũ. Hash của 5 tài khoản demo khớp hash seed sai đã biết; sửa có điều kiện, không ghi đè mật khẩu đã đổi. Cả 5 tài khoản đăng nhập 302/dashboard 200, không có lỗi SQL mới. Seed PostgreSQL sửa hash mẫu/fixture và đồng bộ SERIAL cuối file.
+
+Preflight riêng đã copy 20 bảng nguồn/650 dòng (19 bảng dự án, 1 bảng ngoài schema lưu legacy_archive) vào PostgreSQL trong transaction; MySQL giữ nguyên. Đăng nhập/dashboard 5 roles và MySQL collation regression được kiểm tra trước push. CI chạy mọi push; CD develop cần cả hai job xanh, dùng image cùng SHA, health check/rollback và không replay schema/seed có dữ liệu. Xem [CI/CD](../main/CI_CD.md).

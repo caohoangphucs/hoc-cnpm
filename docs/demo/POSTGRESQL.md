@@ -25,7 +25,7 @@ Connection đặt `options=-c TimeZone=Asia/Ho_Chi_Minh`; kiểm tra `SHOW timez
 | docker-compose.override.yml | DB_PORT=3306 | 5432 trong mạng Compose |
 | DBContext.java | Host mặc định 5432; chưa có escapeSyntaxCallMode | Host 54321, container 5432; chế độ CALL và timezone |
 | AccountDAO.java | CALL function; fallback mật khẩu khi BCrypt lỗi | SELECT function; hash lỗi phải thất bại |
-| database/02_seed.sql | Hash demo cần xác minh/sửa | SQL thủ công chỉ thay hash mẫu đã biết, BCrypt hợp lệ cho 123456 |
+| database/02_seed.sql | Hash demo đã sửa thành BCrypt hợp lệ | SQL thủ công chỉ thay hash mẫu đã biết, BCrypt hợp lệ cho 123456 |
 | scripts/reset-db.ps1 | cnpm-mysql/mysql CLI/root password | docker compose exec -T cnpm-db + psql, ON_ERROR_STOP=1; chờ healthy, nạp *.sql theo tên |
 | docker-compose.yml | PostgreSQL đúng, thông tin hardcode, chưa healthcheck | Biến môi trường đồng bộ, pg_isready, app chờ service_healthy |
 | .github/workflows/deploy.yml | Chỉ nạp 01/02 | Nạp01/02 trên DB test sạch; build và kiểm tra JDBC PostgreSQL |

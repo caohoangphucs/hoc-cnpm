@@ -62,7 +62,7 @@ Các điểm phải xử lý trước demo ứng dụng:
 1. Đọc POSTGRESQL.md trước: cấu hình hiện tại còn cổng MySQL và JDBC cần sửa.
    Sau khi sửa ở giai đoạn code, chạy DB/app riêng và kiểm tra kết nối trước demo.
 2. README công bố admin, sv001, ketoan1, kythuat1, baove1 với mật khẩu
-   123456. Kiểm tra đăng nhập thực tế trước demo; chưa xác minh hash seed.
+   123456. Hash seed đã sửa và được kiểm tra; xác minh đăng nhập lại sau mỗi deploy.
 3. Seed sv001 → MSSV 21110001 đang ở A-102. **Không dùng ngay tài khoản
    đang lưu trú để chứng minh đăng ký mới hợp lệ.** Chuẩn bị SV chưa có
    hợp đồng/đơn hiện hữu và SV thứ hai để thử tranh chấp.
