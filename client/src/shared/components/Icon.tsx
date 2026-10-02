@@ -26,6 +26,12 @@ const paths = {
   eyeOff: 'M3 3l18 18M10.5 5.1A12 12 0 0 1 12 5c6.5 0 10 7 10 7a20 20 0 0 1-3 4M6 6a20 20 0 0 0-4 6s3.5 7 10 7a12 12 0 0 0 5-1M10 10a3 3 0 0 0 4 4',
   logout: 'M9 3H3v18h6M8 12h13m-5-5 5 5-5 5',
   info: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20ZM12 11v6M12 7h.01',
+  search: 'M10.5 3a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15ZM16 16l5 5',
+  refresh: 'M20 7v5h-5M4 17v-5h5M6 7a8 8 0 0 1 14 5M18 17A8 8 0 0 1 4 12',
+  check: 'm5 12 4 4L19 6',
+  unlock: 'M7 11V7a5 5 0 0 1 9-3M5 11h14v11H5V11ZM12 15v3',
+  sortUp: 'M12 19V5m-5 5 5-5 5 5',
+  sortDown: 'M12 5v14m-5-5 5 5 5-5',
 } as const
 
 export type IconName = keyof typeof paths
