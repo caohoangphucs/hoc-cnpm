@@ -10,7 +10,7 @@ Mặc định tất cả NOT_RUN. Fixture chỉ dùng dữ liệu giả, DB loca
 - Sửa chữa: phiếuMOI/DANG_XU_LY/HOAN_THANH, vật tư tồn50/1/0, ảnhPNG hợp lệ và ảnh giả. Gate: thẻactive/revoked/expired, kháchvalid/expired; clock tại23:00,23:00:01,00:30,04:59:59,05:00.
 - Kỷ luật:2/3vi phạm kỳA,1kỳB,ảnhminh chứng,quyết định/khiếu nại. Công ích:A10-11/B10:30-12/C11-12;hoạt độngcòn1chỗ,SV57điểm,đãquyđổi4/5ĐRL,đăng kýcancelled/completed.
 
-Tách fixture cho từng case, reset giữa case, không phụ thuộc thứ tự chạy. Dùng namespace DEMO-, ghi manifest IDs và expected row counts. SQL fixture sẽ được viết khi có migration; tài liệu không tạo bảng mới hoặc nạp dữ liệu vào DB thật.
+Tách fixture cho từng case, reset giữa case, không phụ thuộc thứ tự chạy. Dùng namespace DEMO-, ghi manifest IDs và expected row counts. SQL fixture sẽ được viết khi cấu trúc DB tương ứng hoàn thiện; tài liệu không tạo bảng mới hoặc nạp dữ liệu vào DB thật.
 
 ## Ca kiểm thử
 
@@ -70,7 +70,7 @@ Tách fixture cho từng case, reset giữa case, không phụ thuộc thứ t�
 
 ## Kiểm tra chung
 
-Lặp quyền cho cả5roles ở mọi endpoint, ownership SV A→B, CSRF,uploadmagicbytes/XSS/SQLinjection tham số, idle15min/2FA/hashlỗi, logsecret. Kiểm fault injection trước/giữa/sau commit và worker crash; DB mất kết nối trả503/rollback; gateway/IPN trễ/lặp/sai chữ ký. Thử constraint trực tiếp để chứng minh DB chặn bản ghi sai (tồn âm/unique/FK) sau migration.
+Lặp quyền cho cả5roles ở mọi endpoint, ownership SV A→B, CSRF,uploadmagicbytes/XSS/SQLinjection tham số, idle15min/2FA/hashlỗi, logsecret. Kiểm fault injection trước/giữa/sau commit và worker crash; DB mất kết nối trả503/rollback; gateway/IPN trễ/lặp/sai chữ ký. Thử constraint trực tiếp để chứng minh DB chặn bản ghi sai (tồn âm/unique/FK) sau cập nhật SQL.
 
 Nhánh thêm: duyệt hàng loạt phải có kết quả từng đơn và ưu tiên cấu hình, Excel chỉ tạo draft với lỗi dòng, warranty/review link chỉ gửi sau hoàn thành, báo cáo cổng lọc ngày theo Việt Nam và khách tách SV. Mỗi nhánh có request và dữ liệu trước/sau trong evidence.
 
@@ -82,7 +82,7 @@ Nhánh thêm: duyệt hàng loạt phải có kết quả từng đơn và ưu t
 | SB-02 | MockMvc role/ownership/2FA/sessionidle15min | Đúng401/403/404/Error JSON, trangHTMLredirect đúng | NOT_RUN |
 | SB-03 | GET session trước login; POST login thiếu CSRF/có CSRF; rotate token | Thiếu403, hợp lệ có session; token mới sau login/logout | NOT_RUN |
 | SB-04 | JdbcTemplate function và7 procedure, OUT/status lỗi; inject lỗi giữa transaction | Đúng typedDTO; DomainException rollback mọi bảng/outbox | NOT_RUN |
-| SB-05 | Flyway DB mới và DB đã baseline; migrationfailure | Không DROP dữ liệu cũ/seed prod; app dừng nếu migration lỗi | NOT_RUN |
+| SB-05 | Nạp01/02 trên DB test mới; cập nhật SQL thủ công trên bản sao DB cũ | SQL đúng hậu điều kiện; app startup không tự DDL/seed; DB cũ giữ dữ liệu | NOT_RUN |
 | SB-06 | Mở 8 màn hình Thymeleaf, form/JSON/upload/static/fragments | Binding/validation/CSRF đầy đủ; không phụ thuộc JSPmount | NOT_RUN |
 | SB-07 | Gọi IPN không session và không CSRF; sai chữký | Callback hợp lệ được adapter xử lý; sai chữ ký không ghi tiền | NOT_RUN |
 | SB-08 | Worker 2 instance, crash sau gửi; Actuator/mạng public | Lease chống nhận đôi, idempotency không ghi lại; metrics được bảo vệ | NOT_RUN |

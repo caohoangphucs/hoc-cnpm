@@ -63,7 +63,6 @@ package "Persistence" {
  class JdbcTemplate <<Spring JDBC>>
  class JdbcTransactionManager <<Spring>>
  class HikariDataSource <<auto-configured>>
- class Flyway <<migration>>
 }
 package "Integration / Jobs" {
  interface PaymentGateway {
@@ -131,7 +130,6 @@ MomoAdapter ..|> PaymentGateway
 JdbcTemplate --> HikariDataSource
 JdbcTransactionManager --> HikariDataSource
 HikariDataSource --> PostgreSQL16
-Flyway --> PostgreSQL16
 OutboxWorker --> JdbcTemplate
 OutboxWorker --> NotificationAdapter
 OutboxWorker --> CTSVAdapter

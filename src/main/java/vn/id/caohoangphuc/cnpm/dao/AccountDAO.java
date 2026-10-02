@@ -28,12 +28,12 @@ public class AccountDAO {
                         return res;
                     }
 
-                    // Kiểm tra BCrypt hash hoặc password mẫu
+                    // Chỉ chấp nhận BCrypt hợp lệ; hash hỏng không được bypass mật khẩu.
                     boolean valid = false;
                     try {
                         valid = BCrypt.checkpw(password, hash);
                     } catch (Exception e) {
-                        valid = password.equals(hash) || "123456".equals(password) || "admin123".equals(password);
+                        valid = false;
                     }
 
                     if (valid) {

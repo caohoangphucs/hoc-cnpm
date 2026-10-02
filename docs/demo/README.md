@@ -41,20 +41,20 @@ Có nền mã/SQL không đồng nghĩa đã kiểm thử hay nghiệm thu.
 | UC-08 | InvoiceDAO.confirmPayment, usp_XacNhanThanhToan | Tạo PENDING; gateway/IPN sandbox; chữ ký/tiền; chống lặp; timeout/đối soát; biên lai; gộp hóa đơn |
 | UC-22 | MaintenanceServlet, MaintenanceDAO, usp_HoanThanhSuaChua | Tiếp nhận/gán người; ảnh; lịch hẹn/bảo hành; kiểm tra tồn; đề xuất mua; lịch sử; thông báo/link đánh giá |
 | UC-25 | SecurityServlet, SecurityDAO, usp_GhiNhanRaVao | Thẻ/QR; hợp đồng; mốc giờ/timezone; barrier; khách thăm; app/báo cáo |
-| UC-14 | VI_PHAM và getViolations() để xem | Chưa có module xử lý Admin; minh chứng; đếm theo học kỳ; quyết định/lịch sử; nhóm; khiếu nại; rollback |
-| UC-30 | Chưa có module/bảng nghiệp vụ | Hoạt động/chỉ tiêu; đăng ký; chống trùng lịch; QR; xác nhận/cộng điểm; hủy; CTSV; PDF chữ ký/QR |
+| UC-14 | VI_PHAM, getViolations(), usp_XuLyKyLuat | Chưa có module xử lý Admin; minh chứng; đếm theo học kỳ; quyết định/lịch sử; nhóm; khiếu nại; rollback |
+| UC-30 | Có4bảng công ích và usp_DangKyCongIch; chưa có UI/module Java | Hoạt động/chỉ tiêu; đăng ký; chống trùng lịch; QR; xác nhận/cộng điểm; hủy; CTSV; PDF chữ ký/QR |
 
 Các điểm phải xử lý trước demo ứng dụng:
 
 - Auth chưa có 2FA; bổ sung kiểm tra quyền server. AccountDAO có fallback
-  mật khẩu mẫu khi BCrypt lỗi: cần bỏ và dùng hash hợp lệ.
+  mật khẩu mẫu khi BCrypt lỗi đã được bỏ; dùng BCrypt hợp lệ và từ chối hash hỏng.
 - rooms.jsp sinh cố định 4 lựa chọn giường, chưa lọc theo trạng thái giường.
 - StudentServlet ghi báo hỏng bằng SQL trực tiếp và ID mặc định khi session
   thiếu: đưa xuống DAO, kiểm tra lưu trú thực tế.
 - Nút thu tiền mặt tạo ref CASH-... nhưng chưa tạo giao dịch tương ứng;
   usp_XacNhanThanhToan cần giao dịch tồn tại. Không dùng nút này để chứng
   minh thanh toán online đã chạy.
-- Mở rộng DB bằng migration mới, dùng lại SP và transaction; không bỏ qua
+- Mở rộng DB bằng SQL cập nhật thủ công đã review, dùng lại SP và transaction; không bỏ qua
   nghiệp vụ SP bằng insert/update nhiều bảng trực tiếp trong DAO.
 
 ## Chuẩn bị
@@ -62,7 +62,7 @@ Các điểm phải xử lý trước demo ứng dụng:
 1. Đọc POSTGRESQL.md trước: cấu hình hiện tại còn cổng MySQL và JDBC cần sửa.
    Sau khi sửa ở giai đoạn code, chạy DB/app riêng và kiểm tra kết nối trước demo.
 2. README công bố admin, sv001, ketoan1, kythuat1, baove1 với mật khẩu
-   123456. Kiểm tra đăng nhập thực tế trước demo; chưa xác minh hash seed.
+   123456. Hash seed đã sửa và được kiểm tra; xác minh đăng nhập lại sau mỗi deploy.
 3. Seed sv001 → MSSV 21110001 đang ở A-102. **Không dùng ngay tài khoản
    đang lưu trú để chứng minh đăng ký mới hợp lệ.** Chuẩn bị SV chưa có
    hợp đồng/đơn hiện hữu và SV thứ hai để thử tranh chấp.

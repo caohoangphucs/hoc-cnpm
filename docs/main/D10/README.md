@@ -12,3 +12,5 @@ Bộ tài liệu demo đang dùng:
 
 File SequenceDiagram.puml cũ rỗng đã được bỏ; nguồn mới nằm trong
 docs/sequence-diagrams/demo/.
+
+[PNG thanh toán hiện hành](SequenceDiagram_ThanhToanHoaDon.png) được render từ [nguồn UC08 Spring Boot](../../sequence-diagrams/demo/UC-08_thanh-toan-truc-tuyen.puml); đây là bản xem thiết kế hiện hành, còn DOCX báo cáo cũ vẫn là lịch sử.

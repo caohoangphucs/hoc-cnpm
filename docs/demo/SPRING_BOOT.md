@@ -12,13 +12,13 @@ Quyết định công nghệ ngày 02/10/2026: chuyển thiết kế đích sang
 | Validation/lỗi | Jakarta Bean Validation trên DTO, @RestControllerAdvice giữ Error schema hiện hành |
 | Dữ liệu | Spring JDBC JdbcTemplate/NamedParameterJdbcTemplate, HikariCP, pgJDBC; PostgreSQL procedure giữ nghiệp vụ nhiều bảng |
 | Transaction | @Transactional ở public Service bean; JdbcTransactionManager, một DataSource |
-| Migration | Flyway versioned migration; PostgreSQL module; seed chỉ profile demo/test |
+| Khởi tạo DB | database/01_schema.sql → 02_seed.sql cho DB demo mới; cập nhật SQL thủ công cho DB có dữ liệu |
 | Tác vụ | @Scheduled điều phối job; outbox/lease PostgreSQL cho nhiều instance |
 | Đóng gói | Maven, spring-boot-maven-plugin, executable JAR; java -jar, không deploy WAR lên Tomcat10.1 |
 | Kiểm thử | Spring Boot Test/MockMvc + Spring Security Test; Testcontainers PostgreSQL16; không thay bằng H2 |
 | Giám sát | Actuator health/readiness và metrics; chỉ health tối thiểu public, metrics cần quyền/mạng nội bộ |
 
-Spring MVC hỗ trợ controller theo annotation và template engine trong [hướng dẫn web chính thức](https://docs.spring.io/spring-boot/reference/web/servlet.html). Dependency để triển khai: parent spring-boot-starter-parent 4.1.1; starters webmvc, thymeleaf, security, validation, jdbc, flyway, actuator; org.postgresql:postgresql runtime; org.flywaydb:flyway-database-postgresql; starters test/webmvc-test/jdbc-test/security-test ở test scope và Testcontainers PostgreSQL. Boot BOM quản lý phiên bản thư viện; không giữ các version Servlet/Hikari/Hibernate từ pom legacy. Tên starter theo [danh mục chính thức](https://docs.spring.io/spring-boot/reference/using/build-systems.html).
+Spring MVC hỗ trợ controller theo annotation và template engine trong [hướng dẫn web chính thức](https://docs.spring.io/spring-boot/reference/web/servlet.html). Dependency để triển khai: parent spring-boot-starter-parent 4.1.1; starters webmvc, thymeleaf, security, validation, jdbc, actuator; org.postgresql:postgresql runtime; starters test/webmvc-test/jdbc-test/security-test ở test scope và Testcontainers PostgreSQL. Boot BOM quản lý phiên bản thư viện; không giữ các version Servlet/Hikari/Hibernate từ pom legacy. Tên starter theo [danh mục chính thức](https://docs.spring.io/spring-boot/reference/using/build-systems.html).
 
 ## Cấu trúc module đích
 
@@ -61,23 +61,23 @@ application.yml và profiles local/demo/test/prod sẽ được viết lúc code
 - spring.datasource.url lấy SPRING_DATASOURCE_URL, host local localhost:54321, container cnpm-db:5432; username/password từ SPRING_DATASOURCE_USERNAME/PASSWORD. DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASS legacy chỉ được dùng làm placeholder adapter nếu cần, không tạo pool thứ hai.
 - spring.datasource.hikari.data-source-properties.escapeSyntaxCallMode=callIfNoReturn; options=-c TimeZone=Asia/Ho_Chi_Minh; maxPoolSize15, minimumIdle3, connectionTimeout10000ms.
 - server.port=8080 trong container; host mapping8091; server.servlet.session.timeout=15m; multipart max-file-size5MB, max-request-size26MB cho5ảnh và metadata; limit số file/MIME còn kiểm tại service.
-- spring.sql.init.mode=never; Flyway là chủ thể quản lý schema. spring.flyway.clean-disabled=true; production không tự seed. Chỉ bật thông tin lỗi chi tiết ở log đã lọc, không trả ra HTTP.
+- spring.sql.init.mode=never; schema quản lý bằng SQL thủ công; app không khởi tạo/reset DB hoặc seed khi startup. Chỉ bật thông tin lỗi chi tiết ở log đã lọc, không trả ra HTTP.
 - Devtools và thymeleaf cache=false chỉ local; prod cache=true. Chuyển _header/_footer JSP thành Thymeleaf fragments. JSP mount/F5 trong Compose legacy không áp dụng cho JAR mới; local dùng boot run + rebuild resource hoặc restart devtools.
 
 Không tự lấy image Tomcat10.1 legacy để chạy Boot4.1. Runtime container dùng Java17 chạy JAR; Dockerfile/Compose/CI sẽ chuyển trong giai đoạn code, chưa chỉnh ở đợt docs.
 
-## Flyway và dữ liệu cũ
+## Quản lý schema bằng SQL
 
-Không copy nguyên 01_schema.sql có DROP TABLE vào migration chạy trên DB cần giữ. DB mới: viết V1__baseline_schema.sql tương đương schema/constraints/procedures, bỏ DROP; fixture seed trong location demo/test riêng. DB có dữ liệu: backup/preflight/đối chiếu baseline, baseline Flyway version1 một lần có kiểm soát; V2 trở đi additive/backfill/SP/index. Không bật baseline-on-migrate tự động để bỏ qua DB không rõ nguồn.
+Không dùng Flyway/Liquibase hoặc migration tự động. Nguồn schema là database/01_schema.sql (27bảng,5view,1function,9procedure); seed demo là database/02_seed.sql. DB demo mới/được phép reset: nạp01 rồi02 bằng psql -v ON_ERROR_STOP=1, hoặc để Docker entrypoint nạp trên volume mới. Restart với volume hiện hữu không tự cập nhật schema.
 
-Flyway location db/migration trong resources là bản migration runtime chính thức; database/ giữ nguồn SQL và lịch sử, có kiểm tra checksum nếu mirror. Sau chuyển đổi, Docker entrypoint không đồng thời nạp cùng migrations nữa. Init/seed/Flyway chỉ một nguồn thực thi, theo [hướng dẫn initialization](https://docs.spring.io/spring-boot/how-to/data-initialization.html). Rollback theo TRIEN_KHAI_VA_NGHIEM_THU; không dùng clean để sửa lỗi.
+DB cần giữ dữ liệu: backup/preflight, chuẩn bị SQL ALTER/CREATE OR REPLACE đã review theo chênh lệch schema, chạy thủ công trong transaction phù hợp và đối chiếu dữ liệu. Không chạy01 có DROP hoặc replay seed. Giữ biên bản script/checksum/người thực hiện; không tạo schema history hay V1/V2. Ứng dụng chỉ kết nối DB đã chuẩn bị; quy trình triển khai kiểm cấu trúc và dừng khi không tương thích. Nếu dùng JPA ở đợt sau, chỉ validate schema; không dùng ddl-auto=create/update để thay SQL.
 
 ## Các bước chuyển và nghiệm thu công nghệ
 
 1. Boot skeleton/JAR, security/DTO/advice/datasource; health fail khi DB unavailable.
-2. Repository gọi function và7procedure qua JdbcTemplate, Testcontainers PG16; chứng minh rollback/shared connection và status→exception.
+2. Repository gọi function và9procedure qua JdbcTemplate, Testcontainers PG16; chứng minh rollback/shared connection và status→exception.
 3. Chuyển Thymeleaf và8module theo từng đợt, giữ API/BR/SRS IDs; kiểm requestId, schema, session/CSRF/2FA.
-4. Flyway baseline/migration: DB mới và DB có seed, no-drop production, không init trùng; startup migration failure phải dừng app.
+4. Kiểm DB mới nạp schema/seed và DB có dữ liệu được cập nhật SQL thủ công; no-drop DB cần giữ; startup không tự chạy DDL/seed.
 5. Docker/CI JAR, joblease/outbox,51case nghiệp vụ + test Spring ở KIEM_THU. Nghiệm thu mock/sandbox theo TICH_HOP.
 
 Không đánh dấu hoàn thành chuyển công nghệ bằng việc docs đã đổi tên class. Code hiện tại vẫn JSP/Servlet WAR; chưa có ứng dụng Spring Boot để build hoặc chạy.

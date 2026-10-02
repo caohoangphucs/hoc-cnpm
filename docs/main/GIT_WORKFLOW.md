@@ -9,7 +9,7 @@
 Hệ thống tuân thủ mô hình Git Flow chuẩn hóa gồm 3 cấp độ nhánh:
 
 ```text
-  main (Production - Tự động deploy cnpm.caohoangphuc.id.vn)
+  main (Nhánh release)
    ▲
    │ (Pull Request cuối kỳ / sau khi test ổn định)
   develop (Nhánh tích hợp chung của cả nhóm)
@@ -27,7 +27,7 @@ Hệ thống tuân thủ mô hình Git Flow chuẩn hóa gồm 3 cấp độ nh�
 >    - Chốt đợt Release / Báo cáo / Chấm điểm đồ án cuối kỳ.
 >    - Khi Lead cập nhật tài liệu hoặc cấu hình chung của toàn repo.
 
-* **`develop`**: Nhánh tích hợp chính (Staging & Continuous Deployment — tự động kích hoạt CI/CD deploy lên `https://cnpm.caohoangphuc.id.vn`). Toàn bộ tính năng mới sau khi hoàn thành sẽ được tạo PR vào đây.
+* **`develop`**: Nhánh tích hợp chính; push/PR kích hoạt CI kiểm tra PostgreSQL, Maven và container. CI thành công trên commit develop sẽ kích hoạt CD deploy, kiểm health và rollback khi lỗi; xem [CI/CD](CI_CD.md). Toàn bộ tính năng mới sau khi hoàn thành sẽ được tạo PR vào đây.
 * **`main`**: Nhánh Release / Production chính thức (chốt nộp bài cuối kỳ / demo đồ án). Chỉ nhận merge từ `develop` qua PR do Lead duyệt.
 * **Nhánh cá nhân (`feat/*`, `fix/*`, `docs/*`)**: Nơi mỗi thành viên tự do phát triển mà không làm ảnh hưởng đến người khác.
 
