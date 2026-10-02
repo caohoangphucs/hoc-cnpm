@@ -15,15 +15,12 @@ Các test hiện là nền DB/DTO và frontend health; chưa có test HTTP login
 
 ## Deploy và rollback
 
-`scripts/deploy-server.sh SHA cnpm-server-ci:SHA cnpm-client-ci:SHA` kiểm SHA label của cả image, lock deploy và schema production trước khi đổi container.
+Chỉ push `develop` sau khi toàn bộ test thành công mới deploy. Runner build image ngay trên server, không upload/download image qua GitHub.
 
-- Backend `cnpm-server`: Spring Boot/JAR, chỉ8080 trong network cnpm-production.
-- Frontend `cnpm-web`: Nginx, port8091→80; proxy `/api` đến backend cùng origin.
-- DB `cnpm-postgres`: PostgreSQL16, volume cnpm_production_pg_data; không mở host port.
-- Secrets: `/home/phuc/deployments/hoc-cnpm/runtime.env`, quyền0600, ngoài checkout.
+Production dùng `docker-compose.prod.yml` cho hai service Spring Boot và Nginx/React. PostgreSQL hiện hữu nằm ngoài Compose này; không nạp lại schema/seed hoặc thay volume DB. `docker-compose.yml` dùng cho môi trường local.
 
-Lưu container trước cho cả hai, chạy cặp mới, kiểm readiness DB qua Nginx và trang chủ. Nếu lỗi, khôi phục cả backend/frontend; hỗ trợ lần chuyển đầu từ container web đơn. Thành công ghi SHA tại deployed-sha và nhãn cnpm.commit trên cả hai container. Không replay DDL/seed/reset production; Hibernate chỉ validate schema.
+`scripts/deploy-server.sh SHA cnpm-server-ci:SHA cnpm-client-ci:SHA` kiểm image đúng commit, lưu cặp image trước rồi chạy `docker compose up -d --no-build --pull never`. Kiểm `/api/health` và trang chủ; nếu lỗi, Compose chạy lại cặp image trước. Không còn đổi tên và giữ container sau mỗi lần deploy.
 
-Cập nhật DB cần backup/review SQL thủ công; schema sai khiến startup/deploy thất bại. Không dùng Flyway/Liquibase. Runner chạy từng job tuần tự, script có flock bổ sung. Mỗi push kiểm commit đầu nhánh, không tự kiểm từng commit trung gian trong một push nhiều commit.
+Cấu hình riêng trên server tại `/home/phuc/deployments/hoc-cnpm`: `runtime.env` chứa kết nối DB, `release.env` chứa hai image đang chạy, `previous-release.env` chứa bản trước. Các file này không commit. Network có sẵn `cnpm-production`; frontend mở cổng8091, backend8080 chỉ trong network.
 
-GitHub hiện trả403 khi cấu hình branch protection cho repo private trên gói hiện tại. CD vẫn bị chặn khi CI thất bại; chưa có policy bắt buộc CI ở cấp merge. Không đổi visibility/gói tài khoản.
+Chuyển container cũ sang Compose chỉ thực hiện một lần, giữ bản cũ đến khi kiểm health thành công. Những lần deploy tiếp theo đều dùng cùng một luồng Compose. TODO chưa đánh dấu hoàn thành; CI xanh chỉ xác nhận phạm vi test hiện có.
