@@ -4,7 +4,7 @@ Phạm vi demo hiện tại gồm **8 UC trọng tâm từ SRS cũ**. Bắt đ�
 [bộ demo](demo/README.md), sau đó đọc [thiết kế xử lý](demo/THIET_KE_XU_LY.md)
 và [Sequence Diagram](sequence-diagrams/README.md).
 Kiến trúc đích: [Spring Boot](demo/SPRING_BOOT.md). Chuẩn DB: [PostgreSQL 16](demo/POSTGRESQL.md); thiết kế lớp: [Class Diagram demo](demo/class-diagrams/README.md).
-API, dữ liệu/SP, tích hợp, test và nghiệm thu được liên kết tại mục lục demo.
+API, dữ liệu/SQL, tích hợp, rà soát nghiệp vụ, test và nghiệm thu được liên kết tại [mục lục demo](demo/README.md).
 
 | Thư mục | Mục đích |
 |---|---|

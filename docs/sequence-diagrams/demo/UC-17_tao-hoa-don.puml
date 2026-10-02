@@ -15,15 +15,12 @@ skinparam sequenceGroupBackgroundColor #F8FAFC
 actor "Kế toán" as A
 boundary "React / TypeScript" as UI
 control "InvoiceController" as C
-control "InvoiceService\n<<đề xuất>>" as S
+control "InvoiceService\n<<chưa triển khai>>" as S
 participant "InvoiceRepository" as D
-database "PostgreSQL\nSP / dữ liệu" as DB
-participant "Thông báo / Outbox\n<<đề xuất>>" as N
+database "PostgreSQL\nSQL trực tiếp / dữ liệu" as DB
+participant "Thông báo / Outbox\n<<chưa triển khai>>" as N
 note over C,DB
-Đã có: /accounting/generate-invoice; usp_PhatHanhHoaDon từng phòng.
-SRS dùng lượng × đơn giá; preview, giá theo kỳ, giảm giá, QR và gửi hóa đơn cần bổ sung.
-Đích mới: Spring Boot @RestController → @Service @Transactional → @Repository/JdbcTemplate.
-Code nền còn Servlet/DAO legacy; các bước ghi là thiết kế cần triển khai.
+UC-17: Java InvoiceService/InvoiceRepository đã có preview, snapshot và phát hành từng phòng. Controller/API nhập chi phí, chọn bỏ qua lỗi và worker gửi hóa đơn còn thiếu. Các thao tác DB là SQL trực tiếp trong repository; không gọi procedure.
 end note
 ref over UI,C : Tiền điều kiện: đăng nhập, kiểm tra quyền phía server; Admin/Kế toán có 2FA
 A -> UI : Chọn kỳ tháng/năm và danh sách phòng
@@ -69,11 +66,11 @@ else Còn phòng chưa phát hành
   C -> S : phatHanh(duThaoDaXacNhan)
   loop Mỗi phòng hợp lệ
     S -> D : generateInvoice(roomId, month)
-    D -> DB : usp_PhatHanhHoaDon(room, month, OUT id, status, message)
+    D -> DB : INSERT hóa đơn/chi tiết bằng SQL sau khi đối chiếu snapshot
     DB -> DB : Kiểm tra trùng và thiếu số đo lần cuối
     alt SUCCESS
       DB -> DB : Tạo HOA_DON CHUA_TT và CHI_TIET_HOA_DON
-      note right of DB : Cần mở rộng SP để tổng tiền khớp\npreview, giảm giá, chi phí và giá theo kỳ.
+      note right of DB : Service đối chiếu tổng tiền với preview,\ngiảm giá, chi phí và giá theo kỳ.
       D -> DB : Ghi QR và outbox hóa đơn; commit cùng transaction (đề xuất)
       DB --> D : Mã hóa đơn
       D --> S : Đã phát hành

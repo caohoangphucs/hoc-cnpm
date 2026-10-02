@@ -14,18 +14,15 @@ skinparam sequenceParticipantBackgroundColor #EAF2F8
 skinparam sequenceGroupBackgroundColor #F8FAFC
 actor "Sinh viên" as A
 boundary "React / TypeScript" as UI
-control "CommunityController\n<<đề xuất>>" as C
-control "CommunityService\n<<đề xuất>>" as S
-participant "CommunityRepository\n<<đề xuất>>" as D
-database "PostgreSQL\nSP / dữ liệu" as DB
+control "CommunityController\n<<chưa triển khai>>" as C
+control "CommunityService\n<<chưa triển khai>>" as S
+participant "CommunityRepository\n<<chưa triển khai>>" as D
+database "PostgreSQL\nSQL trực tiếp / dữ liệu" as DB
 actor "Admin BQL" as BQL
-participant "Thông báo / Outbox\n<<đề xuất>>" as N
+participant "Thông báo / Outbox\n<<chưa triển khai>>" as N
 participant "Phòng CTSV" as CTSV
 note over C,DB
-Đã có4bảng công ích và usp_DangKyCongIch; chưa có giao diện/module Java.
-Toàn bộ luồng này là thiết kế cần triển khai; không coi seed hiện tại đã hỗ trợ.
-Đích mới: Spring Boot @RestController → @Service @Transactional → @Repository/JdbcTemplate.
-Code nền còn Servlet/DAO legacy; các bước ghi là thiết kế cần triển khai.
+UC-30: Java CommunityService/CommunityRepository đã có hoạt động, đăng ký, hủy, xác nhận, sổ điểm và yêu cầu quy đổi/chứng nhận. Controller/API, worker CTSV, ký PDF/QR và tự đóng hoạt động hết chỗ còn thiếu. Các thao tác DB là SQL trực tiếp trong repository; không gọi procedure.
 end note
 ref over UI,C : Tiền điều kiện: đăng nhập, kiểm tra quyền phía server; Admin/Kế toán có 2FA
 A -> UI : Mở danh sách hoạt động

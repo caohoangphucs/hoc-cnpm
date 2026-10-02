@@ -1,6 +1,6 @@
 # API, phân quyền và bảo vệ dữ liệu
 
-Đích API JSON `/api/v1`, được mô tả bằng [OpenAPI](api/openapi.json). API đích do Spring Boot @RestController triển khai, giao diện React dùng cùng Service. Kiến trúc và mapping legacy tại [Spring Boot](SPRING_BOOT.md); code hiện tại chưa chuyển.
+API JSON dùng prefix `/api/v1` và được mô tả bằng [OpenAPI](api/openapi.json). Route được khai báo tập trung trong `ApiRoutes`; handler không đặt annotation route trên từng phương thức. `AuthController` xử lý login/session/logout, và `BookingController` bắt đầu nối `POST /bookings` với service. Các UC còn lại chưa có controller. Kiến trúc tại [Spring Boot](SPRING_BOOT.md).
 
 ## Giao thức chung
 
@@ -30,7 +30,7 @@ ADMIN không mặc nhiên được thanh toán thay SV hoặc hoàn thành phi�
 ## Endpoint hỗ trợ và tích hợp
 
 - Upload `POST /files` multipart: file JPG/PNG <=5MB, loại hồ sơ/minh chứng, tối đa 5 ảnh/phiếu. Kiểm magic bytes, decode ảnh, quét malware, strip EXIF, tên object UUID; trả fileId. Dữ liệu AES-256-GCM bằng khóa ngoài DB, mỗi tệp nonce riêng; TTL DRAFT 24 giờ nếu chưa gắn hồ sơ. Tải tệp qua `/files/{id}` kiểm owner hoặc quyền nghiệp vụ; không có public bucket.
-- `POST /auth/login`, `/auth/2fa`, `/auth/logout`; `GET /auth/session` public trả authenticated; khi chưa login chỉ csrfToken, khi đã login thêm role, trạng thái 2FA và idleExpiresAt.
+- `POST /auth/login`, `/auth/2fa`, `/auth/logout`; `GET /auth/session` public trả authenticated; khi chưa login chỉ csrfToken, khi đã login thêm role, trạng thái 2FA và idleExpiresAt. `/auth/2fa` hiện trả 503 an toàn vì schema chưa có secret TOTP đã đăng ký; ADMIN/KETOAN bị middleware chặn khỏi API nghiệp vụ tới khi tính năng này được cấu hình.
 - `GET /notifications` và PATCH trạng thái đọc thuộc người dùng; worker mail/SMS không có endpoint công khai để gọi gửi tùy ý.
 - VNPay IPN GET `/payments/vnpay/ipn`, MoMo IPN POST `/payments/momo/ipn`; return URL GET chỉ hiển thị kết quả lấy từ server.
 - `POST /activities/{id}/attendance` chỉ ADMIN quét QR hợp lệ của hoạt động; không cộng điểm tại endpoint này.
@@ -40,4 +40,4 @@ ADMIN không mặc nhiên được thanh toán thay SV hoặc hoàn thành phi�
 
 Giữ 5 bước thiết kế trong THIET_KE_XU_LY. Dùng loading, chống double click, empty state, validation tại trường và requestId để tra lỗi. 409 giữ dữ liệu nhập, refresh trạng thái và đề nghị thao tác lại; không tự retry thanh toán bằng phiên mới. 503 thử lại cùng key; 401 chuyển login và chỉ khôi phục draft không nhạy cảm. CSV/Excel import chỉ tạo bản nháp, preview dòng lỗi; giới hạn 1000 dòng, không chạy macro/formula và không phát hành ngầm.
 
-Spring SecurityFilterChain xử lý auth/CSRF/2FA; @PreAuthorize và ownership ở Service; @RestControllerAdvice cùng filter handlers giữ Error contract. Chi tiết [Spring Boot](SPRING_BOOT.md).
+Spring SecurityFilterChain xử lý session/CSRF/2FA; ownership được kiểm lại trong service. Route dùng `RouterFunction` tập trung tại `ApiRoutes`; middleware bảo mật chuẩn hóa lỗi 401/403. Chi tiết [Spring Boot](SPRING_BOOT.md).

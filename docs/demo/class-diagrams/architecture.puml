@@ -79,7 +79,6 @@ package "Integration / Jobs" {
  interface CertificateSigner
 }
 class PostgreSQL16 <<database>> {
- +procedures : PL/pgSQL
  +constraints : FK, UNIQUE, CHECK
 }
 ReactClient --> SecurityFilterChain
@@ -138,7 +137,7 @@ OutboxWorker --> CertificateSigner
 GlobalExceptionHandler ..> BookingController : Error DTO chung
 note bottom of JdbcTransactionManager
  @Transactional tại Service; cùng DataSource/Connection.
- JdbcTemplate gọi procedure; khóa/cập nhật liên bảng nằm trong SP.
+ Service Java điều phối quy tắc/khóa; repository chạy SQL trực tiếp qua JdbcTemplate.
  Không gọi mạng khi giữ transaction.
 end note
 @enduml

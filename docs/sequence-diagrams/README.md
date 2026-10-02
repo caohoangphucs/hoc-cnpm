@@ -18,10 +18,9 @@ Sơ đồ mô tả thiết kế đích theo đặc tả; mức triển khai hi�
 
 ## Cách đọc
 
-- Actor → Thymeleaf/Bootstrap → Spring @RestController → @Service/@Transactional → @Repository/JdbcTemplate → PostgreSQL/SP.
-- `<<đề xuất>>` là thành phần cần triển khai; Controller/Service/Repository Spring Boot chưa có trong mã hiện tại.
-- Các ghi chú Servlet/DAO là nền legacy để đối chiếu; class đích Spring Boot được mô tả ở [kiến trúc](../demo/SPRING_BOOT.md). SP giữ contract, không chứng minh
-  toàn bộ thông điệp của sơ đồ đã được cài đặt.
+- Actor → React → Spring REST API (chưa triển khai) → Java service → repository/JdbcTemplate → PostgreSQL.
+- Các sơ đồ mô tả luồng đích. Service/repository Java cho 8 UC đã có; Controller/API, UI và tích hợp ngoài còn cần triển khai.
+- Các ghi chú Servlet/DAO là nền legacy để đối chiếu; class đích Spring Boot được mô tả ở [kiến trúc](../demo/SPRING_BOOT.md). Sơ đồ không chứng minh toàn bộ thông điệp đã được cài đặt; xem [rà soát nghiệp vụ](../demo/RA_SOAT_NGHIEP_VU_8UC.md).
 - `alt` là các nhánh lựa chọn/lỗi; `opt` là nhánh tùy điều kiện; `loop`
   là xử lý lặp; `ref` chỉ tiền điều kiện hoặc nghiệp vụ liên quan.
 - Include gửi thông báo dùng REQ-005 để tránh nhầm UC-03 giữa hai bản SRS.

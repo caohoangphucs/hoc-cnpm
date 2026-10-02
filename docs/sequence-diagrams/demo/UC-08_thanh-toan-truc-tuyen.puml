@@ -14,17 +14,14 @@ skinparam sequenceParticipantBackgroundColor #EAF2F8
 skinparam sequenceGroupBackgroundColor #F8FAFC
 actor "Sinh viên" as A
 boundary "React / TypeScript" as UI
-control "PaymentController / PaymentCallbackController\n<<đề xuất>>" as C
-control "PaymentService\n<<đề xuất>>" as S
-participant "InvoiceRepository + PaymentRepository\n<<đích Spring Boot>>" as D
-database "PostgreSQL\nSP / dữ liệu" as DB
+control "PaymentController / PaymentCallbackController\n<<chưa triển khai>>" as C
+control "PaymentService\n<<chưa triển khai>>" as S
+participant "InvoiceRepository + PaymentRepository\n<<Java hiện có>>" as D
+database "PostgreSQL\nSQL trực tiếp / dữ liệu" as DB
 participant "Cổng VNPay / MoMo / Ngân hàng" as G
-participant "Thông báo / Outbox\n<<đề xuất>>" as N
+participant "Thông báo / Outbox\n<<chưa triển khai>>" as N
 note over C,DB
-Đã có InvoiceDAO.confirmPayment và usp_XacNhanThanhToan, chưa có PaymentServlet/IPN.
-SP hiện yêu cầu giao dịch tồn tại và chưa chống gọi lặp; không coi return URL là bằng chứng thanh toán.
-Đích mới: Spring Boot @RestController → @Service @Transactional → @Repository/JdbcTemplate.
-Code nền còn Servlet/DAO legacy; các bước ghi là thiết kế cần triển khai.
+UC-08: Java PaymentService/PaymentRepository đã có. Controller/IPN, adapter provider thật, ACK và đối soát ngoài còn thiếu. Các mũi tên DB là SQL trực tiếp; callback chỉ được nhận sau xác minh adapter, không dùng return URL làm bằng chứng thu tiền.
 end note
 ref over UI,C : Tiền điều kiện: đăng nhập, kiểm tra quyền phía server; Admin/Kế toán có 2FA
 A -> UI : Xem hóa đơn; chọn một hoặc nhiều hóa đơn
@@ -78,7 +75,7 @@ else Hợp lệ
       alt IPN trùng; giao dịch đã SUCCESS
         DB --> D : Kết quả đã lưu; không cộng DaThanhToan lần nữa
       else Chưa xử lý thành công
-        D -> DB : usp_XacNhanThanhToan(ref, method, amount, confirmer, OUT status, message)
+        D -> DB : UPDATE khoản thanh toán/hóa đơn bằng SQL sau đối soát
         DB -> DB : THANH_TOAN SUCCESS; tăng DaThanhToan\nHóa đơn DA_TT / TT_MOT_PHAN
         D -> DB : Ghi outbox biên lai; commit (đề xuất)
       end

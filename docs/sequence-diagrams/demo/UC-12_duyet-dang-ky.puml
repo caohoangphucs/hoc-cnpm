@@ -15,16 +15,13 @@ skinparam sequenceGroupBackgroundColor #F8FAFC
 actor "Admin BQL" as A
 boundary "React / TypeScript" as UI
 control "RegistrationController" as C
-control "RegistrationService\n<<đề xuất>>" as S
+control "RegistrationService\n<<chưa triển khai>>" as S
 participant "RoomRepository" as D
-database "PostgreSQL\nSP / dữ liệu" as DB
-participant "Thông báo / Outbox\n<<đề xuất>>" as N
+database "PostgreSQL\nSQL trực tiếp / dữ liệu" as DB
+participant "Thông báo / Outbox\n<<chưa triển khai>>" as N
 actor "Sinh viên" as SV
 note over C,DB
-Đã có: /admin/registrations, /admin/approve-registration; usp_DuyetDangKy.
-SP cập nhật lưu trú trực tiếp, không có trigger gán giường; khóa / audit / hợp đồng / email cần bổ sung.
-Đích mới: Spring Boot @RestController → @Service @Transactional → @Repository/JdbcTemplate.
-Code nền còn Servlet/DAO legacy; các bước ghi là thiết kế cần triển khai.
+UC-12: Java RegistrationService/BookingRepository đã có. Controller/API danh sách, xác minh nội dung hồ sơ và worker gửi thông báo còn thiếu. Các thao tác DB là SQL trực tiếp trong repository; không gọi procedure.
 end note
 ref over UI,C : Tiền điều kiện: đăng nhập, kiểm tra quyền phía server; Admin/Kế toán có 2FA
 A -> UI : Mở danh sách hồ sơ chờ duyệt; chọn bộ lọc
@@ -59,7 +56,7 @@ loop Từng hồ sơ đã xác nhận (một hoặc nhiều)
     C --> UI : Làm mới danh sách
   else Đủ điều kiện
     S -> D : approveRegistration(id, decision, reason)
-    D -> DB : usp_DuyetDangKy(id, decision, reason, OUT status, message)
+    D -> DB : SQL cập nhật quyết định, lưu trú và hợp đồng trong transaction
     alt Phê duyệt
       DB -> DB : Đơn DA_DUYET; giường DANG_O; tạo LUU_TRU\nCập nhật SINH_VIEN và PHONG
       D -> DB : Tạo hợp đồng dự thảo; lưu người duyệt / audit (đề xuất)

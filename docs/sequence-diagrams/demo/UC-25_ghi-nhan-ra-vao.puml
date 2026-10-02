@@ -15,17 +15,13 @@ skinparam sequenceGroupBackgroundColor #F8FAFC
 actor "Bảo vệ" as A
 boundary "React / TypeScript" as UI
 control "GateController" as C
-control "GateService\n<<đề xuất>>" as S
+control "GateService\n<<chưa triển khai>>" as S
 participant "GateRepository" as D
-database "PostgreSQL\nSP / dữ liệu" as DB
-participant "Barrier\n<<đề xuất>>" as B
-participant "Thông báo / Outbox\n<<đề xuất>>" as N
+database "PostgreSQL\nSQL trực tiếp / dữ liệu" as DB
+participant "Barrier\n<<chưa triển khai>>" as B
+participant "Thông báo / Outbox\n<<chưa triển khai>>" as N
 note over C,DB
-Đã có: /security/record-entry; usp_GhiNhanRaVao.
-SP tạo vi phạm trực tiếp (không qua trigger), dùng CURRENT_TIME;
->=23:00 hoặc <05:00. Đích BR-12: >23:00 hoặc <05:00, giờ Việt Nam.
-Đích mới: Spring Boot @RestController → @Service @Transactional → @Repository/JdbcTemplate.
-Code nền còn Servlet/DAO legacy; các bước ghi là thiết kế cần triển khai.
+UC-25: Java GateService/GateRepository đã có ghi nhận thẻ, kiểm tra giờ về, khách mã hóa và sự kiện barrier chờ xử lý. Controller/API, đối chiếu CCCD tại cổng và adapter barrier còn thiếu. Các thao tác DB là SQL trực tiếp trong repository; không gọi procedure.
 end note
 ref over UI,C : Tiền điều kiện: đăng nhập, kiểm tra quyền phía server; Admin/Kế toán có 2FA
 alt AF-1: Khách thăm tại cổng
@@ -60,11 +56,11 @@ else Sinh viên về KTX
   else Hợp lệ
     S --> UI : Hiển thị thông tin sinh viên
     S -> D : recordEntry(studentId, VAO, guard, note)
-    D -> DB : usp_GhiNhanRaVao(..., OUT status, message)
+    D -> DB : INSERT RA_VAO/VI_PHAM/sự kiện barrier bằng SQL cùng transaction
     DB -> DB : Ghi RA_VAO với thời gian máy chủ
     opt <<extend>> UC-26: Về sau giờ giới nghiêm
       DB -> DB : Tạo VI_PHAM gắn MaRaVao và MaSinhVien
-      note right of DB : Trong SP hiện tại: >=23:00 hoặc <05:00;\nĐích BR-12: >23:00 hoặc <05:00; Asia/Ho_Chi_Minh.
+      note right of DB : Quy tắc BR-12: >23:00 hoặc <05:00 theo Asia/Ho_Chi_Minh.
     end
     D -> DB : Ghi outbox cảnh báo nếu có; commit (đề xuất)
     DB --> D : SUCCESS hoặc VIOLATION_RECORDED

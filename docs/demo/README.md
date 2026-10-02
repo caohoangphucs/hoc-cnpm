@@ -6,7 +6,7 @@ Demo chọn **đúng 8 đặc tả trọng tâm trong SRS cũ**, bao phủ 5 vai
 
 Đọc [kiến trúc Spring Boot](SPRING_BOOT.md), [SRS nguồn](NGUON.md), [thiết kế xử lý 5 bước](THIET_KE_XU_LY.md),
 [PostgreSQL](POSTGRESQL.md), [quy tắc](QUY_TAC_NGHIEP_VU.md),
-[dữ liệu/SP](DU_LIEU_VA_SP.md), [API và quyền](API_VA_PHAN_QUYEN.md),
+[dữ liệu/SQL](DU_LIEU_VA_SQL.md), [rà soát nghiệp vụ 8 UC](RA_SOAT_NGHIEP_VU_8UC.md), [API và quyền](API_VA_PHAN_QUYEN.md),
 [Class Diagram](class-diagrams/README.md), [tích hợp](TICH_HOP.md),
 [test case](KIEM_THU.md), [triển khai/nghiệm thu](TRIEN_KHAI_VA_NGHIEM_THU.md),
 [truy vết](TRUY_VET.md), [8 Sequence Diagram](../sequence-diagrams/README.md) và [TODO](../../TODO.md).
@@ -30,29 +30,28 @@ và thông báo là nghiệp vụ hỗ trợ. Các nhánh chính sách, khách t
 
 ## Khoảng cách triển khai
 
-Bảng dưới lưu đối chiếu nền Servlet/JSP tại **0c08ae7**, không phải inventory code hiện hành. Nền mới đã nằm trong server/ và client/; Service/Controller và API/UI8UC chưa triển khai. Mapping đích trong SPRING_BOOT.md.
+Bảng dưới lưu đối chiếu nền Servlet/JSP tại **0c08ae7**, không phải inventory code hiện hành; tên procedure trong bảng chỉ thuộc snapshot lịch sử đó. Nền mới nằm trong server/ và client/. Tầng service/repository Java cho 8 UC đã có; API đang được nối từng phần: auth handlers và `POST /bookings` đã bắt đầu, UC khác và UI nghiệp vụ còn thiếu. Mapping đích trong SPRING_BOOT.md.
 Có nền mã/SQL không đồng nghĩa đã kiểm thử hay nghiệm thu.
 
 | UC | Nền hiện có | Cần hoàn thiện theo SRS |
 |---|---|---|
-| UC-04 | StudentServlet, RoomDAO, usp_DatGiuong | Hồ sơ/ảnh mã hóa; giường trống thực; giới tính/đợt/hợp đồng; giữ 48 giờ; audit; lỗi upload/rời trang |
-| UC-12 | AdminServlet, RoomDAO, usp_DuyetDangKy | Khóa khi duyệt; hạn giữ chỗ/giường khóa; người duyệt; hợp đồng dự thảo; hàng loạt ưu tiên; email/retry |
-| UC-17 | AccountingServlet, InvoiceDAO, usp_PhatHanhHoaDon | Preview; giá theo kỳ; giảm giá; chi phí riêng; batch; Excel nháp; QR; gửi hóa đơn |
-| UC-08 | InvoiceDAO.confirmPayment, usp_XacNhanThanhToan | Tạo PENDING; gateway/IPN sandbox; chữ ký/tiền; chống lặp; timeout/đối soát; biên lai; gộp hóa đơn |
-| UC-22 | MaintenanceServlet, MaintenanceDAO, usp_HoanThanhSuaChua | Tiếp nhận/gán người; ảnh; lịch hẹn/bảo hành; kiểm tra tồn; đề xuất mua; lịch sử; thông báo/link đánh giá |
-| UC-25 | SecurityServlet, SecurityDAO, usp_GhiNhanRaVao | Thẻ/QR; hợp đồng; mốc giờ/timezone; barrier; khách thăm; app/báo cáo |
-| UC-14 | VI_PHAM, getViolations(), usp_XuLyKyLuat | Chưa có module xử lý Admin; minh chứng; đếm theo học kỳ; quyết định/lịch sử; nhóm; khiếu nại; rollback |
-| UC-30 | Có4bảng công ích và usp_DangKyCongIch; chưa có UI/module Java | Hoạt động/chỉ tiêu; đăng ký; chống trùng lịch; QR; xác nhận/cộng điểm; hủy; CTSV; PDF chữ ký/QR |
+| UC-04 | StudentServlet, RoomDAO, legacy usp_DatGiuong | Hồ sơ/ảnh mã hóa; giường trống thực; giới tính/đợt/hợp đồng; giữ 48 giờ; audit; lỗi upload/rời trang |
+| UC-12 | AdminServlet, RoomDAO, legacy usp_DuyetDangKy | Khóa khi duyệt; hạn giữ chỗ/giường khóa; người duyệt; hợp đồng dự thảo; hàng loạt ưu tiên; email/retry |
+| UC-17 | AccountingServlet, InvoiceDAO, legacy usp_PhatHanhHoaDon | Preview; giá theo kỳ; giảm giá; chi phí riêng; batch; Excel nháp; QR; gửi hóa đơn |
+| UC-08 | InvoiceDAO.confirmPayment, legacy usp_XacNhanThanhToan | Tạo PENDING; gateway/IPN sandbox; chữ ký/tiền; chống lặp; timeout/đối soát; biên lai; gộp hóa đơn |
+| UC-22 | MaintenanceServlet, MaintenanceDAO, legacy usp_HoanThanhSuaChua | Tiếp nhận/gán người; ảnh; lịch hẹn/bảo hành; kiểm tra tồn; đề xuất mua; lịch sử; thông báo/link đánh giá |
+| UC-25 | SecurityServlet, SecurityDAO, legacy usp_GhiNhanRaVao | Thẻ/QR; hợp đồng; mốc giờ/timezone; barrier; khách thăm; app/báo cáo |
+| UC-14 | VI_PHAM, getViolations(), legacy usp_XuLyKyLuat | Chưa có module xử lý Admin; minh chứng; đếm theo học kỳ; quyết định/lịch sử; nhóm; khiếu nại; rollback |
+| UC-30 | Có4bảng công ích và legacy usp_DangKyCongIch; chưa có UI/module Java | Hoạt động/chỉ tiêu; đăng ký; chống trùng lịch; QR; xác nhận/cộng điểm; hủy; CTSV; PDF chữ ký/QR |
 
 Các điểm phải xử lý trước demo ứng dụng:
 
-- Auth chưa có 2FA; bổ sung kiểm tra quyền server. AccountDAO chỉ dùng BCrypt hợp lệ và từ chối hash hỏng.
+- 2FA chưa có nơi lưu secret TOTP; middleware chặn ADMIN/KETOAN khỏi API nghiệp vụ cho tới khi cấu hình xong. Account auth dùng BCrypt và từ chối hash hỏng.
 - rooms.jsp sinh cố định 4 lựa chọn giường, chưa lọc theo trạng thái giường.
 - StudentServlet ghi báo hỏng bằng SQL trực tiếp và ID mặc định khi session
   thiếu: đưa xuống DAO, kiểm tra lưu trú thực tế.
-- Nút thu tiền mặt tạo ref CASH-... nhưng chưa tạo giao dịch tương ứng;
-  usp_XacNhanThanhToan cần giao dịch tồn tại. Không dùng nút này để chứng
-  minh thanh toán online đã chạy.
+- Nút thu tiền mặt tạo ref CASH-... nhưng chưa tạo giao dịch tương ứng. Không
+  dùng nút này để chứng minh thanh toán online đã chạy.
 - Mở rộng DB bằng SQL cập nhật thủ công đã review, dùng lại SP và transaction; không bỏ qua
   nghiệp vụ SP bằng insert/update nhiều bảng trực tiếp trong DAO.
 
