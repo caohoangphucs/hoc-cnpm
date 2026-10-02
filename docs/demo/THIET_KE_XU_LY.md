@@ -5,7 +5,7 @@
 Class Diagram đích: [thiết kế lớp demo](class-diagrams/README.md).
 Quy tắc chi tiết và ranh giới SQL/repository tại [quy tắc](QUY_TAC_NGHIEP_VU.md) và [dữ liệu](DU_LIEU_VA_SQL.md).
 
-Các luồng bên dưới là thiết kế theo SRS; mức hiện thực được đối chiếu trong [báo cáo rà soát 8 UC](RA_SOAT_NGHIEP_VU_8UC.md). Tầng Java service/repository cho 8 UC hiện đã có. Service điều phối transaction và quy tắc; repository dùng SQL qua JdbcTemplate. Controller/API, xác thực HTTP, giao diện nghiệp vụ và adapter/job ngoài hệ thống chưa hoàn tất. Các nhãn procedure trong sequence lịch sử chỉ là tên bước nghiệp vụ; sequence hiện hành và service mới dùng SQL trực tiếp.
+Các luồng bên dưới là thiết kế theo SRS; mức hiện thực được đối chiếu trong [báo cáo rà soát 8 UC](RA_SOAT_NGHIEP_VU_8UC.md). Tầng Java service/repository cho 8 UC hiện đã có. Route auth và đăng ký phòng được khai báo tại `ApiRoutes`; handler nằm trong controller, service điều phối transaction/quy tắc và repository dùng SQL qua JdbcTemplate. Controller các UC còn lại, TOTP, giao diện nghiệp vụ và adapter/job ngoài hệ thống chưa hoàn tất. Các nhãn procedure trong sequence lịch sử chỉ là tên bước nghiệp vụ; sequence hiện hành và service mới dùng SQL trực tiếp.
 
 ## UC-04 Đăng ký phòng
 

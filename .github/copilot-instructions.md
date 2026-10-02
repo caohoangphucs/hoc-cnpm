@@ -2,8 +2,8 @@
 
 Backend nằm trong `server/`: Spring Boot4.1.1, Java17, PostgreSQL16. Frontend nằm trong `client/`: React/TypeScript/Vite, Nginx proxy cùng origin. Xem [thiết kế](../docs/demo/SPRING_BOOT.md) và [Git workflow](../docs/main/GIT_WORKFLOW.md).
 
-- Dùng một DataSource/HikariCP. JPA entity/read repository chỉ đọc, schema validate; transaction ghi dùng Spring JDBC và stored procedure.
-- `DormitoryProcedureRepository` bắt buộc caller có JDBC transaction; status lỗi chuyển thành runtime exception để rollback. Không tạo pool, commit hoặc Connection riêng trong repository.
+- Dùng một DataSource/HikariCP. JPA entity/read repository chỉ đọc, schema validate; service điều phối transaction ghi qua repository Spring JDBC và SQL tường minh.
+- Không tạo pool, commit hoặc Connection riêng trong repository; transaction do service quản lý.
 - Entity ánh xạ schema hiện hành; DTO là contract API đích, không trả entity/hash/CCCD trực tiếp ra HTTP. Các bảng chưa có trong SQL không được giả lập thành entity hiện hành.
 - Service/Controller nghiệp vụ và auth/session/2FA chưa triển khai. Giữ quyền từ session và kiểm ownership khi viết Service; không tin actor/student identity từ body.
 - Không dùng migration tự động hoặc ddl-auto=create/update. Nguồn schema/seed duy nhất trong database/. Reset chỉ DB demo riêng.

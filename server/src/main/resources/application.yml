@@ -10,8 +10,6 @@ spring:
       minimum-idle: 3
       connection-timeout: 10000
       connection-init-sql: SET TIME ZONE 'Asia/Ho_Chi_Minh'
-      data-source-properties:
-        escapeSyntaxCallMode: callIfNoReturn
   sql:
     init:
       mode: never

@@ -73,8 +73,8 @@ cho các luồng này và không chuyển quy tắc nghiệp vụ nhiều bướ
 service. Chi tiết các phương thức hiện có và phần chưa triển khai nằm trong
 [báo cáo rà soát 8 UC](RA_SOAT_NGHIEP_VU_8UC.md).
 
-Schema vẫn giữ function/procedure từ nền cũ để tương thích dữ liệu và các kiểm tra
-legacy. Chúng không được service của 8 UC gọi; không thêm procedure mới cho các
+Schema hiện hành không định nghĩa function/procedure từ nền cũ. Service của 8 UC
+điều phối nghiệp vụ và repository thực hiện SQL trực tiếp bằng JdbcTemplate cho các
 nghiệp vụ này. DDL hiện hành nằm trong `database/01_schema.sql`; seed demo nằm
 trong `database/02_seed.sql`. Thay đổi schema được review và áp dụng bằng SQL thủ
 công, không dùng migration tự động.
