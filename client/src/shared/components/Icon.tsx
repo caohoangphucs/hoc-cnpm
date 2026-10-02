@@ -32,6 +32,7 @@ const paths = {
   unlock: 'M7 11V7a5 5 0 0 1 9-3M5 11h14v11H5V11ZM12 15v3',
   sortUp: 'M12 19V5m-5 5 5-5 5 5',
   sortDown: 'M12 5v14m-5-5 5 5 5-5',
+  bed: 'M3 18V6m0 8h18v4M3 10h6v4M9 10h10a2 2 0 0 1 2 2v2M3 18v3m18-3v3',
 } as const
 
 export type IconName = keyof typeof paths
