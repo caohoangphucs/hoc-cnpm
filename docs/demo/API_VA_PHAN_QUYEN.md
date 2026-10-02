@@ -1,6 +1,6 @@
 # API, phân quyền và bảo vệ dữ liệu
 
-Đích API JSON `/api/v1`, được mô tả bằng [OpenAPI](api/openapi.json). API đích do Spring Boot @RestController triển khai, giao diện Thymeleaf dùng cùng Service. Kiến trúc và mapping legacy tại [Spring Boot](SPRING_BOOT.md); code hiện tại chưa chuyển.
+Đích API JSON `/api/v1`, được mô tả bằng [OpenAPI](api/openapi.json). API đích do Spring Boot @RestController triển khai, giao diện React dùng cùng Service. Kiến trúc và mapping legacy tại [Spring Boot](SPRING_BOOT.md); code hiện tại chưa chuyển.
 
 ## Giao thức chung
 

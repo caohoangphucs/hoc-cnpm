@@ -13,7 +13,7 @@ Ngày 02/10/2026.
 | Sequence | SERIAL được đồng bộ sau toàn bộ fixture; tránh trùng ID explicit |
 | CI/CD | Mọi push chạy CI; develop deploy image đúng SHA sau CI, health check và rollback |
 | Server | PostgreSQL đã deploy qua Actions thành công tại 4633afe; dữ liệu được bảo toàn |
-| Runtime | Servlet/JSP WAR hiện hành; Spring Boot4.1.1/Java17 là kiến trúc tài liệu đích |
+| Runtime nền mới | Spring Boot/JAR trong server/, React/Nginx trong client/; chưa triển khai API/UI nghiệp vụ |
 
 Sau đợt dọn, code/config/script/CI chỉ dùng PostgreSQL; không có thành phần DB khác trong quy trình vận hành. CI bổ sung kiểm OUT/JDBC cả 9 procedure; Compose/env/reset đồng bộ cổng và credentials. Nguồn DDL/seed duy nhất nằm trong database/, CD không chạy DDL/seed trên DB có dữ liệu.
 
