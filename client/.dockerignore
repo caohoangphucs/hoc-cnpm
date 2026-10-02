@@ -2,8 +2,11 @@
 !Dockerfile
 !.dockerignore
 !package.json
-!package-lock.json
-!tsconfig.json
+!pnpm-lock.yaml
+!tsconfig*.json
+!eslint.config.js
+!public/
+!public/**
 !vite.config.ts
 !index.html
 !src/
