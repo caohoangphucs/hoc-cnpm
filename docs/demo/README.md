@@ -30,7 +30,7 @@ và thông báo là nghiệp vụ hỗ trợ. Các nhánh chính sách, khách t
 
 ## Khoảng cách triển khai
 
-Bảng dưới lưu đối chiếu nền Servlet/JSP tại **0c08ae7**, không phải inventory code hiện hành. Nền mới đã nằm trong server/ và client/; Service/Controller và API/UI8UC chưa triển khai. Mapping đích trong SPRING_BOOT.md.
+Bảng dưới lưu đối chiếu nền Servlet/JSP tại **0c08ae7**, không phải inventory code hiện hành. Nền mới nằm trong server/ và client/. Tầng service/repository Java cho 8 UC đã có; Controller/API và UI nghiệp vụ chưa triển khai. Mapping đích trong SPRING_BOOT.md.
 Có nền mã/SQL không đồng nghĩa đã kiểm thử hay nghiệm thu.
 
 | UC | Nền hiện có | Cần hoàn thiện theo SRS |
