@@ -1,10 +1,10 @@
 # API, phân quyền và bảo vệ dữ liệu
 
-Đích API JSON `/api/v1`, được mô tả bằng [OpenAPI](api/openapi.json). API mới chưa tồn tại. JSP có thể gọi API hoặc Servlet adapter; không tái sử dụng route cũ nếu thiếu RBAC/ownership. Các form hiện hành `/student`, `/admin`, `/accounting`, `/maintenance`, `/security` cần đối chiếu controller lúc triển khai; không coi mapping đó là REST API đã chạy.
+Đích API JSON `/api/v1`, được mô tả bằng [OpenAPI](api/openapi.json). API đích do Spring Boot @RestController triển khai, giao diện Thymeleaf dùng cùng Service. Kiến trúc và mapping legacy tại [Spring Boot](SPRING_BOOT.md); code hiện tại chưa chuyển.
 
 ## Giao thức chung
 
-Session JSESSIONID cookie HttpOnly, Secure trong HTTPS, SameSite=Lax; idle timeout 15 phút, rotate ID sau login. ADMIN/KETOAN phải hoàn tất 2FA trước truy cập API bảo vệ. GET chỉ đọc. POST/PATCH/DELETE yêu cầu X-CSRF-Token và Origin hợp lệ, ngoại trừ IPN được xác thực bằng chữ ký provider. Login giới hạn 5 lần sai/15 phút/account + IP; thông báo không tiết lộ account tồn tại.
+Session JSESSIONID cookie HttpOnly, Secure trong HTTPS, SameSite=Lax; idle timeout 15 phút, rotate ID sau login. ADMIN/KETOAN phải hoàn tất 2FA trước truy cập API bảo vệ. GET chỉ đọc. POST/PATCH/DELETE yêu cầu X-CSRF-TOKEN và Origin hợp lệ, ngoại trừ đúng hai IPN được xác thực bằng chữ ký provider. Login cũng kiểm CSRF; GET /auth/session public cung cấp token ban đầu và trạng thái chưa login. Login giới hạn 5 lần sai/15 phút/account + IP; thông báo không tiết lộ account tồn tại.
 
 POST nghiệp vụ dùng Idempotency-Key UUID. Giữ kết quả 24 giờ; cùng key/cùng payload trả lại response, khác payload trả 409. Idempotency tài chính (provider_ref/event) lưu suốt vòng đời chứng từ, không hết hạn cùng cache API. Request ID UUID trong header X-Request-Id và response lỗi. Thời gian RFC3339 có offset; month YYYY-MM; ID số nguyên dương, UUID dùng format uuid. List mặc định page=1/pageSize=20, tối đa 100, sort có whitelist; server không nhận raw SQL sort.
 
@@ -30,7 +30,7 @@ ADMIN không mặc nhiên được thanh toán thay SV hoặc hoàn thành phi�
 ## Endpoint hỗ trợ và tích hợp
 
 - Upload `POST /files` multipart: file JPG/PNG <=5MB, loại hồ sơ/minh chứng, tối đa 5 ảnh/phiếu. Kiểm magic bytes, decode ảnh, quét malware, strip EXIF, tên object UUID; trả fileId. Dữ liệu AES-256-GCM bằng khóa ngoài DB, mỗi tệp nonce riêng; TTL DRAFT 24 giờ nếu chưa gắn hồ sơ. Tải tệp qua `/files/{id}` kiểm owner hoặc quyền nghiệp vụ; không có public bucket.
-- `POST /auth/login`, `/auth/2fa`, `/auth/logout`; `GET /auth/session` trả role, csrfToken, trạng thái 2FA và idleExpiresAt.
+- `POST /auth/login`, `/auth/2fa`, `/auth/logout`; `GET /auth/session` public trả authenticated; khi chưa login chỉ csrfToken, khi đã login thêm role, trạng thái 2FA và idleExpiresAt.
 - `GET /notifications` và PATCH trạng thái đọc thuộc người dùng; worker mail/SMS không có endpoint công khai để gọi gửi tùy ý.
 - VNPay IPN GET `/payments/vnpay/ipn`, MoMo IPN POST `/payments/momo/ipn`; return URL GET chỉ hiển thị kết quả lấy từ server.
 - `POST /activities/{id}/attendance` chỉ ADMIN quét QR hợp lệ của hoạt động; không cộng điểm tại endpoint này.
@@ -39,3 +39,5 @@ ADMIN không mặc nhiên được thanh toán thay SV hoặc hoàn thành phi�
 ## UI và xử lý lỗi
 
 Giữ 5 bước thiết kế trong THIET_KE_XU_LY. Dùng loading, chống double click, empty state, validation tại trường và requestId để tra lỗi. 409 giữ dữ liệu nhập, refresh trạng thái và đề nghị thao tác lại; không tự retry thanh toán bằng phiên mới. 503 thử lại cùng key; 401 chuyển login và chỉ khôi phục draft không nhạy cảm. CSV/Excel import chỉ tạo bản nháp, preview dòng lỗi; giới hạn 1000 dòng, không chạy macro/formula và không phát hành ngầm.
+
+Spring SecurityFilterChain xử lý auth/CSRF/2FA; @PreAuthorize và ownership ở Service; @RestControllerAdvice cùng filter handlers giữ Error contract. Chi tiết [Spring Boot](SPRING_BOOT.md).

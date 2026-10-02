@@ -457,5 +457,77 @@
     "action": "Gửi lại",
     "expected": "409; không phiên mới",
     "status": "NOT_RUN"
+  },
+  {
+    "id": "SB-01",
+    "uc": "SPRING-BOOT",
+    "rule": "BR-01/02/17",
+    "setup": "Ứng dụng Spring Boot đích; fixture test riêng và PostgreSQL16 Testcontainers",
+    "action": "@SpringBootTest khởi động JAR/profile test với PostgreSQL 16",
+    "expected": "Context healthy, đúng DataSource/timezone, không static DBContext",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "SB-02",
+    "uc": "SPRING-BOOT",
+    "rule": "BR-01/02/17",
+    "setup": "Ứng dụng Spring Boot đích; fixture test riêng và PostgreSQL16 Testcontainers",
+    "action": "MockMvc role/ownership/2FA/sessionidle15min",
+    "expected": "Đúng401/403/404/Error JSON, trangHTMLredirect đúng",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "SB-03",
+    "uc": "SPRING-BOOT",
+    "rule": "BR-01/02/17",
+    "setup": "Ứng dụng Spring Boot đích; fixture test riêng và PostgreSQL16 Testcontainers",
+    "action": "GET session trước login; POST login thiếu CSRF/có CSRF; rotate token",
+    "expected": "Thiếu403, hợp lệ có session; token mới sau login/logout",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "SB-04",
+    "uc": "SPRING-BOOT",
+    "rule": "BR-01/02/17",
+    "setup": "Ứng dụng Spring Boot đích; fixture test riêng và PostgreSQL16 Testcontainers",
+    "action": "JdbcTemplate function và7 procedure, OUT/status lỗi; inject lỗi giữa transaction",
+    "expected": "Đúng typedDTO; DomainException rollback mọi bảng/outbox",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "SB-05",
+    "uc": "SPRING-BOOT",
+    "rule": "BR-01/02/17",
+    "setup": "Ứng dụng Spring Boot đích; fixture test riêng và PostgreSQL16 Testcontainers",
+    "action": "Flyway DB mới và DB đã baseline; migrationfailure",
+    "expected": "Không DROP dữ liệu cũ/seed prod; app dừng nếu migration lỗi",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "SB-06",
+    "uc": "SPRING-BOOT",
+    "rule": "BR-01/02/17",
+    "setup": "Ứng dụng Spring Boot đích; fixture test riêng và PostgreSQL16 Testcontainers",
+    "action": "Mở 8 màn hình Thymeleaf, form/JSON/upload/static/fragments",
+    "expected": "Binding/validation/CSRF đầy đủ; không phụ thuộc JSPmount",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "SB-07",
+    "uc": "SPRING-BOOT",
+    "rule": "BR-01/02/17",
+    "setup": "Ứng dụng Spring Boot đích; fixture test riêng và PostgreSQL16 Testcontainers",
+    "action": "Gọi IPN không session và không CSRF; sai chữký",
+    "expected": "Callback hợp lệ được adapter xử lý; sai chữ ký không ghi tiền",
+    "status": "NOT_RUN"
+  },
+  {
+    "id": "SB-08",
+    "uc": "SPRING-BOOT",
+    "rule": "BR-01/02/17",
+    "setup": "Ứng dụng Spring Boot đích; fixture test riêng và PostgreSQL16 Testcontainers",
+    "action": "Worker 2 instance, crash sau gửi; Actuator/mạng public",
+    "expected": "Lease chống nhận đôi, idempotency không ghi lại; metrics được bảo vệ",
+    "status": "NOT_RUN"
   }
 ]

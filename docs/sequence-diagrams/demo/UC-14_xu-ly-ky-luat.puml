@@ -1,7 +1,7 @@
 @startuml UC-14_xu-ly-ky-luat
 title
 UC-14 — Xử lý vi phạm kỷ luật
-REQ-012, REQ-014 • Thiết kế demo theo SRS cũ
+REQ-012, REQ-014 • Spring Boot • Thiết kế demo theo SRS cũ
 end title
 hide footbox
 autonumber
@@ -13,16 +13,17 @@ skinparam maxMessageSize 85
 skinparam sequenceParticipantBackgroundColor #EAF2F8
 skinparam sequenceGroupBackgroundColor #F8FAFC
 actor "Admin BQL" as A
-boundary "Giao diện" as UI
-control "DisciplineServlet\n<<đề xuất>>" as C
+boundary "Thymeleaf / Bootstrap" as UI
+control "DisciplineController\n<<đề xuất>>" as C
 control "DisciplineService\n<<đề xuất>>" as S
-participant "DisciplineDAO\n<<đề xuất>>" as D
+participant "DisciplineRepository\n<<đề xuất>>" as D
 database "PostgreSQL\nSP / dữ liệu" as DB
 actor "Sinh viên vi phạm" as SV
 note over C,DB
 Đã có bảng VI_PHAM và SecurityDAO.getViolations() để xem.
 Chưa có endpoint Admin xử lý, minh chứng, lịch sử quyết định và đếm theo học kỳ.
-Các Service và bước ghi là thiết kế đích; xem bảng khoảng cách triển khai.
+Đích mới: Spring Boot @RestController → @Service @Transactional → @Repository/JdbcTemplate.
+Code nền còn Servlet/DAO legacy; các bước ghi là thiết kế cần triển khai.
 end note
 ref over UI,C : Tiền điều kiện: đăng nhập, kiểm tra quyền phía server; Admin/Kế toán có 2FA
 A -> UI : Mở danh sách vi phạm chưa xử lý

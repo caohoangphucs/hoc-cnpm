@@ -14,7 +14,7 @@ Password lấy từ biến môi trường/secret; không ghi secret production t
 
 JDBC URL: `jdbc:postgresql://HOST:PORT/DB`. HikariCP đặt `escapeSyntaxCallMode=callIfNoReturn` cho `{call procedure(...)}`. `usp_DangNhap` là function trả bảng, phải dùng PreparedStatement với `SELECT * FROM usp_DangNhap(?)`; các procedure khác dùng CallableStatement, đăng ký toàn bộ OUT theo đúng thứ tự. Thiết kế này theo [tài liệu pgJDBC](https://jdbc.postgresql.org/documentation/callproc/).
 
-Connection đặt `options=-c TimeZone=Asia/Ho_Chi_Minh`; kiểm tra `SHOW timezone`. Transaction nhiều DAO phải dùng cùng Connection, autoCommit=false, commit một lần, rollback mọi lỗi; không tự COMMIT trong procedure. Đọc status OUT và SQLState, không trả stack trace/SQL ra trình duyệt.
+Connection đặt `options=-c TimeZone=Asia/Ho_Chi_Minh`; kiểm tra `SHOW timezone`. Đích Spring Boot: @Transactional tại Service và JdbcTemplate tại @Repository dùng Connection do Spring quản lý; không commit/rollback thủ công ở repository hoặc trong procedure. Xem [Spring Boot](SPRING_BOOT.md). Đọc status OUT và SQLState, không trả stack trace/SQL ra trình duyệt.
 
 ## Sai lệch hiện có cần sửa khi bắt đầu code
 
@@ -37,7 +37,7 @@ Connection đặt `options=-c TimeZone=Asia/Ho_Chi_Minh`; kiểm tra `SHOW timez
 
 ## Khởi tạo và migration
 
-Database mới nạp 01_schema → 02_seed → migration mới theo thứ tự tên. Docker entrypoint chỉ chạy trên volume mới; restart không tự nạp lại. 01_schema có DROP TABLE, chỉ dùng khởi tạo/reset DB local có chủ đích; không dùng làm migration production.
+Quy trình legacy: database mới nạp 01_schema → 02_seed → migration theo tên. Đích Spring Boot quản lý schema bằng Flyway như SPRING_BOOT.md; không nạp đồng thời bằng Docker entrypoint. Docker entrypoint chỉ chạy trên volume mới; restart không tự nạp lại. 01_schema có DROP TABLE, chỉ dùng khởi tạo/reset DB local có chủ đích; không dùng làm migration production.
 
 DB có dữ liệu: backup, kiểm tra constraint/dữ liệu hiện hữu, áp dụng từng migration mới bằng `psql -v ON_ERROR_STOP=1 --single-transaction -f FILE.sql`, ghi version/checksum. Không chạy lại 01/02. Migration thay SP dùng CREATE OR REPLACE, giữ chữ ký để DAO tương thích; đổi chữ ký phải cập nhật contract/API và kiểm tra caller. Index concurrent cần tách khỏi transaction.
 
@@ -48,3 +48,5 @@ Khi script reset được sửa, cần cảnh báo xóa dữ liệu, yêu cầu 
 02/10/2026: trên container PostgreSQL 16 tạm riêng, `01_schema.sql` và `02_seed.sql` nạp thành công với ON_ERROR_STOP; có 19 bảng, 5 view, 1 function đăng nhập và 7 procedure. Không reset DB của dự án/người dùng.
 
 Một bản sửa JDBC tạm đã build thành công và kiểm tra function đăng nhập/BCrypt cùng 7 procedure có OUT; bản sửa đã hoàn tác. Kết quả chứng minh hướng sửa kỹ thuật, **không chứng minh code hiện tại chạy đúng**. Test chức năng 8 UC, IPN, phân quyền và cạnh tranh chưa chạy.
+
+Đích thay DBContext bằng DataSource auto-configured, HikariCP và JdbcTemplate; cấu hình SPRING_DATASOURCE_* và profiles, giữ PostgreSQL16. Baseline kiểm tra JDBC trước đây chỉ là kiểm tra legacy, chưa kiểm Spring Boot.

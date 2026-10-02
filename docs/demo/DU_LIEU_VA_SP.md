@@ -52,7 +52,7 @@ Bổ sung DANG_KY_PHONG: hoc_ky_id/dot_id/approved_by, GIUONG/HOA_DON/YEU_CAU_SU
 
 ## SP: vào/ra và transaction
 
-OUT thống nhất: status text, message text, id bigint/UUID nếu tạo đối tượng; API ánh xạ SUCCESS/ALREADY_DONE về 2xx, INVALID về 422, NOT_FOUND về 404, CONFLICT/EXPIRED/INSUFFICIENT_STOCK về 409. Lỗi SQL phải rollback; không suy thành công từ việc không có exception. SP không gọi mạng.
+OUT thống nhất: status text, message text, id bigint/UUID nếu tạo đối tượng; Service @Transactional chuyển status lỗi thành DomainException để rollback; @RestControllerAdvice ánh xạ. API ánh xạ SUCCESS/ALREADY_DONE về 2xx, INVALID về 422, NOT_FOUND về 404, CONFLICT/EXPIRED/INSUFFICIENT_STOCK về 409. Lỗi SQL phải rollback; không suy thành công từ việc không có exception. SP không gọi mạng.
 
 | SP hiện có / đích | Input nghiệp vụ | Khóa và hậu điều kiện |
 |---|---|---|
@@ -73,4 +73,6 @@ OUT thống nhất: status text, message text, id bigint/UUID nếu tạo đối
 | usp_QuyDoiDiem (mới) | student,semester,drl,requestId | Khóa SV; BR-16; ledger debit + transfer/outbox nguyên tử |
 | usp_CapGiayXacNhan (mới) | student,semester,requestId | Snapshot COMPLETED; job PDF/chữ ký sau commit; chỉ trả file khi đã ký |
 
-Migration dự kiến: 03 tables/columns/indexes → 04 SP và view availability đếm giường TRONG → 05 seed demo riêng. Không đặt SQL thiết kế vào thư mục database trước khi triển khai. Mọi migration phải được chạy trên PostgreSQL 16 với schema hiện hành và kiểm tra rollback/preflight.
+Migration đích qua Flyway: baseline V1 (không DROP), V2 tables/columns/indexes, V3 SP và view availability đếm giường TRONG; seed profile demo/test riêng. Không đặt SQL thiết kế vào thư mục database trước khi triển khai. Mọi migration phải được chạy trên PostgreSQL 16 với schema hiện hành và kiểm tra rollback/preflight.
+
+@Repository dùng JdbcTemplate gọi function/procedure; @Transactional quản lý cùng Connection theo [Spring Boot](SPRING_BOOT.md). Contract dữ liệu/SP không thay khi đổi framework.

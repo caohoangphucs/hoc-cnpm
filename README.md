@@ -1,7 +1,8 @@
 # HỆ THỐNG QUẢN LÝ KÝ TÚC XÁ (KTX SMART HUB) - ĐỒ ÁN CNPM
 
 - **Production URL:** [https://cnpm.caohoangphuc.id.vn](https://cnpm.caohoangphuc.id.vn)
-- **Tech Stack:** Java 17, Jakarta EE 10 (Servlet 6.0, JSP/JSTL 3.0), PostgreSQL 16, HikariCP Connection Pool, BCrypt, Docker, Bootstrap 5.
+- **Tech Stack đích:** Spring Boot4.1.1, Java17, Thymeleaf/Bootstrap5, Spring Security, Spring JDBC/HikariCP, Flyway và PostgreSQL16. [Kiến trúc/chuyển đổi](docs/demo/SPRING_BOOT.md).
+- **Mã nguồn hiện tại:** Servlet/JSP WAR legacy; đợt này cập nhật tài liệu, chưa chuyển code.
 - **Kiến trúc:** 3 Tầng chuẩn hóa (Presentation Layer $\rightarrow$ Business/Service Layer $\rightarrow$ Data Access / Stored Procedures & Triggers).
 
 ---
@@ -14,7 +15,7 @@ UC-17, UC-22, UC-25, UC-14**. Xem [bộ demo](docs/demo/README.md),
 Mã UC trong bảng phân công cũ bên dưới là bộ mã triển khai ban đầu;
 đối chiếu bằng tên nghiệp vụ và REQ, không dùng làm mã đặc tả demo.
 
-## PHÂN CÔNG TRÁCH NHIỆM 5 THÀNH VIÊN & 8 USE CASES
+## PHÂN CÔNG LEGACY 5 THÀNH VIÊN & 8 USE CASES
 
 | STT | Thành Viên | Vai Trò & Phân Hệ | Thực Thể Phụ Trách | Use Cases & Nghiệp Vụ Chính |
 |---|---|---|---|---|
@@ -64,7 +65,7 @@ Mã UC trong bảng phân công cũ bên dưới là bộ mã triển khai ban �
    - Thêm bảng hoặc update logic chỉ tạo file SQL mới trong thư mục `/database/` (ví dụ: `/database/02_update_vnpay.sql`). Không xóa hoặc làm gián đoạn DB.
 
 4. **Tiện ích phát triển nhanh (Hot-reload UI):**
-   - Đã cấu hình `docker-compose.override.yml`: Khi sửa file JSP, CSS, JS trong `src/main/webapp`, bạn chỉ cần **bấm F5 trên trình duyệt** là thấy kết quả ngay mà không cần rebuild container.
+   - Đã cấu hình `docker-compose.override.yml`: Hướng dẫn legacy: khi sửa file JSP, CSS, JS trong `src/main/webapp`, bạn chỉ cần **bấm F5 trên trình duyệt** là thấy kết quả ngay mà không cần rebuild container.
 
 5. **CI/CD Tự Động:**
    - Khi commit/push hoặc merge PR vào `develop`, GitHub Actions tự động kích hoạt pipeline kiểm tra schema CSDL, nạp seed data mẫu và build đóng gói war tự động deploy lên `https://cnpm.caohoangphuc.id.vn`.
@@ -83,7 +84,7 @@ Mã UC trong bảng phân công cũ bên dưới là bộ mã triển khai ban �
 
 ---
 
-## HƯỚNG DẪN CHẠY LOCAL VỚI DOCKER
+## HƯỚNG DẪN DOCKER LEGACY (CHƯA CHUYỂN SPRING BOOT)
 
 ```bash
 # 1. Khởi động DB và ứng dụng

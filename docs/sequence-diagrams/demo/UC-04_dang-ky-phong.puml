@@ -1,7 +1,7 @@
 @startuml UC-04_dang-ky-phong
 title
 UC-04 — Đăng ký phòng trực tuyến
-REQ-001 • Thiết kế demo theo SRS cũ
+REQ-001 • Spring Boot • Thiết kế demo theo SRS cũ
 end title
 hide footbox
 autonumber
@@ -13,16 +13,17 @@ skinparam maxMessageSize 85
 skinparam sequenceParticipantBackgroundColor #EAF2F8
 skinparam sequenceGroupBackgroundColor #F8FAFC
 actor "Sinh viên" as A
-boundary "Giao diện" as UI
-control "StudentServlet" as C
+boundary "Thymeleaf / Bootstrap" as UI
+control "BookingController" as C
 control "BookingService\n<<đề xuất>>" as S
-participant "RoomDAO" as D
+participant "RoomRepository" as D
 database "PostgreSQL\nSP / dữ liệu" as DB
 
 note over C,DB
 Đã có: /student/rooms, /student/book-bed; usp_DatGiuong.
 SRS giữ chỗ 48 giờ; SP hiện giữ 3 ngày. Upload và audit chưa có.
-Các Service và bước ghi là thiết kế đích; xem bảng khoảng cách triển khai.
+Đích mới: Spring Boot @RestController → @Service @Transactional → @Repository/JdbcTemplate.
+Code nền còn Servlet/DAO legacy; các bước ghi là thiết kế cần triển khai.
 end note
 ref over UI,C : Tiền điều kiện: đăng nhập, kiểm tra quyền phía server; Admin/Kế toán có 2FA
 == Tra cứu và chọn giường ==

@@ -73,3 +73,18 @@ Tách fixture cho từng case, reset giữa case, không phụ thuộc thứ t�
 Lặp quyền cho cả5roles ở mọi endpoint, ownership SV A→B, CSRF,uploadmagicbytes/XSS/SQLinjection tham số, idle15min/2FA/hashlỗi, logsecret. Kiểm fault injection trước/giữa/sau commit và worker crash; DB mất kết nối trả503/rollback; gateway/IPN trễ/lặp/sai chữ ký. Thử constraint trực tiếp để chứng minh DB chặn bản ghi sai (tồn âm/unique/FK) sau migration.
 
 Nhánh thêm: duyệt hàng loạt phải có kết quả từng đơn và ưu tiên cấu hình, Excel chỉ tạo draft với lỗi dòng, warranty/review link chỉ gửi sau hoàn thành, báo cáo cổng lọc ngày theo Việt Nam và khách tách SV. Mỗi nhánh có request và dữ liệu trước/sau trong evidence.
+
+## Kiểm thử chuyển công nghệ Spring Boot
+
+| ID | Thao tác | Kết quả bắt buộc | Trạng thái |
+|---|---|---|---|
+| SB-01 | @SpringBootTest khởi động JAR/profile test với PostgreSQL 16 | Context healthy, đúng DataSource/timezone, không static DBContext | NOT_RUN |
+| SB-02 | MockMvc role/ownership/2FA/sessionidle15min | Đúng401/403/404/Error JSON, trangHTMLredirect đúng | NOT_RUN |
+| SB-03 | GET session trước login; POST login thiếu CSRF/có CSRF; rotate token | Thiếu403, hợp lệ có session; token mới sau login/logout | NOT_RUN |
+| SB-04 | JdbcTemplate function và7 procedure, OUT/status lỗi; inject lỗi giữa transaction | Đúng typedDTO; DomainException rollback mọi bảng/outbox | NOT_RUN |
+| SB-05 | Flyway DB mới và DB đã baseline; migrationfailure | Không DROP dữ liệu cũ/seed prod; app dừng nếu migration lỗi | NOT_RUN |
+| SB-06 | Mở 8 màn hình Thymeleaf, form/JSON/upload/static/fragments | Binding/validation/CSRF đầy đủ; không phụ thuộc JSPmount | NOT_RUN |
+| SB-07 | Gọi IPN không session và không CSRF; sai chữký | Callback hợp lệ được adapter xử lý; sai chữ ký không ghi tiền | NOT_RUN |
+| SB-08 | Worker 2 instance, crash sau gửi; Actuator/mạng public | Lease chống nhận đôi, idempotency không ghi lại; metrics được bảo vệ | NOT_RUN |
+
+Dùng Spring Boot Test, MockMvc/Spring Security Test và Testcontainers PostgreSQL 16. Không chạy tests H2 thay nghiệp vụ PL/pgSQL. Các test SB bổ sung 51 test nghiệp vụ, chưa có test code.

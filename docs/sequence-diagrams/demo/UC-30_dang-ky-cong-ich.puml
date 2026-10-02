@@ -1,7 +1,7 @@
 @startuml UC-30_dang-ky-cong-ich
 title
 UC-30 — Đăng ký hoạt động công ích
-REQ-017, REQ-029, REQ-038 • Thiết kế demo theo SRS cũ
+REQ-017, REQ-029, REQ-038 • Spring Boot • Thiết kế demo theo SRS cũ
 end title
 hide footbox
 autonumber
@@ -13,10 +13,10 @@ skinparam maxMessageSize 85
 skinparam sequenceParticipantBackgroundColor #EAF2F8
 skinparam sequenceGroupBackgroundColor #F8FAFC
 actor "Sinh viên" as A
-boundary "Giao diện" as UI
-control "CommunityServlet\n<<đề xuất>>" as C
+boundary "Thymeleaf / Bootstrap" as UI
+control "CommunityController\n<<đề xuất>>" as C
 control "CommunityService\n<<đề xuất>>" as S
-participant "CommunityDAO\n<<đề xuất>>" as D
+participant "CommunityRepository\n<<đề xuất>>" as D
 database "PostgreSQL\nSP / dữ liệu" as DB
 actor "Admin BQL" as BQL
 participant "Thông báo / Outbox\n<<đề xuất>>" as N
@@ -24,7 +24,8 @@ participant "Phòng CTSV" as CTSV
 note over C,DB
 Chưa có giao diện, Servlet/DAO và bảng hoạt động/điểm công ích.
 Toàn bộ luồng này là thiết kế cần triển khai; không coi seed hiện tại đã hỗ trợ.
-Các Service và bước ghi là thiết kế đích; xem bảng khoảng cách triển khai.
+Đích mới: Spring Boot @RestController → @Service @Transactional → @Repository/JdbcTemplate.
+Code nền còn Servlet/DAO legacy; các bước ghi là thiết kế cần triển khai.
 end note
 ref over UI,C : Tiền điều kiện: đăng nhập, kiểm tra quyền phía server; Admin/Kế toán có 2FA
 A -> UI : Mở danh sách hoạt động
