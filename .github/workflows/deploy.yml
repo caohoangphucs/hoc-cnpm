@@ -1,4 +1,4 @@
-name: Server CI/CD - Spring Boot and Client
+name: Backend and Frontend CI/CD
 on:
   push:
     branches: [ "**" ]
@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 jobs:
-  database-schema-seed-and-build:
+  build-test-and-deploy:
     runs-on: [self-hosted, linux, x64, cnpm-deploy]
     timeout-minutes: 30
     services:
@@ -45,9 +45,9 @@ jobs:
           psql -v ON_ERROR_STOP=1 --single-transaction -f database/01_schema.sql
           psql -v ON_ERROR_STOP=1 --single-transaction -f database/02_seed.sql
           test "$(psql -Atc "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' AND table_name NOT LIKE 'svc_%'")" = 27
-      - name: Build backend and run JUnit unit tests
+      - name: Build backend and run Java unit tests
         run: docker build --target build -t "cnpm-server-build:$CI_SHA" server
-      - name: Run API controller tests
+      - name: Run controller tests with MockMvc (no real HTTP or database)
         run: |
           docker run --rm --network "$CI_NETWORK" \
             --entrypoint java "cnpm-server-build:$CI_SHA" \
@@ -56,7 +56,7 @@ jobs:
             --select-class vn.id.caohoangphuc.cnpm.api.ApiRoutesTest \
             --select-class vn.id.caohoangphuc.cnpm.api.BookingControllerTest \
             --fail-if-no-tests
-      - name: Run Spring PostgreSQL integration tests
+      - name: Run API black-box tests with HTTP and PostgreSQL
         run: |
           docker run --rm --network "$CI_NETWORK" \
             -e DB_HOST="$CI_DB_HOST" -e DB_PORT=5432 -e DB_NAME=cnpm_db \
