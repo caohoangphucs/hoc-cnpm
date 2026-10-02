@@ -14,9 +14,10 @@ import { BookingPage } from '@/features/booking/BookingPage'
 import { RegistrationReviewPage } from '@/features/registration-review/RegistrationReviewPage'
 import { InvoiceIssuancePage } from '@/features/invoice-issuance/InvoiceIssuancePage'
 import { PaymentsPage } from '@/features/payments/PaymentsPage'
+import { MaintenancePage } from '@/features/maintenance/MaintenancePage'
 
 const WorkspacePreview = import.meta.env.DEV ? lazy(() => import('./WorkspacePreview')) : null
-const pages = { 'admin/accounts': AccountsPage, 'admin/bookings': RegistrationReviewPage, 'student/stay': BookingPage, 'accountant/invoices': InvoiceIssuancePage, 'student/invoices': PaymentsPage }
+const pages = { 'admin/accounts': AccountsPage, 'admin/bookings': RegistrationReviewPage, 'student/stay': BookingPage, 'accountant/invoices': InvoiceIssuancePage, 'student/invoices': PaymentsPage, 'technician/repairs': MaintenancePage }
 
 export default function AppRoutes() {
   return (
