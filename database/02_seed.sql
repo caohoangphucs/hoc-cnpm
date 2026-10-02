@@ -729,3 +729,29 @@ INSERT INTO DANG_KY_CONG_ICH (MaHoatDong, MaSinhVien, MaQRToken, TrangThai) VALU
 
 INSERT INTO SO_DIEM_CONG_ICH (MaSinhVien, MaHocKy, MaDangKyCongIch, SoDiemThayDoi, LoaiGiaoDich, GhiChu) VALUES
 ('21110003', 'HK1-2026', 2, 10, 'CONG_DIEM', 'Hoan thanh hoat dong Chu nhat xanh ACT-01');
+
+-- =========================================================================
+-- FIXTURES CHO TEST CASES NFR & FUNCTIONAL (KIEM_THU.md)
+-- =========================================================================
+
+-- 1. SV TEST: sv_new_nam (21110091), sv_new_nu (21110092) - Chua luu tru (phuc vu UC-04, TC-04-01, TC-04-05)
+INSERT INTO TAI_KHOAN (MaTaiKhoan, TenDangNhap, MatKhauHash, HoTen, Email, SoDienThoai, VaiTro, TrangThai) VALUES
+(91, 'sv_new_nam', 'a0EqJtq98hPqEX7fNZaFWoO./t6M.2rP9pX84qU0j490qLh8Oiqf2m', 'Nguyen Van Nam Test', 'sv_new_nam@student.ktx.edu.vn', '0911000091', 'SINHVIEN', 'ACTIVE'),
+(92, 'sv_new_nu', 'a0EqJtq98hPqEX7fNZaFWoO./t6M.2rP9pX84qU0j490qLh8Oiqf2m', 'Le Thi Nu Test', 'sv_new_nu@student.ktx.edu.vn', '0911000092', 'SINHVIEN', 'ACTIVE');
+
+INSERT INTO SINH_VIEN (MaSinhVien, MaTaiKhoan, HoTen, NgaySinh, GioiTinh, CCCD, Email, SoDienThoai, Lop, Khoa, QueQuan, MaPhongHienTai, TrangThai) VALUES
+('21110091', 91, 'Nguyen Van Nam Test', '2003-01-01', 'NAM', '079203000091', 'sv_new_nam@student.ktx.edu.vn', '0911000091', '21110CL1', 'CNTT', 'TP.HCM', NULL, 'CHO_DUYET'),
+('21110092', 92, 'Le Thi Nu Test', '2003-02-02', 'NU', '079203000092', 'sv_new_nu@student.ktx.edu.vn', '0911000092', '21110CL2', 'Kinh te', 'Ha Noi', NULL, 'CHO_DUYET');
+
+-- 2. FIXTURE UC-14 (TC-14-01, TC-14-02): SV co 3 vi pham chua xu ly de test canh bao co >=3
+INSERT INTO VI_PHAM (MaViPham, MaSinhVien, NoiDungViPham, MucDo, HinhThucXuLy, NgayViPham, TrangThai) VALUES
+(16, '21110001', 'Su dung bep dien sai quy dinh trong phong', 'MEDIUM', NULL, '2026-10-01 19:30:00', 'CHUA_XU_LY'),
+(17, '21110001', 'Gay on ao mat trat tu sau 22h00', 'LOW', NULL, '2026-10-02 22:30:00', 'CHUA_XU_LY');
+
+-- 3. FIXTURE UC-30 (TC-30-06): SV co 57 diem cong ich de test quy doi sang DRL (50 diem -> 5 DRL)
+INSERT INTO SO_DIEM_CONG_ICH (MaSinhVien, MaHocKy, SoDiemThayDoi, LoaiGiaoDich, GhiChu) VALUES
+('21110001', 'HK1-2026', 57, 'CONG_DIEM', 'Tich luy diem hoat dong tinh nguyen he va phong trao');
+
+-- 4. FIXTURE UC-22 (TC-22-02): Vat tu co ton kho = 1 de test canh tranh ton kho
+INSERT INTO VAT_TU (MaVatTu, TenVatTu, DonViTinh, SoLuongTon, DonGiaNhap, GhiChu) VALUES
+('VT-AP-TON-1', 'Aptomat 16A Schneider Test', 'Cai', 1, 85000, 'Fixture test ton kho 1');
