@@ -11,6 +11,7 @@ public class CommunityController {
     private final CommunityService community;
     private final ApiSupport api;
 
+    /** Connects activity routes to the service and shared HTTP request handling. */
     public CommunityController(CommunityService community, ApiSupport api) {
         this.community = community;
         this.api = api;
@@ -19,7 +20,7 @@ public class CommunityController {
     /** Returns a page of activities from the community service. */
     public ServerResponse activities(ServerRequest request) throws Exception {
         return api.handle(request, (actor, context) -> community.activities(actor,
-                request.param("page").map(Integer::parseInt).orElse(1),
-                request.param("size").map(Integer::parseInt).orElse(20)));
+                api.integerParameter(request, "page", 1),
+                api.integerParameter(request, "size", 20)));
     }
 }

@@ -32,10 +32,12 @@ public class CommunityRepository {
 
   private final JdbcTemplate jdbc;
 
+  /** Khởi tạo repository cho hoạt động, đăng ký và sổ điểm công ích. */
   public CommunityRepository(JdbcTemplate jdbc) {
     this.jdbc = jdbc;
   }
 
+  /** Ánh xạ một dòng hoạt động và học kỳ sang mô hình service. */
   private Activity activityRow(java.sql.ResultSet r) throws java.sql.SQLException {
     return new Activity(
         r.getString("mahoatdong"),
@@ -56,6 +58,7 @@ public class CommunityRepository {
       SELECT a.*,h.public_id semester_id FROM hoat_dong a JOIN hoc_ky h USING(mahocky)
       """;
 
+  /** Liệt kê các hoạt động đang mở theo trang và thời gian bắt đầu. */
   public List<Activity> activities(int page, int size) {
     return jdbc.query(
         activitySelect
@@ -65,12 +68,14 @@ public class CommunityRepository {
         (page - 1) * size);
   }
 
+  /** Tìm mã học kỳ nội bộ từ mã công khai hoặc báo không tìm thấy. */
   public String semesterCode(long id) {
     var rows = jdbc.queryForList("SELECT mahocky FROM hoc_ky WHERE public_id=?", String.class, id);
     if (rows.isEmpty()) throw vn.id.caohoangphuc.cnpm.service.ServiceException.notFound("Semester");
     return rows.get(0);
   }
 
+  /** Tạo hoạt động mới trong học kỳ và trả lại dòng vừa được tạo. */
   public Activity create(
       long semesterId, String title, Instant start, Instant end, int capacity, int points) {
     String code = semesterCode(semesterId);
@@ -96,12 +101,14 @@ public class CommunityRepository {
     return activity(publicId, false);
   }
 
+  /** Sinh các byte khó đoán dùng cho mã hoạt động nội bộ. */
   private byte[] random(int size) {
     byte[] result = new byte[size];
     new java.security.SecureRandom().nextBytes(result);
     return result;
   }
 
+  /** Đọc hoạt động theo mã nội bộ; tùy chọn khóa dòng để cập nhật. */
   public Activity activityByCode(String code, boolean lock) {
     var rows =
         jdbc.query(
@@ -111,6 +118,7 @@ public class CommunityRepository {
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Đọc hoạt động theo mã công khai; tùy chọn khóa dòng để cập nhật. */
   public Activity activity(long id, boolean lock) {
     var rows =
         jdbc.query(
@@ -120,6 +128,7 @@ public class CommunityRepository {
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Đếm các đăng ký đang hiệu lực có thời gian trùng với hoạt động mới. */
   public int overlaps(String student, Instant start, Instant end) {
     return jdbc.queryForObject(
         """
@@ -133,6 +142,7 @@ public class CommunityRepository {
         local(start));
   }
 
+  /** Kiểm tra sinh viên đã đăng ký hoạt động này và chưa hủy hay chưa. */
   public boolean registered(String student, String activity) {
     return !jdbc.queryForList(
             "SELECT madangkycongich FROM dang_ky_cong_ich WHERE masinhvien=? AND mahoatdong=? AND"
@@ -143,6 +153,7 @@ public class CommunityRepository {
         .isEmpty();
   }
 
+  /** Đọc một đăng ký theo ID; có thể khóa dòng trước khi đổi trạng thái. */
   public Registration registration(int id, boolean lock) {
     var rows =
         jdbc.query(
@@ -159,6 +170,7 @@ public class CommunityRepository {
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Tìm đăng ký qua hash QR và tùy chọn khóa trước khi điểm danh. */
   public Registration registrationByToken(String hash, boolean lock) {
     var rows =
         jdbc.query(
@@ -175,10 +187,12 @@ public class CommunityRepository {
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Khóa sinh viên để tuần tự hóa đăng ký, hủy và cộng điểm. */
   public void lockStudent(String id) {
     jdbc.queryForList("SELECT masinhvien FROM sinh_vien WHERE masinhvien=? FOR UPDATE", id);
   }
 
+  /** Tạo đăng ký, lưu hash QR và tăng số chỗ đã đăng ký của hoạt động. */
   public int register(String activity, String student, String token) {
     int id =
         jdbc.queryForObject(
@@ -193,6 +207,7 @@ public class CommunityRepository {
     return id;
   }
 
+  /** Cập nhật trạng thái đăng ký và tăng version của dòng. */
   public void state(int id, String state) {
     jdbc.update(
         "UPDATE dang_ky_cong_ich SET trangthai=?,version=version+1 WHERE madangkycongich=?",
@@ -200,6 +215,7 @@ public class CommunityRepository {
         id);
   }
 
+  /** Điều chỉnh số chỗ đã đăng ký và tăng version hoạt động. */
   public void capacity(String activity, int delta) {
     jdbc.update(
         "UPDATE hoat_dong SET dadangky=dadangky+?,version=version+1 WHERE mahoatdong=?",
@@ -207,6 +223,7 @@ public class CommunityRepository {
         activity);
   }
 
+  /** Hoàn tất đăng ký và cộng điểm đúng một lần nhờ khóa duy nhất theo đăng ký. */
   public int confirm(int id, int admin, Instant at) {
     jdbc.update(
         "UPDATE dang_ky_cong_ich SET"
@@ -225,6 +242,7 @@ public class CommunityRepository {
         id);
   }
 
+  /** Đọc sổ biến động điểm theo sinh viên và học kỳ. */
   public List<Ledger> ledger(String student, String semester) {
     return jdbc.query(
         "SELECT magiaodich,masinhvien,mahocky,sodiemthaydoi,loaigiaodich,thoigian FROM"
@@ -241,6 +259,7 @@ public class CommunityRepository {
         semester);
   }
 
+  /** Tính tổng điểm rèn luyện đã nhận hoặc đang chờ trong học kỳ. */
   public int conversionDrl(String student, String semester) {
     return jdbc.queryForObject(
         "SELECT coalesce(sum(diemrenluyennhan),0) FROM quy_doi_diem q JOIN hoc_ky h USING(mahocky)"
@@ -250,6 +269,7 @@ public class CommunityRepository {
         Long.parseLong(semester));
   }
 
+  /** Tạo yêu cầu quy đổi trạng thái chờ và liên kết mã giao dịch service. */
   public int createConversion(UUID transfer, String student, String semester, int spent, int drl) {
     int id =
         jdbc.queryForObject(
@@ -266,6 +286,7 @@ public class CommunityRepository {
     return id;
   }
 
+  /** Ghi bút toán trừ điểm công ích cho một yêu cầu quy đổi. */
   public void debit(String student, String semester, int points, int conversion) {
     jdbc.update(
         "INSERT INTO so_diem_cong_ich(masinhvien,mahocky,sodiemthaydoi,loaigiaodich,ghichu) SELECT"
@@ -276,6 +297,7 @@ public class CommunityRepository {
         Long.parseLong(semester));
   }
 
+  /** Lưu bản nháp chứng nhận và hash token xác minh. */
   public void certificate(
       UUID id, int account, String student, String semester, String snapshot, String tokenHash) {
     jdbc.update(
@@ -289,6 +311,7 @@ public class CommunityRepository {
         tokenHash);
   }
 
+  /** Tạo JSON snapshot các hoạt động hoàn thành tại thời điểm yêu cầu chứng nhận. */
   public String completedSnapshot(String student, String semester) {
     return jdbc.queryForObject(
         """
@@ -302,13 +325,12 @@ WHERE d.masinhvien=? AND h.public_id=? AND d.trangthai='COMPLETED'
         Long.parseLong(semester));
   }
 
+  /** Đọc mã học kỳ nội bộ từ mã công khai của học kỳ. */
   public String studentSemester(String student, long semester) {
-    var rows =
-        jdbc.queryForList("SELECT mahocky FROM hoc_ky WHERE public_id=?", String.class, semester);
-    if (rows.isEmpty()) throw vn.id.caohoangphuc.cnpm.service.ServiceException.notFound("Semester");
-    return rows.get(0);
+    return semesterCode(semester);
   }
 
+  /** Chuyển thời điểm UTC sang giờ địa phương dùng trong các cột timestamp cũ. */
   private LocalDateTime local(Instant value) {
     return LocalDateTime.ofInstant(value, ServiceContext.ZONE);
   }

@@ -13,6 +13,7 @@ public class InvoiceController {
     private final InvoiceService invoices;
     private final ApiSupport api;
 
+    /** Connects invoice routes to the service and shared HTTP request handling. */
     public InvoiceController(InvoiceService invoices, ApiSupport api) {
         this.invoices = invoices;
         this.api = api;

@@ -26,6 +26,7 @@ public class ApiRoutes {
     public static final String VIOLATIONS = "/api/v1/violations";
     public static final String ACTIVITIES = "/api/v1/activities";
 
+    /** Maps each declared path and HTTP method to its controller handler. */
     @Bean
     RouterFunction<ServerResponse> apiRouter(
             AuthController auth,

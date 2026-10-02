@@ -34,14 +34,17 @@ public class GateRepository {
 
   private final JdbcTemplate jdbc;
 
+  /** Khởi tạo repository cho thẻ, lượt ra vào và khách thăm. */
   public GateRepository(JdbcTemplate jdbc) {
     this.jdbc = jdbc;
   }
 
+  /** Băm token thẻ trước khi tra cứu để không lưu token thô trong cơ sở dữ liệu. */
   public String hashCard(String token) {
     return vn.id.caohoangphuc.cnpm.service.ServiceContext.hash(token);
   }
 
+  /** Tìm và khóa thẻ cùng thông tin sinh viên, lưu trú và hiệu lực. */
   public Card card(String hash) {
     var rows =
         jdbc.query(
@@ -64,6 +67,7 @@ public class GateRepository {
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Đọc sự kiện cổng theo UUID; có thể khóa trước khi hoàn tất xử lý. */
   public Entry event(UUID id, boolean lock) {
     var rows =
         jdbc.query(
@@ -86,6 +90,7 @@ LEFT JOIN vi_pham v ON v.maravao=r.maravao WHERE e.event_id=?
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Ghi một lượt ra vào và trả về mã lượt mới. */
   public int entry(String student, String type, String guard, String note, LocalDateTime time) {
     return jdbc.queryForObject(
         "INSERT INTO ra_vao(masinhvien,loaisukien,baoveghinhan,ghichu,thoigian) VALUES(?,?,?,?,?)"
@@ -98,6 +103,7 @@ LEFT JOIN vi_pham v ON v.maravao=r.maravao WHERE e.event_id=?
         time);
   }
 
+  /** Tạo vi phạm mức thấp khi sinh viên về trễ. */
   public int lateViolation(String student, int entryId, String note, Instant at) {
     return jdbc.queryForObject(
         "INSERT INTO vi_pham(masinhvien,maravao,noidungvipham,mucdo,ngayvipham)"
@@ -109,6 +115,7 @@ LEFT JOIN vi_pham v ON v.maravao=r.maravao WHERE e.event_id=?
         java.sql.Timestamp.from(at));
   }
 
+  /** Lưu dấu vết xử lý sự kiện thiết bị và trạng thái barrier ban đầu. */
   public void gateEvent(
       UUID eventId, int entryId, String device, String hash, int actor, String status) {
     jdbc.update(
@@ -123,10 +130,12 @@ LEFT JOIN vi_pham v ON v.maravao=r.maravao WHERE e.event_id=?
         status);
   }
 
+  /** Cập nhật trạng thái barrier đã nhận cho sự kiện cổng. */
   public void barrier(UUID id, String status) {
     jdbc.update("UPDATE svc_gate_event SET barrier_status=? WHERE event_id=?", status, id);
   }
 
+  /** Đọc khách thăm; khóa dòng nếu service đang duyệt hoặc cập nhật lượt thăm. */
   public Visitor visitor(long id, boolean lock) {
     var rows =
         jdbc.query(
@@ -145,6 +154,7 @@ LEFT JOIN vi_pham v ON v.maravao=r.maravao WHERE e.event_id=?
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Kiểm tra tài khoản hiện tại có sở hữu hồ sơ sinh viên được nêu hay không. */
   public boolean ownsStudent(int accountId, String studentId) {
     return !jdbc.queryForList(
             "SELECT masinhvien FROM sinh_vien WHERE mataikhoan=? AND masinhvien=?",
@@ -154,6 +164,7 @@ LEFT JOIN vi_pham v ON v.maravao=r.maravao WHERE e.event_id=?
         .isEmpty();
   }
 
+  /** Tìm tài khoản chủ hồ sơ; trả về 0 khi không có sinh viên tương ứng. */
   public int studentAccount(String studentId) {
     var rows =
         jdbc.queryForList(
@@ -161,6 +172,7 @@ LEFT JOIN vi_pham v ON v.maravao=r.maravao WHERE e.event_id=?
     return rows.isEmpty() ? 0 : rows.get(0);
   }
 
+  /** Lưu khách thăm với thông tin nhận dạng đã mã hóa và thời hạn được duyệt. */
   public long visitor(String host, String name, String identity, Instant from, Instant to) {
     return jdbc.queryForObject(
         "INSERT INTO"
@@ -174,6 +186,7 @@ LEFT JOIN vi_pham v ON v.maravao=r.maravao WHERE e.event_id=?
         java.sql.Timestamp.from(to));
   }
 
+  /** Cập nhật trạng thái, người duyệt và version của yêu cầu thăm. */
   public void visitorState(long id, String state, int approver) {
     jdbc.update(
         "UPDATE svc_visitor SET state=?,approved_by=?,version=version+1 WHERE id=?",
@@ -182,6 +195,7 @@ LEFT JOIN vi_pham v ON v.maravao=r.maravao WHERE e.event_id=?
         id);
   }
 
+  /** Ghi nhận check-in hoặc check-out đúng một lần cho khách thăm. */
   public void visitorEntry(long id, boolean entering, Instant at) {
     String sql =
         entering

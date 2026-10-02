@@ -11,7 +11,12 @@ import org.springframework.transaction.annotation.Transactional;
 @NoRepositoryBean
 @Transactional(readOnly = true, transactionManager = "jpaReadTransactionManager")
 public interface ReadRepository<T, ID> extends Repository<T, ID> {
+    /** Finds one record by its primary key. */
     Optional<T> findById(ID id);
+
+    /** Reads a bounded page of records. */
     Page<T> findAll(Pageable pageable);
+
+    /** Counts records without loading their contents. */
     long count();
 }

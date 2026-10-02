@@ -6,6 +6,7 @@ import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
 public class UniqueElementsValidator implements ConstraintValidator<UniqueElements, Collection<?>> {
+    /** Accepts null and rejects collections containing duplicate values. */
     @Override public boolean isValid(Collection<?> value, ConstraintValidatorContext context) {
         return value == null || new HashSet<>(value).size() == value.size();
     }

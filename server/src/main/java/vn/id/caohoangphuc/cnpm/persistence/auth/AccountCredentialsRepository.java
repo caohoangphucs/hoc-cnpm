@@ -6,6 +6,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public class AccountCredentialsRepository {
     private final JdbcTemplate jdbc;
 
+    /** Khởi tạo repository dùng truy vấn JDBC có tham số. */
     public AccountCredentialsRepository(JdbcTemplate jdbc) { this.jdbc = jdbc; }
 
     /** Returns the encrypted authenticator secret for an account, if one is enrolled. */

@@ -21,6 +21,7 @@ public class TotpService {
     private static final SecureRandom RANDOM = new SecureRandom();
     private final SecretKeySpec encryptionKey;
 
+    /** Derives the AES key used to protect authenticator secrets stored in the database. */
     public TotpService(@Value("${security.totp-encryption-key:local-development-only-change-me}") String key) {
         if (key.length() < 32) {
             throw new IllegalArgumentException("TOTP_ENCRYPTION_KEY must contain at least 32 characters");
@@ -49,10 +50,14 @@ public class TotpService {
 
     /** Checks the current code and the adjacent time step to allow small clock differences. */
     public boolean matches(String secret, String code, long epochSeconds) {
-        if (code == null || !code.matches("[0-9]{6}")) return false;
+        if (code == null || !code.matches("[0-9]{6}")) {
+            return false;
+        }
         long counter = epochSeconds / PERIOD_SECONDS;
         for (long offset = -1; offset <= 1; offset++) {
-            if (code.equals(codeFor(secret, counter + offset))) return true;
+            if (code.equals(codeFor(secret, counter + offset))) {
+                return true;
+            }
         }
         return false;
     }
@@ -89,6 +94,7 @@ public class TotpService {
         }
     }
 
+    /** Calculates one six-digit HOTP value for the supplied 30-second counter. */
     private static String codeFor(String secret, long counter) {
         try {
             Mac mac = Mac.getInstance("HmacSHA1");
@@ -103,6 +109,7 @@ public class TotpService {
         }
     }
 
+    /** Encodes random secret bytes using the alphabet expected by authenticator apps. */
     private static String encodeBase32(byte[] bytes) {
         StringBuilder result = new StringBuilder();
         int buffer = 0;
@@ -118,6 +125,7 @@ public class TotpService {
         return result.toString();
     }
 
+    /** Decodes an authenticator secret before calculating its time-based code. */
     private static byte[] decodeBase32(String value) {
         byte[] result = new byte[value.length() * 5 / 8];
         int buffer = 0;
@@ -125,7 +133,9 @@ public class TotpService {
         int index = 0;
         for (char character : value.toUpperCase().toCharArray()) {
             int digit = BASE32.indexOf(character);
-            if (digit < 0) throw new IllegalArgumentException("Invalid Base32 secret");
+            if (digit < 0) {
+                throw new IllegalArgumentException("Invalid Base32 secret");
+            }
             buffer = (buffer << 5) | digit;
             bits += 5;
             if (bits >= 8) result[index++] = (byte) (buffer >> (bits -= 8));
@@ -133,6 +143,7 @@ public class TotpService {
         return result;
     }
 
+    /** Escapes an issuer or account label for the authenticator provisioning URI. */
     private static String urlEncode(String value) {
         return java.net.URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
     }

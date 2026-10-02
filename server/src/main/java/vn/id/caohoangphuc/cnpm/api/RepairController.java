@@ -12,6 +12,7 @@ public class RepairController {
     private final RepairService repairs;
     private final ApiSupport api;
 
+    /** Connects repair routes to the service and shared HTTP request handling. */
     public RepairController(RepairService repairs, ApiSupport api) {
         this.repairs = repairs;
         this.api = api;
@@ -26,7 +27,7 @@ public class RepairController {
     /** Lists repairs visible to the authenticated student, technician, or administrator. */
     public ServerResponse list(ServerRequest request) throws Exception {
         return api.handle(request, (actor, context) -> repairs.list(actor,
-                request.param("page").map(Integer::parseInt).orElse(1),
-                request.param("size").map(Integer::parseInt).orElse(20)));
+                api.integerParameter(request, "page", 1),
+                api.integerParameter(request, "size", 20)));
     }
 }

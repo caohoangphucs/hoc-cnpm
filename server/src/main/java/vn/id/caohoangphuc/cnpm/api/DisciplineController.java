@@ -11,6 +11,7 @@ public class DisciplineController {
     private final DisciplineService discipline;
     private final ApiSupport api;
 
+    /** Connects discipline routes to the service and shared HTTP request handling. */
     public DisciplineController(DisciplineService discipline, ApiSupport api) {
         this.discipline = discipline;
         this.api = api;
@@ -19,7 +20,7 @@ public class DisciplineController {
     /** Lists pending violations visible to an administrator. */
     public ServerResponse pending(ServerRequest request) throws Exception {
         return api.handle(request, (actor, context) -> discipline.pending(actor,
-                request.param("page").map(Integer::parseInt).orElse(1),
-                request.param("size").map(Integer::parseInt).orElse(20)));
+                api.integerParameter(request, "page", 1),
+                api.integerParameter(request, "size", 20)));
     }
 }

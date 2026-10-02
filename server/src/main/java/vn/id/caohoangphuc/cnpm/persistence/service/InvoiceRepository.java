@@ -22,15 +22,18 @@ public class InvoiceRepository {
 
   private final JdbcTemplate jdbc;
 
+  /** Khởi tạo repository đọc nguồn tính và phát hành hóa đơn. */
   public InvoiceRepository(JdbcTemplate jdbc) {
     this.jdbc = jdbc;
   }
 
+  /** Kiểm tra phòng còn tồn tại trước khi tạo bản nháp hoặc phát hành hóa đơn. */
   public boolean roomExists(String roomId) {
     return !jdbc.queryForList("SELECT maphong FROM phong WHERE maphong=?", String.class, roomId)
         .isEmpty();
   }
 
+  /** Đọc chỉ số điện nước của phòng trong tháng được yêu cầu. */
   public Reading reading(String roomId, String month) {
     var rows =
         jdbc.query(
@@ -42,6 +45,7 @@ public class InvoiceRepository {
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Đọc đơn giá điện, nước và phòng đang có hiệu lực trong tháng. */
   public Price prices(String roomId, String month) {
     LocalDate first = LocalDate.parse(month + "-01");
     var electric =
@@ -72,6 +76,7 @@ public class InvoiceRepository {
     return new Price(electric.get(0), water.get(0), roomPrice);
   }
 
+  /** Đọc người ở và chia giá phòng, đồng thời lấy tỷ lệ giảm của từng người. */
   public List<Occupant> occupants(String roomId, String month, BigDecimal fullRoomPrice) {
     LocalDate first = LocalDate.parse(month + "-01");
     var students =
@@ -108,6 +113,7 @@ AND cs.trangthai='DANG_AP_DUNG'
     return result;
   }
 
+  /** Đọc các khoản phí bổ sung của phòng trong tháng. */
   public List<Extra> extras(String roomId, String month) {
     return jdbc.query(
         "SELECT name,amount FROM svc_room_extra WHERE room_id=? AND month=? ORDER BY id",
@@ -116,6 +122,7 @@ AND cs.trangthai='DANG_AP_DUNG'
         month);
   }
 
+  /** Kiểm tra phòng đã có hóa đơn cho tháng này hay chưa. */
   public boolean issued(String roomId, String month) {
     return !jdbc.queryForList(
             "SELECT mahoadon FROM hoa_don WHERE maphong=? AND kythang=?",
@@ -125,6 +132,7 @@ AND cs.trangthai='DANG_AP_DUNG'
         .isEmpty();
   }
 
+  /** Lưu snapshot đầu vào của bản nháp để kiểm tra khi phát hành sau đó. */
   public void saveDraft(UUID id, int actor, String month, String rooms, String hash) {
     jdbc.update(
         "INSERT INTO svc_invoice_draft(id,actor_id,month,inputs,input_hash)"
@@ -136,6 +144,7 @@ AND cs.trangthai='DANG_AP_DUNG'
         hash);
   }
 
+  /** Đọc bản nháp thuộc đúng actor và khóa nó nếu sắp được phát hành. */
   public Draft draft(UUID id, int actor, boolean lock) {
     var rows =
         jdbc.query(
@@ -154,6 +163,7 @@ AND cs.trangthai='DANG_AP_DUNG'
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Tạo hóa đơn và toàn bộ dòng chi tiết từ snapshot đã được service kiểm tra. */
   public Invoice issue(
       String roomId,
       String month,
@@ -217,6 +227,7 @@ VALUES(?,?,?,?,?,?,?,?,?,'CHUA_TT') RETURNING mahoadon
     return new Invoice(id, roomId, month, total, BigDecimal.ZERO, "CHUA_TT");
   }
 
+  /** Lưu hash và dữ liệu snapshot dùng để đối chiếu hóa đơn đã phát hành. */
   public void snapshot(int invoiceId, String hash, String input) {
     jdbc.update(
         "INSERT INTO svc_invoice_snapshot(invoice_id,input_hash,inputs) VALUES(?,?,?::jsonb)",
@@ -225,11 +236,13 @@ VALUES(?,?,?,?,?,?,?,?,?,'CHUA_TT') RETURNING mahoadon
         input);
   }
 
+  /** Liệt kê mã hóa đơn của phòng trong tháng được phát hành. */
   public List<Integer> invoiceIds(String roomId, String month) {
     return jdbc.queryForList(
         "SELECT mahoadon FROM hoa_don WHERE maphong=? AND kythang=?", Integer.class, roomId, month);
   }
 
+  /** Khóa phòng để ngăn hai lần phát hành hóa đơn đồng thời. */
   public void lockRoom(String roomId) {
     jdbc.queryForList("SELECT maphong FROM phong WHERE maphong=? FOR UPDATE", roomId);
   }

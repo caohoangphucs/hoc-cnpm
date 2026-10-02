@@ -8,7 +8,12 @@ import jakarta.validation.Payload;
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = UniqueElementsValidator.class)
 public @interface UniqueElements {
+    /** Returns the validation message shown when an input contains duplicates. */
     String message() default "Elements must be unique";
+
+    /** Returns validation groups supported by Jakarta Bean Validation. */
     Class<?>[] groups() default {};
+
+    /** Returns payload types supported by Jakarta Bean Validation. */
     Class<? extends Payload>[] payload() default {};
 }

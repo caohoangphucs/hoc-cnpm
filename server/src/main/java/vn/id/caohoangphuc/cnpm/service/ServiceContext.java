@@ -29,6 +29,7 @@ public class ServiceContext {
   private final Clock clock;
   private final TransactionTemplate transaction;
 
+  /** Stores shared validators, JSON, clock and transaction management for UC services. */
   public ServiceContext(
       ServiceRepository repository,
       Validator validator,

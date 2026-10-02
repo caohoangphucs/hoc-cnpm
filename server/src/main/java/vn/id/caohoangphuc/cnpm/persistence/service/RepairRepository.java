@@ -23,10 +23,12 @@ public class RepairRepository {
 
   private final JdbcTemplate jdbc;
 
+  /** Khởi tạo repository cho yêu cầu sửa chữa, phân công và xuất vật tư. */
   public RepairRepository(JdbcTemplate jdbc) {
     this.jdbc = jdbc;
   }
 
+  /** Ánh xạ dòng yêu cầu sửa chữa từ truy vấn SQL sang mô hình service. */
   private Repair map(java.sql.ResultSet r) throws java.sql.SQLException {
     return new Repair(
         r.getInt("mayeucau"),
@@ -38,6 +40,7 @@ public class RepairRepository {
         r.getLong("version"));
   }
 
+  /** Liệt kê yêu cầu theo vai trò; kỹ thuật viên chỉ thấy việc được phân công. */
   public List<Repair> list(String role, int actor, int page, int size) {
     String sql =
         role.equals("KYTHUAT")
@@ -50,6 +53,7 @@ public class RepairRepository {
         : jdbc.query(sql, (r, n) -> map(r), size, (page - 1) * size);
   }
 
+  /** Đọc yêu cầu sửa chữa theo ID và tùy chọn khóa trước khi cập nhật. */
   public Repair repair(int id, boolean lock) {
     var rows =
         jdbc.query(
@@ -59,6 +63,7 @@ public class RepairRepository {
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Kiểm tra tài khoản có vai trò kỹ thuật viên và đang hoạt động. */
   public int technicianRole(int id) {
     return jdbc.queryForObject(
         "SELECT count(*) FROM tai_khoan WHERE mataikhoan=? AND vaitro='KYTHUAT' AND"
@@ -67,6 +72,7 @@ public class RepairRepository {
         id);
   }
 
+  /** Đọc lịch phân công và thời hạn bảo hành; có thể khóa dòng phân công. */
   public Assignment assignment(int id, boolean lock) {
     var rows =
         jdbc.query(
@@ -82,6 +88,7 @@ public class RepairRepository {
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Phân công kỹ thuật viên và chuyển yêu cầu sang trạng thái đang xử lý. */
   public void assign(int id, int technician, Instant when) {
     jdbc.update(
         "INSERT INTO svc_repair_assignment(repair_id,technician_id,scheduled_at) VALUES(?,?,?)",
@@ -93,6 +100,7 @@ public class RepairRepository {
         id);
   }
 
+  /** Cập nhật lịch hẹn, bảo hành và ghi chú kỹ thuật. */
   public void schedule(int id, Instant when, LocalDate warranty, String note) {
     jdbc.update(
         "UPDATE svc_repair_assignment SET scheduled_at=?,warranty_until=? WHERE repair_id=?",
@@ -103,6 +111,7 @@ public class RepairRepository {
         "UPDATE yeu_cau_sua_chua SET version=version+1,ghichukythuat=? WHERE mayeucau=?", note, id);
   }
 
+  /** Đọc tồn kho một vật tư và tùy chọn khóa dòng khi xuất kho. */
   public Supply supply(String id, boolean lock) {
     var rows =
         jdbc.query(
@@ -112,6 +121,7 @@ public class RepairRepository {
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Lưu yêu cầu mua vật tư; request ID chống tạo yêu cầu trùng khi retry. */
   public void purchase(int repair, String supply, int quantity, java.util.UUID request) {
     jdbc.update(
         "INSERT INTO svc_purchase_request(repair_id,supply_id,quantity,request_id) VALUES(?,?,?,?)"
@@ -122,6 +132,7 @@ public class RepairRepository {
         request);
   }
 
+  /** Trừ kho, ghi phiếu xuất và hoàn tất yêu cầu trong transaction hiện tại. */
   public void complete(
       int id, List<Line> supplies, int actor, String note, LocalDate warranty, Instant now) {
     for (Line line : supplies) {
@@ -148,6 +159,7 @@ public class RepairRepository {
         "UPDATE svc_repair_assignment SET warranty_until=? WHERE repair_id=?", warranty, id);
   }
 
+  /** Ghi lịch sử chuyển trạng thái để truy vết xử lý sửa chữa. */
   public void history(int id, int actor, String from, String to, String note, Instant at) {
     jdbc.update(
         "INSERT INTO svc_repair_history(repair_id,actor_id,from_state,to_state,note,created_at)"
@@ -160,6 +172,7 @@ public class RepairRepository {
         java.sql.Timestamp.from(at));
   }
 
+  /** Tạo yêu cầu gắn với phòng hiện tại của sinh viên và lưu hồ sơ file. */
   public int create(
       String studentId,
       String title,
@@ -183,6 +196,7 @@ public class RepairRepository {
     return id;
   }
 
+  /** Liệt kê các yêu cầu sửa chữa của sinh viên theo thời gian tạo. */
   public List<Repair> listForStudent(String studentId, int page, int size) {
     return jdbc.query(
         "SELECT * FROM yeu_cau_sua_chua WHERE masinhvien=? ORDER BY ngaytao DESC LIMIT ? OFFSET ?",
@@ -192,6 +206,7 @@ public class RepairRepository {
         (page - 1) * size);
   }
 
+  /** Liệt kê các yêu cầu đang xử lý đã được phân công. */
   public List<Repair> assigned() {
     return jdbc.query(
         "SELECT r.* FROM yeu_cau_sua_chua r JOIN svc_repair_assignment a ON a.repair_id=r.mayeucau"

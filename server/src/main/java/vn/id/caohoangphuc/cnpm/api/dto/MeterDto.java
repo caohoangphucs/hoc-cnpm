@@ -23,6 +23,7 @@ public record MeterDto(
     @NotNull @DecimalMin("0") @DecimalMax("999999999999999") Long newWater
 ) {
 
+    /** Ensures neither new utility meter reading is below its previous reading. */
     @AssertTrue(message = "New readings must be greater than or equal to old readings")
     @JsonIgnore
     public boolean isNonDecreasing() {

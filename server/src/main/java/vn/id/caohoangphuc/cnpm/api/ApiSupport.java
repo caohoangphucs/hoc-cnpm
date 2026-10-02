@@ -26,8 +26,14 @@ public class ApiSupport {
 
     private final AccountCredentialsRepository accounts;
 
+    /** Supplies account lookup for authenticated controller requests. */
     public ApiSupport(AccountCredentialsRepository accounts) {
         this.accounts = accounts;
+    }
+
+    /** Reads an integer query parameter or returns its default when it is absent. */
+    public int integerParameter(ServerRequest request, String name, int defaultValue) {
+        return request.param(name).map(Integer::parseInt).orElse(defaultValue);
     }
 
     /** Runs one controller action and returns the API error contract for expected failures. */
@@ -71,11 +77,13 @@ public class ApiSupport {
         return new RequestContext(requestId, key == null ? UUID.randomUUID() : UUID.fromString(key));
     }
 
+    /** Reads a supplied request ID or generates one for this request. */
     private UUID requestId(ServerRequest request) {
         String value = request.headers().firstHeader("X-Request-Id");
         return value == null ? UUID.randomUUID() : UUID.fromString(value);
     }
 
+    /** Builds the common JSON error response returned by all UC controllers. */
     private ServerResponse error(int status, String code, String message, UUID requestId) {
         return ServerResponse.status(status).contentType(MediaType.APPLICATION_JSON)
                 .body(new ErrorDto(code, message, requestId, Map.of()));

@@ -31,10 +31,12 @@ public class DisciplineRepository {
 
   private final JdbcTemplate jdbc;
 
+  /** Khởi tạo repository cho quyết định kỷ luật và khiếu nại. */
   public DisciplineRepository(JdbcTemplate jdbc) {
     this.jdbc = jdbc;
   }
 
+  /** Ánh xạ dữ liệu vi phạm cùng thống kê học kỳ sang mô hình service. */
   private Violation map(java.sql.ResultSet r) throws java.sql.SQLException {
     return new Violation(
         r.getInt("mavipham"),
@@ -48,15 +50,18 @@ public class DisciplineRepository {
         r.getBoolean("evidence_required"));
   }
 
+  /** Khóa sinh viên trước khi ghi quyết định hoặc xử lý khiếu nại. */
   public void lockStudent(String id) {
     jdbc.queryForList("SELECT masinhvien FROM sinh_vien WHERE masinhvien=? FOR UPDATE", id);
   }
 
+  /** Tìm mã vi phạm gắn với một quyết định kỷ luật. */
   public int violationIdForDecision(long decisionId) {
     return jdbc.queryForObject(
         "SELECT violation_id FROM svc_discipline_decision WHERE id=?", Integer.class, decisionId);
   }
 
+  /** Trả về mã sinh viên của các vi phạm theo thứ tự khóa ổn định. */
   public List<String> studentIds(List<Long> ids) {
     String sql =
         "SELECT DISTINCT masinhvien FROM vi_pham WHERE mavipham IN ("
@@ -65,6 +70,7 @@ public class DisciplineRepository {
     return jdbc.queryForList(sql, String.class, ids.toArray());
   }
 
+  /** Đọc ID bằng chứng đã lưu cho một quyết định kỷ luật. */
   public java.util.UUID evidence(long decisionId) {
     var rows =
         jdbc.queryForList(
@@ -75,6 +81,7 @@ public class DisciplineRepository {
     return rows.get(0);
   }
 
+  /** Kiểm tra quyết định thuộc về sinh viên được nêu trong yêu cầu. */
   public long decisionStudent(long id, String student) {
     return jdbc.queryForObject(
         "SELECT count(*) FROM svc_discipline_decision d JOIN vi_pham v ON v.mavipham=d.violation_id"
@@ -84,6 +91,7 @@ public class DisciplineRepository {
         student);
   }
 
+  /** Đọc các vi phạm được chọn; có thể khóa chúng trước khi áp dụng hàng loạt. */
   public List<Violation> violations(List<Long> ids, boolean lock) {
     String query =
         """
@@ -100,6 +108,7 @@ WHERE v.mavipham IN (%s) ORDER BY v.masinhvien,v.mavipham
     return jdbc.query(query, (r, n) -> map(r), ids.toArray());
   }
 
+  /** Liệt kê vi phạm chưa xử lý kèm số lần vi phạm trong học kỳ. */
   public List<Violation> pending(int page, int size) {
     return jdbc.query(
         """
@@ -114,6 +123,7 @@ WHERE v.trangthai='CHUA_XU_LY' ORDER BY v.ngayvipham DESC LIMIT ? OFFSET ?
         (page - 1) * size);
   }
 
+  /** Tính số thứ tự revision tiếp theo cho một vi phạm. */
   public int nextRevision(int id) {
     return jdbc.queryForObject(
         "SELECT coalesce(max(revision),0)+1 FROM svc_discipline_decision WHERE violation_id=?",
@@ -121,6 +131,7 @@ WHERE v.trangthai='CHUA_XU_LY' ORDER BY v.ngayvipham DESC LIMIT ? OFFSET ?
         id);
   }
 
+  /** Lưu quyết định và cập nhật trạng thái xử lý của vi phạm cùng transaction. */
   public void decide(
       int id,
       long semester,
@@ -148,6 +159,7 @@ WHERE v.trangthai='CHUA_XU_LY' ORDER BY v.ngayvipham DESC LIMIT ? OFFSET ?
         id);
   }
 
+  /** Đọc lịch sử các quyết định của một vi phạm theo revision. */
   public List<Decision> decisions(int id) {
     return jdbc.query(
         "SELECT"
@@ -168,6 +180,7 @@ WHERE v.trangthai='CHUA_XU_LY' ORDER BY v.ngayvipham DESC LIMIT ? OFFSET ?
         id);
   }
 
+  /** Tạo khiếu nại mới cho quyết định của sinh viên. */
   public long createAppeal(long decision, String student, String content) {
     return jdbc.queryForObject(
         "INSERT INTO svc_appeal(decision_id,student_id,content) VALUES(?,?,?) RETURNING id",
@@ -177,6 +190,7 @@ WHERE v.trangthai='CHUA_XU_LY' ORDER BY v.ngayvipham DESC LIMIT ? OFFSET ?
         content);
   }
 
+  /** Đọc khiếu nại; khóa dòng nếu service chuẩn bị phản hồi. */
   public Appeal appeal(long id, boolean lock) {
     var rows =
         jdbc.query(
@@ -189,6 +203,7 @@ WHERE v.trangthai='CHUA_XU_LY' ORDER BY v.ngayvipham DESC LIMIT ? OFFSET ?
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Lưu kết quả phản hồi, người xử lý và version mới của khiếu nại. */
   public void respond(long id, String status, String reason, int actor) {
     jdbc.update(
         "UPDATE svc_appeal SET state=?,response=?,handled_by=?,version=version+1 WHERE id=?",

@@ -1,6 +1,7 @@
 package vn.id.caohoangphuc.cnpm.service;
 
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -20,22 +21,28 @@ import vn.id.caohoangphuc.cnpm.api.dto.PointsResourceDto;
 import vn.id.caohoangphuc.cnpm.persistence.service.CommunityRepository;
 
 public class CommunityService {
+  private static final SecureRandom RANDOM = new SecureRandom();
+
+  /** Identifies a student's registration and the QR token used for attendance. */
   public record RegistrationReceipt(
       long id, String activityId, String status, String qrToken, long version) {}
 
+  /** Reports a requested points conversion and its current review state. */
   public record ConversionReceipt(
       String id, String status, int pointsSpent, int drl, String externalState) {}
 
   private final CommunityRepository repository;
   private final ServiceContext context;
 
+  /** Connects community workflows to persistence and shared transaction handling. */
   public CommunityService(CommunityRepository repository, ServiceContext context) {
     this.repository = repository;
     this.context = context;
   }
 
+  /** Lists activities after checking the caller's role and requested page. */
   public List<ActivityResourceDto> activities(Actor actor, int page, int size) {
-    if (page < 1 || size < 1 || size > 100) throw ServiceException.invalid("Invalid page");
+    context.page(page, size);
     return context.transaction(
         () -> {
           context.require(actor, "SINHVIEN", "ADMIN");
@@ -43,6 +50,7 @@ public class CommunityService {
         });
   }
 
+  /** Creates an activity and writes its audit event in the same transaction. */
   public ActivityResourceDto createActivity(
       Actor actor, RequestContext request, ActivityDto input) {
     context.validate(input);
@@ -70,6 +78,7 @@ public class CommunityService {
         "ADMIN");
   }
 
+  /** Registers a student after checking capacity, duplicate registration and schedule conflicts. */
   public RegistrationReceipt register(Actor actor, RequestContext request, long activityPublicId) {
     context.positive(activityPublicId, "activityId");
     return context.write(
@@ -100,6 +109,7 @@ public class CommunityService {
         "SINHVIEN");
   }
 
+  /** Cancels an eligible registration and releases one activity place. */
   public CommandResultDto cancel(Actor actor, RequestContext request, int id, long version) {
     var input = new vn.id.caohoangphuc.cnpm.api.dto.VersionDto(version);
     context.validate(input);
@@ -135,6 +145,7 @@ public class CommunityService {
         "SINHVIEN");
   }
 
+  /** Marks a registration attended after validating its one-time QR token. */
   public CommandResultDto attend(Actor actor, RequestContext request, AttendanceDto input) {
     context.validate(input);
     String hash = ServiceContext.hash(input.qrToken());
@@ -166,6 +177,7 @@ public class CommunityService {
         "ADMIN");
   }
 
+  /** Completes a batch of attended registrations in a stable lock order. */
   public List<CommandResultDto> confirm(Actor actor, RequestContext request, ConfirmDto input) {
     context.validate(input);
     var result =
@@ -173,10 +185,10 @@ public class CommunityService {
             actor,
             request,
             "activities/completion",
-        input,
-        CommandResultDto[].class,
-        () -> completeRegistrations(actor, request, input),
-        "ADMIN");
+            input,
+            CommandResultDto[].class,
+            () -> completeRegistrations(actor, request, input),
+            "ADMIN");
     return java.util.Arrays.asList(result);
   }
 
@@ -237,6 +249,7 @@ public class CommunityService {
         request.requestId());
   }
 
+  /** Calculates a student's earned, available and converted points for one semester. */
   public PointsResourceDto points(Actor actor, long semester) {
     return context.transaction(
         () -> {
@@ -267,6 +280,7 @@ public class CommunityService {
         });
   }
 
+  /** Converts available community points into conduct points within the semester limit. */
   public ConversionReceipt convert(Actor actor, RequestContext request, ConvertDto input) {
     context.validate(input);
     return context.write(
@@ -300,6 +314,7 @@ public class CommunityService {
         "SINHVIEN");
   }
 
+  /** Creates a certificate request from a snapshot of completed activities. */
   public CertificateResourceDto requestCertificate(
       Actor actor, RequestContext request, CertificateRequestDto input) {
     context.validate(input);
@@ -334,6 +349,7 @@ public class CommunityService {
         "SINHVIEN");
   }
 
+  /** Signs a certificate verification token using the configured server key. */
   private String verificationToken(UUID id) {
     try {
       String key = System.getenv("KTX_CERTIFICATE_TOKEN_KEY");
@@ -352,6 +368,7 @@ public class CommunityService {
     }
   }
 
+  /** Rejects registration if the activity is closed, full, duplicated or overlapping. */
   private void requireCanRegister(CommunityRepository.Activity activity, String studentId) {
     if (!activity.status().equals("MO_DANG_KY") || !activity.start().isAfter(context.now()))
       throw ServiceException.conflict("Activity registration is closed");
@@ -366,6 +383,7 @@ public class CommunityService {
       throw ServiceException.conflict("Activity time conflicts with another registration");
   }
 
+  /** Requires an activity to start in the future and have a positive time range. */
   private void requireFutureActivity(ActivityDto input) {
     boolean validRange = input.endAt().isAfter(input.startAt());
     boolean startsInFuture = input.startAt().toInstant().isAfter(context.now());
@@ -373,6 +391,7 @@ public class CommunityService {
       throw ServiceException.invalid("Activity must have a future start and a valid time range");
   }
 
+  /** Applies the rule that cancellation closes twelve hours before the activity begins. */
   private void requireCanCancel(
       CommunityRepository.Registration registration, CommunityRepository.Activity activity) {
     if (!registration.status().equals("REGISTERED"))
@@ -383,6 +402,7 @@ public class CommunityService {
       throw ServiceException.conflict("Cancellation is allowed until 12 hours before the activity");
   }
 
+  /** Converts requested conduct points to community-point cost within the remaining limit. */
   private int pointsToConvert(long balance, int alreadyConverted, int requestedDrl) {
     int remainingLimit = 5 - alreadyConverted;
     int maximum = (int) Math.min(balance / 10, remainingLimit);
@@ -392,6 +412,7 @@ public class CommunityService {
     return requestedDrl * 10;
   }
 
+  /** Maps the repository activity row to the public response, including remaining capacity. */
   private ActivityResourceDto resource(CommunityRepository.Activity a) {
     return new ActivityResourceDto(
         a.publicId(),
@@ -406,9 +427,10 @@ public class CommunityService {
         a.version());
   }
 
+  /** Generates the unpredictable token embedded in a registration QR code. */
   private byte[] random(int size) {
     byte[] bytes = new byte[size];
-    new java.security.SecureRandom().nextBytes(bytes);
+    RANDOM.nextBytes(bytes);
     return bytes;
   }
 }

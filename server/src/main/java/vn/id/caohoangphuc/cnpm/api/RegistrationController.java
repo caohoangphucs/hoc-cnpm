@@ -12,6 +12,7 @@ public class RegistrationController {
     private final RegistrationService registrations;
     private final ApiSupport api;
 
+    /** Connects registration routes to the service and shared HTTP request handling. */
     public RegistrationController(RegistrationService registrations, ApiSupport api) {
         this.registrations = registrations;
         this.api = api;
