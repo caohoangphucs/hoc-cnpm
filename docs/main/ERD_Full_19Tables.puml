@@ -1,0 +1,274 @@
+@startuml
+!theme plain
+skinparam linetype ortho
+skinparam shadowing false
+skinparam roundcorner 5
+skinparam classFontSize 12
+skinparam classAttributeFontSize 11
+
+title ERD Toàn Bộ Cơ Sở Dữ Liệu PostgreSQL (19 Bảng) — Hệ Thống Quản Lý KTX
+
+package "1. Phân Hệ Người Dùng & Phân Quyền" {
+  entity "TAI_KHOAN" as TAI_KHOAN {
+    * **MaTaiKhoan** : SERIAL <<PK>>
+    --
+    * TenDangNhap : VARCHAR(50) <<UQ>>
+    * MatKhauHash : VARCHAR(255)
+    * HoTen : VARCHAR(100)
+    * Email : VARCHAR(100) <<UQ>>
+    SoDienThoai : VARCHAR(20)
+    * VaiTro : VARCHAR(20)
+    * TrangThai : VARCHAR(20)
+    NgayTao : TIMESTAMP
+  }
+
+  entity "SINH_VIEN" as SINH_VIEN {
+    * **MaSinhVien** : VARCHAR(20) <<PK>>
+    --
+    MaTaiKhoan : INT <<FK, UQ>>
+    * HoTen : VARCHAR(100)
+    NgaySinh : DATE
+    * GioiTinh : VARCHAR(10)
+    * CCCD : VARCHAR(20) <<UQ>>
+    * Email : VARCHAR(100) <<UQ>>
+    * SoDienThoai : VARCHAR(20)
+    Lop : VARCHAR(50)
+    Khoa : VARCHAR(100)
+    QueQuan : VARCHAR(255)
+    MaPhongHienTai : VARCHAR(20) <<FK>>
+    * TrangThai : VARCHAR(20)
+  }
+}
+
+package "2. Phân Hệ Quản Lý Tòa Nhà & Phòng Ở" {
+  entity "TOA_NHA" as TOA_NHA {
+    * **MaToaNha** : VARCHAR(20) <<PK>>
+    --
+    * TenToa : VARCHAR(100)
+    * SoTang : INT
+    GioiTinhApDung : VARCHAR(20)
+    GhiChu : VARCHAR(255)
+  }
+
+  entity "LOAI_PHONG" as LOAI_PHONG {
+    * **MaLoaiPhong** : VARCHAR(20) <<PK>>
+    --
+    * TenLoaiPhong : VARCHAR(100)
+    * SucChuaTieuChuan : INT
+    * DonGiaThang : DECIMAL(15,0)
+    MoTa : TEXT
+  }
+
+  entity "PHONG" as PHONG {
+    * **MaPhong** : VARCHAR(20) <<PK>>
+    --
+    * MaToaNha : VARCHAR(20) <<FK>>
+    MaLoaiPhong : VARCHAR(20) <<FK>>
+    * SoPhong : VARCHAR(20)
+    * Tang : INT
+    * SucChua : INT
+    * DangO : INT
+    * GiaPhongCoBan : DECIMAL(15,0)
+    * TrangThai : VARCHAR(20)
+  }
+
+  entity "GIUONG" as GIUONG {
+    * **MaGiuong** : VARCHAR(20) <<PK>>
+    --
+    * MaPhong : VARCHAR(20) <<FK>>
+    * SoGiuong : VARCHAR(20)
+    ViTri : VARCHAR(50)
+    * TrangThai : VARCHAR(20)
+  }
+}
+
+package "3. Phân Hệ Đăng Ký & Lưu Trú" {
+  entity "DANG_KY_PHONG" as DANG_KY_PHONG {
+    * **MaDangKy** : SERIAL <<PK>>
+    --
+    * MaSinhVien : VARCHAR(20) <<FK>>
+    * MaGiuong : VARCHAR(20) <<FK>>
+    * NgayDangKy : TIMESTAMP
+    NgayHetHan : TIMESTAMP
+    * TrangThai : VARCHAR(20)
+    GhiChuLyDo : TEXT
+  }
+
+  entity "LUU_TRU" as LUU_TRU {
+    * **MaLuuTru** : SERIAL <<PK>>
+    --
+    * MaDangKy : INT <<FK>>
+    * MaSinhVien : VARCHAR(20) <<FK>>
+    * MaGiuong : VARCHAR(20) <<FK>>
+    * NgayBatDau : DATE
+    NgayKetThuc : DATE
+    * TrangThai : VARCHAR(20)
+  }
+}
+
+package "4. Phân Hệ Tài Chính, Điện Nước & Hóa Đơn" {
+  entity "DON_GIA_DICH_VU" as DON_GIA_DICH_VU {
+    * **MaDichVu** : SERIAL <<PK>>
+    --
+    * LoaiDichVu : VARCHAR(20) <<UQ>>
+    * TenDichVu : VARCHAR(100)
+    * DonViTinh : VARCHAR(20)
+    * DonGia : DECIMAL(15,0)
+    * TrangThai : VARCHAR(20)
+  }
+
+  entity "CHI_SO_DIEN_NUOC" as CHI_SO_DIEN_NUOC {
+    * **MaChiSo** : SERIAL <<PK>>
+    --
+    * MaPhong : VARCHAR(20) <<FK>>
+    * KyThang : VARCHAR(7)
+    * DienCu : INT
+    * DienMoi : INT
+    * NuocCu : INT
+    * NuocMoi : INT
+    * NgayGhi : TIMESTAMP
+    * NguoiGhi : VARCHAR(50)
+  }
+
+  entity "HOA_DON" as HOA_DON {
+    * **MaHoaDon** : SERIAL <<PK>>
+    --
+    * MaPhong : VARCHAR(20) <<FK>>
+    * KyThang : VARCHAR(7)
+    * TienPhong : DECIMAL(15,0)
+    * TienDien : DECIMAL(15,0)
+    * TienNuoc : DECIMAL(15,0)
+    * TongTien : DECIMAL(15,0)
+    * DaThanhToan : DECIMAL(15,0)
+    * HanThanhToan : DATE
+    * TrangThai : VARCHAR(20)
+    NgayTao : TIMESTAMP
+  }
+
+  entity "CHI_TIET_HOA_DON" as CHI_TIET_HOA_DON {
+    * **MaChiTiet** : SERIAL <<PK>>
+    --
+    * MaHoaDon : INT <<FK>>
+    * TenMuc : VARCHAR(100)
+    * SoLuong : DECIMAL(10,2)
+    * DonGia : DECIMAL(15,0)
+    * ThanhTien : DECIMAL(15,0)
+  }
+
+  entity "THANH_TOAN" as THANH_TOAN {
+    * **MaThanhToan** : SERIAL <<PK>>
+    --
+    * MaHoaDon : INT <<FK>>
+    * PhuongThuc : VARCHAR(20)
+    * SoTien : DECIMAL(15,0)
+    * MaGiaoDich : VARCHAR(100) <<UQ>>
+    * TrangThai : VARCHAR(20)
+    * ThoiGian : TIMESTAMP
+    NguoiXacNhan : VARCHAR(50)
+    GhiChu : TEXT
+  }
+}
+
+package "5. Phân Hệ Kỹ Thuật, Sửa Chữa & Vật Tư" {
+  entity "VAT_TU" as VAT_TU {
+    * **MaVatTu** : VARCHAR(20) <<PK>>
+    --
+    * TenVatTu : VARCHAR(100)
+    * DonViTinh : VARCHAR(20)
+    * SoLuongTon : INT
+    * DonGiaNhap : DECIMAL(15,0)
+  }
+
+  entity "YEU_CAU_SUA_CHUA" as YEU_CAU_SUA_CHUA {
+    * **MaYeuCau** : SERIAL <<PK>>
+    --
+    * MaPhong : VARCHAR(20) <<FK>>
+    * MaSinhVien : VARCHAR(20) <<FK>>
+    * TieuDe : VARCHAR(255)
+    * MoTaChiTiet : TEXT
+    HinhAnhDinhKem : VARCHAR(255)
+    * MucDoUuTien : VARCHAR(20)
+    * TrangThai : VARCHAR(20)
+    * NgayTao : TIMESTAMP
+    NgayHoanThanh : TIMESTAMP
+    NguoiXuLy : VARCHAR(50)
+    GhiChuKyThuat : TEXT
+  }
+
+  entity "XUAT_VAT_TU" as XUAT_VAT_TU {
+    * **MaXuat** : SERIAL <<PK>>
+    --
+    * MaVatTu : VARCHAR(20) <<FK>>
+    * MaYeuCau : INT <<FK>>
+    * SoLuong : INT
+    * NgayXuat : TIMESTAMP
+    * NguoiXuat : VARCHAR(50)
+    GhiChu : TEXT
+  }
+}
+
+package "6. Phân Hệ An Ninh, Ra Vào & Kỷ Luật" {
+  entity "RA_VAO" as RA_VAO {
+    * **MaRaVao** : SERIAL <<PK>>
+    --
+    * MaSinhVien : VARCHAR(20) <<FK>>
+    * LoaiSuKien : VARCHAR(10)
+    * ThoiGian : TIMESTAMP
+    * BaoVeGhiNhan : VARCHAR(50)
+    GhiChu : VARCHAR(255)
+  }
+
+  entity "VI_PHAM" as VI_PHAM {
+    * **MaViPham** : SERIAL <<PK>>
+    --
+    * MaSinhVien : VARCHAR(20) <<FK>>
+    MaRaVao : INT <<FK>>
+    * NoiDungViPham : TEXT
+    * MucDo : VARCHAR(20)
+    HinhThucXuLy : VARCHAR(255)
+    * NgayGhiNhan : TIMESTAMP
+    * TrangThai : VARCHAR(20)
+  }
+
+  entity "AUDIT_LOG" as AUDIT_LOG {
+    * **LogId** : BIGSERIAL <<PK>>
+    --
+    * TableName : VARCHAR(50)
+    * Action : VARCHAR(10)
+    RecordId : VARCHAR(50)
+    OldData : JSONB
+    NewData : JSONB
+    ChangedBy : VARCHAR(50)
+    * ChangedAt : TIMESTAMP
+  }
+}
+
+' Relationships
+TAI_KHOAN ||--o| SINH_VIEN : "1 - 0..1"
+TOA_NHA ||--o{ PHONG : "1 - N"
+LOAI_PHONG ||--o{ PHONG : "1 - N"
+PHONG ||--o{ GIUONG : "1 - N"
+PHONG ||--o{ SINH_VIEN : "1 - N (PhongHienTai)"
+
+SINH_VIEN ||--o{ DANG_KY_PHONG : "1 - N"
+GIUONG ||--o{ DANG_KY_PHONG : "1 - N"
+
+DANG_KY_PHONG ||--o| LUU_TRU : "1 - 0..1"
+SINH_VIEN ||--o{ LUU_TRU : "1 - N"
+GIUONG ||--o{ LUU_TRU : "1 - N"
+
+PHONG ||--o{ CHI_SO_DIEN_NUOC : "1 - N"
+PHONG ||--o{ HOA_DON : "1 - N"
+HOA_DON ||--o{ CHI_TIET_HOA_DON : "1 - N"
+HOA_DON ||--o{ THANH_TOAN : "1 - N"
+
+PHONG ||--o{ YEU_CAU_SUA_CHUA : "1 - N"
+SINH_VIEN ||--o{ YEU_CAU_SUA_CHUA : "1 - N"
+YEU_CAU_SUA_CHUA ||--o{ XUAT_VAT_TU : "1 - N"
+VAT_TU ||--o{ XUAT_VAT_TU : "1 - N"
+
+SINH_VIEN ||--o{ RA_VAO : "1 - N"
+SINH_VIEN ||--o{ VI_PHAM : "1 - N"
+RA_VAO ||--o| VI_PHAM : "1 - 0..1"
+
+@enduml
