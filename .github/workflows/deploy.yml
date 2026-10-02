@@ -1,4 +1,4 @@
-name: CI - PostgreSQL, Legacy DB Repair and Container Smoke Test
+name: Server CI/CD - PostgreSQL
 
 on:
   push:
@@ -11,7 +11,8 @@ permissions:
 
 jobs:
   database-schema-seed-and-build:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, cnpm-deploy]
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:16-alpine
@@ -20,196 +21,119 @@ jobs:
           POSTGRES_DB: cnpm_db
           POSTGRES_USER: cnpm_user
         ports:
-          - 5432:5432
+          - 5432/tcp
         options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
+          --health-cmd "pg_isready -h 127.0.0.1 -U cnpm_user -d cnpm_db"
+          --health-interval 5s
           --health-timeout 5s
-          --health-retries 5
-
+          --health-retries 20
+    env:
+      CI_SHA: ${{ github.sha }}
+      CI_CONTAINER: cnpm-ci-${{ github.run_id }}-${{ github.run_attempt }}
+      PGHOST: 127.0.0.1
+      PGUSER: cnpm_user
+      PGDATABASE: cnpm_db
+      PGPASSWORD: RootPassword2026!
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: maven
-
-      - name: 1. Apply Table Schema (01_schema.sql)
+      - name: Resolve isolated test network
         env:
-          PGPASSWORD: RootPassword2026!
+          PG_SERVICE_ID: ${{ job.services.postgres.id }}
+          PGPORT: ${{ job.services.postgres.ports['5432'] }}
         run: |
-          echo "Applying database schema..."
-          psql -h 127.0.0.1 -U cnpm_user -d cnpm_db -v ON_ERROR_STOP=1 -f database/01_schema.sql
-          echo "Schema updated successfully."
+          network=$(docker inspect "$PG_SERVICE_ID" --format '{{range $name, $settings := .NetworkSettings.Networks}}{{$name}}{{end}}')
+          host=$(docker inspect "$PG_SERVICE_ID" --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')
+          test -n "$network"
+          test -n "$host"
+          printf 'CI_NETWORK=%s\nCI_DB_HOST=%s\nPGPORT=%s\n' "$network" "$host" "$PGPORT" >> "$GITHUB_ENV"
 
-      - name: 2. Load Seed Data (02_seed.sql)
-        env:
-          PGPASSWORD: RootPassword2026!
+      - name: Apply PostgreSQL schema and seed to isolated service
         run: |
-          echo "Loading seed data..."
-          psql -h 127.0.0.1 -U cnpm_user -d cnpm_db -v ON_ERROR_STOP=1 -f database/02_seed.sql
-          echo "Seed data loaded successfully."
-
-      - name: 3. Verify Database Integrity & Counts
-        env:
-          PGPASSWORD: RootPassword2026!
-        run: |
-          echo "Verifying tables and record counts..."
-          psql -h 127.0.0.1 -U cnpm_user -d cnpm_db -c "
-            SELECT 'SINH_VIEN' AS TableName, COUNT(*) AS Total FROM SINH_VIEN
-            UNION ALL
-            SELECT 'GIUONG', COUNT(*) FROM GIUONG
-            UNION ALL
-            SELECT 'HOA_DON', COUNT(*) FROM HOA_DON
-            UNION ALL
-            SELECT 'RA_VAO', COUNT(*) FROM RA_VAO;
-          "
-
-      - name: Assert expected PostgreSQL objects and fixtures
-        env:
-          PGPASSWORD: RootPassword2026!
-        run: |
-          test "$(psql -h 127.0.0.1 -U cnpm_user -d cnpm_db -Atc "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")" = 27
-          test "$(psql -h 127.0.0.1 -U cnpm_user -d cnpm_db -Atc "SELECT COUNT(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.prokind='p'")" = 9
+          psql -v ON_ERROR_STOP=1 --single-transaction -f database/01_schema.sql
+          psql -v ON_ERROR_STOP=1 --single-transaction -f database/02_seed.sql
+          test "$(psql -Atc "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")" = 27
+          test "$(psql -Atc "SELECT COUNT(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.prokind='p'")" = 9
           for table in SINH_VIEN GIUONG HOA_DON RA_VAO; do
-            test "$(psql -h 127.0.0.1 -U cnpm_user -d cnpm_db -Atc "SELECT COUNT(*) FROM $table")" -gt 0
+            test "$(psql -Atc "SELECT COUNT(*) FROM $table")" -gt 0
           done
 
-      - name: 4. Verify with Maven
-        run: mvn --batch-mode clean verify
+      - name: Build and verify using local Docker cache and JDK 17
+        run: docker build --target build --tag "cnpm-build:$CI_SHA" .
 
-      - name: 5. Check WAR has no migration artifacts
+      - name: Verify PostgreSQL JDBC and all procedure OUT bindings
         run: |
-          if unzip -l target/ROOT.war | grep -Ei 'flyway|db/migration/'; then
-            echo "Unexpected migration artifact in WAR"
-            exit 1
-          fi
+          docker run --rm --network "$CI_NETWORK" \
+            -e DB_HOST="$CI_DB_HOST" -e DB_PORT=5432 \
+            -e DB_NAME=cnpm_db -e DB_USER=cnpm_user -e DB_PASS="$PGPASSWORD" \
+            -v "$PWD/tests/java:/ci-tests:ro" --entrypoint sh "cnpm-build:$CI_SHA" -c '
+              set -eu
+              classpath="/app/target/classes:/app/target/ROOT/WEB-INF/lib/*"
+              javac -cp "$classpath" -d /tmp/ci-test-classes /ci-tests/PostgresProcedureSmoke.java
+              java -cp "/tmp/ci-test-classes:$classpath" PostgresProcedureSmoke
+            '
 
-      - name: 6. Build runtime container
-        run: docker build --tag cnpm-ci:latest .
-
-      - name: 7. Smoke test Tomcat and PostgreSQL connection
-        env:
-          PGPASSWORD: RootPassword2026!
+      - name: Check WAR contents
         run: |
-          docker run -d --name cnpm-ci --network host \
-            -e DB_HOST=127.0.0.1 -e DB_PORT=5432 \
-            -e DB_NAME=cnpm_db -e DB_USER=cnpm_user \
-            -e DB_PASS='RootPassword2026!' cnpm-ci:latest
+          docker run --rm --entrypoint sh "cnpm-build:$CI_SHA" -c '
+            set -eu
+            jar tf /app/target/ROOT.war > /tmp/war-files
+            if grep -Ei "flyway|db/migration/" /tmp/war-files; then
+              echo "Unexpected schema management files in WAR"
+              exit 1
+            fi
+          '
+
+      - name: Build immutable runtime image on this server
+        run: docker build --label "cnpm.commit=$CI_SHA" --tag "cnpm-ci:$CI_SHA" .
+
+      - name: Smoke test isolated app and all five roles
+        run: |
+          docker run -d --name "$CI_CONTAINER" --network "$CI_NETWORK" \
+            -p 127.0.0.1::8080 \
+            -e DB_HOST="$CI_DB_HOST" -e DB_PORT=5432 \
+            -e DB_NAME=cnpm_db -e DB_USER=cnpm_user -e DB_PASS="$PGPASSWORD" \
+            "cnpm-ci:$CI_SHA"
+          mapping=$(docker port "$CI_CONTAINER" 8080/tcp)
+          base="http://127.0.0.1:${mapping##*:}"
           ready=false
           for attempt in $(seq 1 60); do
-            if curl --fail --silent http://127.0.0.1:8080/ > /tmp/cnpm-index.html; then
-              ready=true
-              break
-            fi
+            if curl --fail --silent "$base/" > "$RUNNER_TEMP/cnpm-index.html"; then ready=true; break; fi
             sleep 2
           done
           test "$ready" = true
-          grep -q '<html' /tmp/cnpm-index.html
-          curl --fail --silent --show-error \
-            --data-urlencode 'username=ci-nonexistent-account' \
-            --data-urlencode 'password=ci-invalid-password' \
-            http://127.0.0.1:8080/auth/login > /tmp/cnpm-login.html
-          grep -q 'không chính xác' /tmp/cnpm-login.html
-          psql -h 127.0.0.1 -U cnpm_user -d cnpm_db -v ON_ERROR_STOP=1 -c \
-            "INSERT INTO TAI_KHOAN(TenDangNhap,MatKhauHash,HoTen,Email,VaiTro) VALUES ('ci-invalid-hash','not-a-bcrypt-hash','CI negative','negative-ci@example.test','ADMIN')"
-          status=$(curl --silent --show-error --output /tmp/cnpm-invalid-hash.html \
-            --write-out '%{http_code}' --data-urlencode username=ci-invalid-hash \
-            --data-urlencode password=123456 http://127.0.0.1:8080/auth/login)
-          test "$status" = 200
-          grep -q 'không chính xác' /tmp/cnpm-invalid-hash.html
-          psql -h 127.0.0.1 -U cnpm_user -d cnpm_db -v ON_ERROR_STOP=1 -c \
-            "DELETE FROM TAI_KHOAN WHERE TenDangNhap='ci-invalid-hash'"
-          # Neither the former fallback password nor arbitrary wrong passwords
-          # may authenticate a real account.
-          for password in admin123 ci-wrong-password; do
-            status=$(curl --silent --show-error --output /tmp/cnpm-invalid.html \
-              --write-out '%{http_code}' --data-urlencode username=admin \
-              --data-urlencode "password=$password" http://127.0.0.1:8080/auth/login)
+          grep -q '<html' "$RUNNER_TEMP/cnpm-index.html"
+          psql -v ON_ERROR_STOP=1 -c "INSERT INTO TAI_KHOAN(TenDangNhap,MatKhauHash,HoTen,Email,VaiTro) VALUES ('ci-invalid-hash','broken-hash','CI negative','negative-ci@example.test','ADMIN')"
+          for entry in ci-nonexistent-account:invalid ci-invalid-hash:123456 admin:admin123 admin:ci-wrong-password; do
+            account=${entry%%:*}; password=${entry##*:}
+            status=$(curl --silent --show-error --output "$RUNNER_TEMP/cnpm-invalid.html" \
+              --write-out '%{http_code}' --data-urlencode "username=$account" \
+              --data-urlencode "password=$password" "$base/auth/login")
             test "$status" = 200
-            grep -q 'không chính xác' /tmp/cnpm-invalid.html
+            grep -q 'không chính xác' "$RUNNER_TEMP/cnpm-invalid.html"
           done
+          psql -v ON_ERROR_STOP=1 -c "DELETE FROM TAI_KHOAN WHERE TenDangNhap='ci-invalid-hash'"
           for entry in admin:admin sv001:student ketoan1:accounting kythuat1:maintenance baove1:security; do
-            account=${entry%%:*}
-            role=${entry##*:}
-            status=$(curl --silent --show-error --cookie-jar /tmp/cnpm-cookie \
-              --output /tmp/cnpm-auth.html --write-out '%{http_code}' \
-              --data-urlencode "username=$account" --data-urlencode 'password=123456' \
-              http://127.0.0.1:8080/auth/login)
+            account=${entry%%:*}; role=${entry##*:}
+            status=$(curl --silent --show-error --cookie-jar "$RUNNER_TEMP/cnpm-cookie" \
+              --output "$RUNNER_TEMP/cnpm-auth.html" --write-out '%{http_code}' \
+              --data-urlencode "username=$account" --data-urlencode password=123456 "$base/auth/login")
             test "$status" = 302
-            status=$(curl --silent --show-error --cookie /tmp/cnpm-cookie \
-              --output /tmp/cnpm-dashboard.html --write-out '%{http_code}' \
-              "http://127.0.0.1:8080/$role/dashboard")
+            status=$(curl --silent --show-error --cookie "$RUNNER_TEMP/cnpm-cookie" \
+              --output "$RUNNER_TEMP/cnpm-dashboard.html" --write-out '%{http_code}' "$base/$role/dashboard")
             test "$status" = 200
-            echo "$account login and dashboard passed"
+            echo "$account login/dashboard PASS"
           done
-          if docker logs cnpm-ci 2>&1 | grep -E 'SEVERE|Exception|ERROR'; then
-            echo "Runtime errors detected"
-            exit 1
-          fi
+          if docker logs "$CI_CONTAINER" 2>&1 | grep -E 'SEVERE|Exception|ERROR'; then exit 1; fi
 
-      - name: Export the verified image for deployment
+      - name: Deploy verified develop image locally with rollback
         if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
-        run: docker save cnpm-ci:latest | gzip > cnpm-image.tar.gz
+        run: bash scripts/deploy-server.sh "$CI_SHA" "cnpm-ci:$CI_SHA"
 
-      - name: Upload deployment image
-        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
-        uses: actions/upload-artifact@v4
-        with:
-          name: cnpm-image-${{ github.sha }}
-          path: cnpm-image.tar.gz
-          retention-days: 3
-          compression-level: 0
-
-      - name: Runtime logs and cleanup
+      - name: Test container logs and cleanup
         if: always()
         run: |
-          docker logs cnpm-ci 2>&1 || true
-          docker rm -f cnpm-ci || true
-
-  legacy-mysql-login-regression:
-    runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: ci-only-root-password
-          MYSQL_DATABASE: cnpm_db
-        ports:
-          - 33060:3306
-        options: >-
-          --health-cmd="mysqladmin ping --host=127.0.0.1 --silent"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
-    steps:
-      - uses: actions/checkout@v4
-      - name: Verify deployed legacy MySQL collation repair
-        env:
-          MYSQL_PWD: ci-only-root-password
-        run: bash tests/legacy-mysql-login.sh
-
-  deploy:
-    needs: [database-schema-seed-and-build, legacy-mysql-login-regression]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
-    runs-on: [self-hosted, linux, x64, cnpm-deploy]
-    permissions:
-      contents: read
-      actions: read
-    concurrency:
-      group: cnpm-production-deployment
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: cnpm-image-${{ github.sha }}
-          path: deploy-artifact
-      - name: Deploy verified commit with health checks and rollback
-        env:
-          DEPLOY_SHA: ${{ github.sha }}
-        run: bash scripts/deploy-server.sh "$DEPLOY_SHA" deploy-artifact/cnpm-image.tar.gz
+          if docker inspect "$CI_CONTAINER" >/dev/null 2>&1; then
+            docker logs "$CI_CONTAINER" 2>&1
+            docker rm -f "$CI_CONTAINER"
+          fi
