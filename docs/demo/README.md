@@ -47,7 +47,7 @@ Có nền mã/SQL không đồng nghĩa đã kiểm thử hay nghiệm thu.
 Các điểm phải xử lý trước demo ứng dụng:
 
 - Auth chưa có 2FA; bổ sung kiểm tra quyền server. AccountDAO có fallback
-  mật khẩu mẫu khi BCrypt lỗi: cần bỏ và dùng hash hợp lệ.
+  mật khẩu mẫu khi BCrypt lỗi đã được bỏ; dùng BCrypt hợp lệ và từ chối hash hỏng.
 - rooms.jsp sinh cố định 4 lựa chọn giường, chưa lọc theo trạng thái giường.
 - StudentServlet ghi báo hỏng bằng SQL trực tiếp và ID mặc định khi session
   thiếu: đưa xuống DAO, kiểm tra lưu trú thực tế.
