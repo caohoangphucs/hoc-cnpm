@@ -17,6 +17,10 @@ Mỗi Use Case đều được thực hiện đầy đủ theo chu trình 5 bư�
 
 ## 📌 PHẦN I: DANH SÁCH TO-DO CẤP TÀI LIỆU CỐT LÕI (DOC-LEVEL TASKS)
 
+- [x] **Doc Task 0: Hoàn thành Đặc tả Use Case chi tiết 100% (28 Functional Use Cases)**
+  - **Đính kèm tài liệu:** [`docs/main/SRS_HeThongQuanLyKTX_v3.docx`](docs/main/SRS_HeThongQuanLyKTX_v3.docx) (Mục 5: Bảng tổng quan Table 17 & 28 bảng đặc tả 12 trường chuẩn).
+  - **Trạng thái:** ✅ Đã hoàn thành và commit (`c8849a0`).
+
 - [ ] **Doc Task 1: Hoàn thiện Sequence Diagram toàn bộ 28 Functional Use Cases**
   - **Đính kèm tài liệu:** [`docs/main/D10/SequenceDiagram.puml`](docs/main/D10/SequenceDiagram.puml), [`docs/main/SRS_HeThongQuanLyKTX_v3.docx`](docs/main/SRS_HeThongQuanLyKTX_v3.docx).
   - **Nội dung:** Mở rộng vẽ đầy đủ Sequence Diagram cho toàn bộ 28 Use Cases chức năng thuộc 5 phân hệ (Sinh viên, Admin, Kế toán, Kỹ thuật, Bảo vệ, Bảo trì hệ thống).
