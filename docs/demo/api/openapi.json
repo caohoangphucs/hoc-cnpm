@@ -3,7 +3,7 @@
   "info": {
     "title": "KTX demo 8 UC — Spring Boot / PostgreSQL",
     "version": "1.1.0",
-    "description": "API Spring Boot 4.1.1 / PostgreSQL. Auth routes and POST /bookings have initial handlers; the remaining 8 UC operations are API contracts awaiting controllers. TOTP verification is unavailable until account secrets can be enrolled safely."
+    "description": "API Spring Boot 4.1.1 / PostgreSQL. Auth routes, TOTP enrollment and POST /bookings have runtime handlers; remaining 8 UC operations are API contracts awaiting controllers."
   },
   "servers": [
     {
@@ -6397,6 +6397,124 @@
           },
           "404": {
             "description": "Không có hoặc không sở hữu"
+          }
+        }
+      }
+    },
+    "/auth/2fa/setup": {
+      "post": {
+        "operationId": "post__auth_2fa_setup",
+        "tags": [
+          "AUTH"
+        ],
+        "summary": "Enroll an authenticator app for ADMIN or KETOAN",
+        "x-roles": [
+          "ADMIN",
+          "KETOAN"
+        ],
+        "responses": {
+          "200": {
+            "description": "Authenticator setup secret and provisioning URI",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "secret",
+                    "provisioningUri"
+                  ],
+                  "properties": {
+                    "secret": {
+                      "type": "string",
+                      "description": "Base32 key entered into Google Authenticator"
+                    },
+                    "provisioningUri": {
+                      "type": "string",
+                      "format": "uri",
+                      "description": "otpauth URI"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Login required"
+          },
+          "403": {
+            "description": "Role cannot enroll two-factor authentication"
+          },
+          "409": {
+            "description": "Authenticator is already configured"
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/auth/2fa/setup/confirm": {
+      "post": {
+        "operationId": "post__auth_2fa_setup_confirm",
+        "tags": [
+          "AUTH"
+        ],
+        "summary": "Confirm authenticator enrollment with a six-digit code",
+        "x-roles": [
+          "ADMIN",
+          "KETOAN"
+        ],
+        "responses": {
+          "200": {
+            "description": "Enrollment complete",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid code or request body"
+          },
+          "401": {
+            "description": "Code does not match"
+          },
+          "403": {
+            "description": "Role cannot enroll two-factor authentication"
+          },
+          "409": {
+            "description": "Setup has not started or account already has an authenticator"
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Otp"
+              }
+            }
           }
         }
       }

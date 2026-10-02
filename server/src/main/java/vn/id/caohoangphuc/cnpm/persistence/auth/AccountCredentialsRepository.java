@@ -8,6 +8,18 @@ public class AccountCredentialsRepository {
 
     public AccountCredentialsRepository(JdbcTemplate jdbc) { this.jdbc = jdbc; }
 
+    /** Returns the encrypted authenticator secret for an account, if one is enrolled. */
+    public Optional<String> findTotpSecret(int accountId) {
+        return jdbc.query("SELECT BiMatTOTP FROM TAI_KHOAN WHERE MaTaiKhoan=?",
+                rs -> rs.next() ? Optional.ofNullable(rs.getString(1)) : Optional.empty(), accountId);
+    }
+
+    /** Saves an encrypted authenticator secret after the owner proves they configured it. */
+    public boolean saveTotpSecret(int accountId, String encryptedSecret) {
+        return jdbc.update("UPDATE TAI_KHOAN SET BiMatTOTP=? WHERE MaTaiKhoan=? AND BiMatTOTP IS NULL",
+                encryptedSecret, accountId) == 1;
+    }
+
     /** Loads login details with a parameterized query; password matching stays in Spring Security. */
     public Optional<AccountCredentials> findByUsername(String username) {
         var rows = jdbc.query(

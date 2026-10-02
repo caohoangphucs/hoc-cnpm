@@ -4,3 +4,5 @@ server:
     session:
       cookie:
         secure: true
+security:
+  totp-encryption-key: ${TOTP_ENCRYPTION_KEY}

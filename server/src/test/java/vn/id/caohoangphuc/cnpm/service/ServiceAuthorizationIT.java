@@ -14,9 +14,9 @@ import vn.id.caohoangphuc.cnpm.api.dto.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-/** Black-box checks of service authorization against the CI PostgreSQL fixture. */
+/** Service-layer checks of use-case authorization against the CI PostgreSQL fixture. */
 @SpringBootTest(classes = KtxApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class UseCaseBlackBoxIT {
+class ServiceAuthorizationIT {
     private static final Actor STUDENT = new Actor(5, false);
     private static final Actor GUARD = new Actor(4, false);
     private static final OffsetDateTime NOW = OffsetDateTime.of(2026, 10, 3, 12, 0, 0, 0, ZoneOffset.UTC);

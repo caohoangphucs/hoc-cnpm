@@ -10,7 +10,7 @@ Hệ thống quản lý ký túc xá, phạm vi demo **8 UC**: UC-04, UC-12, UC-
 
 Đã thay nền Servlet/JSP bằng Spring Boot executable JAR, cấu hình DataSource, 27 entity theo schema hiện hành, repository đọc, DTO theo OpenAPI và các test nền. Tầng service/repository cho 8 UC dùng Java và SQL trực tiếp; schema hiện hành không định nghĩa function hoặc procedure nghiệp vụ. Frontend hiện là khung tổng quan chức năng với trạng thái kết nối thật.
 
-Tầng Java service/repository cho 8 UC đã được bổ sung; quy tắc nghiệp vụ nằm trong service Java, còn repository chỉ đọc/ghi SQL đơn giản. API đang bắt đầu được nối: auth routes tập trung trong `ApiRoutes`, login/session/logout và đăng ký phòng có handler; 2FA chưa cấu hình secret TOTP nên tài khoản ADMIN/KETOAN chưa thể vào API nghiệp vụ. Controller các UC còn lại và giao diện nghiệp vụ chưa hoàn tất. Adapter thanh toán và ký chứng nhận cũng cần tích hợp cấu hình provider trước khi dùng. Mật khẩu seed `123456` chỉ phục vụ dữ liệu demo và test DB. Không coi frontend scaffold hay CI xanh là nghiệm thu end-to-end 8 UC.
+Tầng Java service/repository cho 8 UC đã được bổ sung; quy tắc nghiệp vụ nằm trong service Java, còn repository chỉ đọc/ghi SQL đơn giản. API đang bắt đầu được nối: auth routes tập trung trong `ApiRoutes`, auth và đăng ký phòng có handler. Tài khoản ADMIN/KETOAN có thể đăng ký Google Authenticator qua API TOTP; giao diện chưa tích hợp luồng đăng ký. Controller các UC còn lại và giao diện nghiệp vụ chưa hoàn tất. Adapter thanh toán và ký chứng nhận cũng cần tích hợp cấu hình provider trước khi dùng. Mật khẩu seed `123456` chỉ phục vụ dữ liệu demo và test DB. Không coi frontend scaffold hay CI xanh là nghiệm thu end-to-end 8 UC.
 
 ## Cấu trúc
 

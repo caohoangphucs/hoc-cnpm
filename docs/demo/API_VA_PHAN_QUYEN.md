@@ -30,7 +30,7 @@ ADMIN không mặc nhiên được thanh toán thay SV hoặc hoàn thành phi�
 ## Endpoint hỗ trợ và tích hợp
 
 - Upload `POST /files` multipart: file JPG/PNG <=5MB, loại hồ sơ/minh chứng, tối đa 5 ảnh/phiếu. Kiểm magic bytes, decode ảnh, quét malware, strip EXIF, tên object UUID; trả fileId. Dữ liệu AES-256-GCM bằng khóa ngoài DB, mỗi tệp nonce riêng; TTL DRAFT 24 giờ nếu chưa gắn hồ sơ. Tải tệp qua `/files/{id}` kiểm owner hoặc quyền nghiệp vụ; không có public bucket.
-- `POST /auth/login`, `/auth/2fa`, `/auth/logout`; `GET /auth/session` public trả authenticated; khi chưa login chỉ csrfToken, khi đã login thêm role, trạng thái 2FA và idleExpiresAt. `/auth/2fa` hiện trả 503 an toàn vì schema chưa có secret TOTP đã đăng ký; ADMIN/KETOAN bị middleware chặn khỏi API nghiệp vụ tới khi tính năng này được cấu hình.
+- `POST /auth/login`, `/auth/2fa`, `/auth/2fa/setup`, `/auth/2fa/setup/confirm`, `/auth/logout`; `GET /auth/session` public trả authenticated; khi chưa login chỉ csrfToken, khi đã login thêm role, trạng thái 2FA và idleExpiresAt. ADMIN/KETOAN chưa đăng ký dùng `/auth/2fa/setup` để lấy khóa và provisioning URI; xác nhận mã bằng `/auth/2fa/setup/confirm`. Secret lưu mã hóa AES-GCM với `TOTP_ENCRYPTION_KEY`; `/auth/2fa` kiểm mã các lần đăng nhập sau.
 - `GET /notifications` và PATCH trạng thái đọc thuộc người dùng; worker mail/SMS không có endpoint công khai để gọi gửi tùy ý.
 - VNPay IPN GET `/payments/vnpay/ipn`, MoMo IPN POST `/payments/momo/ipn`; return URL GET chỉ hiển thị kết quả lấy từ server.
 - `POST /activities/{id}/attendance` chỉ ADMIN quét QR hợp lệ của hoạt động; không cộng điểm tại endpoint này.

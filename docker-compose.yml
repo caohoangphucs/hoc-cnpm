@@ -31,6 +31,7 @@ services:
       DB_NAME: ${DB_NAME:-cnpm_db}
       DB_USER: ${DB_USER:-cnpm_user}
       DB_PASS: ${DB_PASS:-cnpm_pass_2026}
+      TOTP_ENCRYPTION_KEY: ${TOTP_ENCRYPTION_KEY:-local-development-only-change-me}
       TZ: Asia/Ho_Chi_Minh
     depends_on:
       cnpm-db:
