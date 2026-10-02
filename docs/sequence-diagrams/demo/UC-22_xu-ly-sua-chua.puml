@@ -15,15 +15,12 @@ skinparam sequenceGroupBackgroundColor #F8FAFC
 actor "Nhân viên kỹ thuật" as A
 boundary "React / TypeScript" as UI
 control "RepairController" as C
-control "RepairService\n<<đề xuất>>" as S
+control "RepairService\n<<chưa triển khai>>" as S
 participant "RepairRepository" as D
-database "PostgreSQL\nSP / dữ liệu" as DB
-participant "Thông báo / Outbox\n<<đề xuất>>" as N
+database "PostgreSQL\nSQL trực tiếp / dữ liệu" as DB
+participant "Thông báo / Outbox\n<<chưa triển khai>>" as N
 note over C,DB
-Đã có: /maintenance/dashboard, /maintenance/complete-repair; usp_HoanThanhSuaChua.
-Tiếp nhận/gán người, ảnh, bảo hành, lịch hẹn và thông báo cần bổ sung.
-Đích mới: Spring Boot @RestController → @Service @Transactional → @Repository/JdbcTemplate.
-Code nền còn Servlet/DAO legacy; các bước ghi là thiết kế cần triển khai.
+UC-22: Java RepairService/RepairRepository đã có nhận phiếu, phân công, lịch sử, kiểm tra/xuất vật tư và đề nghị mua bù. Controller/API, bảo hành ngoài và worker thông báo còn thiếu. Các thao tác DB là SQL trực tiếp trong repository; không gọi procedure.
 end note
 ref over UI,C : Tiền điều kiện: đăng nhập, kiểm tra quyền phía server; Admin/Kế toán có 2FA
 A -> UI : Mở danh sách phiếu mới
@@ -69,7 +66,7 @@ else Tiếp nhận thành công
       C -> S : hoanThanh(kyThuat, phieu, vatTu)
       S -> S : Kiểm tra người phụ trách, trạng thái, số lượng hợp lệ
       S -> D : completeRepair(requestId, supplyId, quantity, worker, note)
-      D -> DB : usp_HoanThanhSuaChua(..., OUT status, message)
+      D -> DB : UPDATE phiếu và xuất kho bằng SQL cùng transaction
       opt Có xuất vật tư
         DB -> DB : Khóa VAT_TU FOR UPDATE; kiểm tra tồn
       end

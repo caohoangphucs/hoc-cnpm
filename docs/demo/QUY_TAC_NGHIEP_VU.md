@@ -4,7 +4,7 @@
 
 | Mã | Quy tắc và kết quả bắt buộc |
 |---|---|
-| BR-01 | PostgreSQL 16 là DB duy nhất của ứng dụng. Spring Boot 4.1.1, Java 17, Spring JDBC/HikariCP; nghiệp vụ nhiều bảng nằm trong PL/pgSQL procedure. |
+| BR-01 | PostgreSQL 16 là DB duy nhất. Các quy tắc của 8 UC nằm trong Java service; repository thực hiện SQL đọc/ghi đơn giản bằng Spring JDBC. Không tạo procedure mới cho các luồng này; procedure hiện hữu chỉ giữ làm tương thích/legacy đến khi được thay thế có chủ đích. |
 | BR-02 | Múi giờ nghiệp vụ Asia/Ho_Chi_Minh. Thời điểm mới lưu timestamptz; ngày lưu date; kỳ hóa đơn lưu ngày đầu tháng, API dùng YYYY-MM. Dữ liệu timestamp cũ được hiểu là giờ Việt Nam khi chuyển đổi. |
 | BR-03 | Giữ giường đúng 48 giờ tính từ thời điểm tạo đơn. Hết hạn khi expiresAt <= now. Hết hạn trả giường và HUY đơn trong cùng transaction; tác vụ chạy mỗi phút, thao tác duyệt luôn tự kiểm tra lại. |
 | BR-04 | Mỗi SV chỉ có một đơn CHO_DUYET chưa hết hạn hoặc một lưu trú DANG_O. Đơn DA_DUYET lịch sử không chặn đăng ký sau khi trả phòng. Giới tính của SV phải phù hợp tòa; TAT_CA chấp nhận cả NAM/NU. |

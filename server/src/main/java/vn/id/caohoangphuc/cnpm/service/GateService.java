@@ -137,9 +137,8 @@ public class GateService {
         input,
         CommandResultDto.class,
         () -> {
-          var owner = context.require(actor, "SINHVIEN", "BAOVE");
-          if (owner.role().equals("SINHVIEN")
-              && !repository.ownsStudent(owner.id(), input.hostStudentId()))
+          var owner = context.require(actor, "SINHVIEN");
+          if (!repository.ownsStudent(owner.id(), input.hostStudentId()))
             throw ServiceException.notFound("Student");
 
           // Thông tin khách được mã hóa trước khi ghi xuống cơ sở dữ liệu.
@@ -162,8 +161,7 @@ public class GateService {
               Map.of("hostStudentId", input.hostStudentId()));
           return new CommandResultDto(Long.toString(id), "PENDING", 1L, request.requestId());
         },
-        "SINHVIEN",
-        "BAOVE");
+        "SINHVIEN");
   }
 
   /** Nhân viên có quyền duyệt hoặc từ chối đăng ký khách. */
@@ -268,7 +266,7 @@ public class GateService {
   /** Xác nhận khách đã được duyệt và đang trong khung giờ thăm. */
   private void requireVisitorAllowed(GateRepository.Visitor visitor, Instant now) {
     if (visitor == null
-        || !visitor.state().equals("APPROVED")
+        || !(visitor.state().equals("PENDING") || visitor.state().equals("APPROVED"))
         || now.isBefore(visitor.validFrom())
         || !now.isBefore(visitor.validTo()))
       throw ServiceException.conflict("Visitor is not allowed at this time");

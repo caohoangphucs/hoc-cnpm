@@ -244,7 +244,7 @@ public class CommunityRepository {
   public int conversionDrl(String student, String semester) {
     return jdbc.queryForObject(
         "SELECT coalesce(sum(diemrenluyennhan),0) FROM quy_doi_diem q JOIN hoc_ky h USING(mahocky)"
-            + " WHERE q.masinhvien=? AND h.public_id=? AND q.trangthai='THANH_CONG'",
+            + " WHERE q.masinhvien=? AND h.public_id=? AND q.trangthai IN ('PENDING','THANH_CONG')",
         Integer.class,
         student,
         Long.parseLong(semester));

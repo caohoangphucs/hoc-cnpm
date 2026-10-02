@@ -13,9 +13,9 @@
 
 Compose đọc `.env` với PORT_WEB, PORT_DB, DB_NAME, DB_USER, DB_PASS; truyền cấu hình đồng bộ cho DB/app và chờ PostgreSQL healthy. PORT_DB là cổng host, không phải cổng container.
 
-Java chạy host không tự đọc `.env`; cần export DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS. DBContext mặc định host localhost:54321, trong container cnpm-db:5432; CI/CD truyền giá trị tường minh. JDBC URL: `jdbc:postgresql://HOST:PORT/DB`. HikariCP đặt `escapeSyntaxCallMode=callIfNoReturn` và timezone Asia/Ho_Chi_Minh.
+Java chạy host không tự đọc `.env`; cần export DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS. DBContext mặc định host localhost:54321, trong container cnpm-db:5432; CI/CD truyền giá trị tường minh. JDBC URL: `jdbc:postgresql://HOST:PORT/DB`. HikariCP dùng timezone Asia/Ho_Chi_Minh.
 
-Function đăng nhập được gọi qua PreparedStatement `SELECT * FROM usp_DangNhap(?)`. Procedures dùng CallableStatement/CALL, khai báo đầy đủ OUT đúng thứ tự. CI kiểm JDBC binding cả 9 procedure trong transaction rồi rollback. Tài khoản demo dùng BCrypt tương thích thư viện Java cho 123456; hash hỏng/mật khẩu sai bị từ chối. SERIAL được đồng bộ sau toàn bộ seed.
+Function đăng nhập và 9 procedure còn trong schema là thành phần legacy; service của 8 UC không gọi chúng. CI có thể giữ kiểm tra tương thích riêng cho schema cũ, không coi đó là cách triển khai nghiệp vụ mới. Tài khoản demo dùng BCrypt tương thích thư viện Java cho 123456; hash hỏng/mật khẩu sai bị từ chối. SERIAL được đồng bộ sau toàn bộ seed.
 
 ## Khởi tạo và cập nhật SQL
 

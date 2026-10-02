@@ -266,7 +266,7 @@ public class PaymentService {
 
   /** Không để sinh viên đọc hoặc thanh toán hóa đơn của người khác. */
   private void requireOwnedInvoice(PaymentRepository.Invoice invoice, String studentId) {
-    if (invoice == null || !invoice.studentId().equals(studentId))
+    if (invoice == null || !repository.belongsToStudent(invoice.id(), studentId))
       throw ServiceException.notFound("Invoice");
   }
 
