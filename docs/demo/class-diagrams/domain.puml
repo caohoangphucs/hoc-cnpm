@@ -1,0 +1,123 @@
+@startuml
+!pragma layout smetana
+skinparam classAttributeIconSize 0
+left to right direction
+title Mô hình miền 8 UC — thiết kế đích, không phải bảng đã có
+class SinhVien {
+ +id : String
+}
+class HocKy {
+ +start : LocalDate
+ +end : LocalDate
+}
+class Giuong {
+ +status : BedStatus
+}
+class DangKyPhong {
+ +expiresAt : Instant
+ +status : RegistrationStatus
+}
+class HoSoDangKy {
+ +fileIds : List<UUID>
+}
+class LuuTru {
+ +status : ResidencyStatus
+}
+class HopDong {
+ +status : ContractStatus
+}
+class HoaDon {
+ +total : BigDecimal
+ +paid : BigDecimal
+ +version : int
+}
+class HoaDonSnapshot {
+ +prices : JSON
+ +discounts : JSON
+}
+class PhienThanhToan {
+ +id : UUID
+ +amount : BigDecimal
+ +state : PaymentState
+}
+class PhanBoThanhToan {
+ +amount : BigDecimal
+}
+class YeuCauSuaChua {
+ +status : RepairStatus
+ +version : int
+}
+class XuatVatTu {
+ +quantity : int
+}
+class VatTu {
+ +stock : int
+}
+class TheKTX {
+ +tokenHash : String
+ +validTo : Instant
+}
+class RaVao {
+ +eventId : UUID
+ +time : Instant
+}
+class ViPham {
+ +status : ViolationStatus
+}
+class QuyetDinhKyLuat {
+ +revision : int
+}
+class KhieuNai {
+ +state : AppealState
+}
+class HoatDong {
+ +capacity : int
+ +start : Instant
+ +end : Instant
+}
+class DangKyCongIch {
+ +state : ActivityRegistrationState
+}
+class SoDiemCongIch {
+ +delta : int
+ +kind : LedgerKind
+}
+class QuyDoiDiem {
+ +drl : int
+ +transferId : UUID
+}
+class GiayXacNhan {
+ +sha256 : String
+ +revokedAt : Instant
+}
+SinhVien "1" -- "0..*" DangKyPhong
+DangKyPhong "0..*" -- "1" Giuong
+DangKyPhong "1" -- "1" HoSoDangKy
+DangKyPhong "1" -- "0..1" LuuTru
+SinhVien "1" -- "0..*" LuuTru
+LuuTru "1" -- "1" HopDong
+HocKy "1" -- "0..*" HopDong
+HoaDon "1" *-- "1" HoaDonSnapshot
+PhienThanhToan "1" *-- "1..*" PhanBoThanhToan
+PhanBoThanhToan "0..*" -- "1" HoaDon
+SinhVien "1" -- "0..*" PhienThanhToan
+SinhVien "1" -- "0..*" YeuCauSuaChua
+YeuCauSuaChua "1" -- "0..*" XuatVatTu
+XuatVatTu "0..*" -- "1" VatTu
+SinhVien "1" -- "0..*" TheKTX
+SinhVien "1" -- "0..*" RaVao
+RaVao "1" -- "0..1" ViPham
+ViPham "1" -- "0..*" QuyetDinhKyLuat
+QuyetDinhKyLuat "1" -- "0..*" KhieuNai
+HocKy "1" -- "0..*" HoatDong
+HoatDong "1" -- "0..*" DangKyCongIch
+SinhVien "1" -- "0..*" DangKyCongIch
+DangKyCongIch "1" -- "0..1" SoDiemCongIch : EARN
+SinhVien "1" -- "0..*" SoDiemCongIch
+SinhVien "1" -- "0..*" QuyDoiDiem
+SinhVien "1" -- "0..*" GiayXacNhan
+note bottom of LuuTru
+ Partial unique đảm bảo một lưu trú DANG_O/SV và /giường.
+ Lịch sử giữ nguyên; các quan hệ 1:1 là hậu điều kiện đích.
+end note
+@enduml

@@ -1,0 +1,93 @@
+@startuml UC-22_xu-ly-sua-chua
+title
+UC-22 — Tiếp nhận và xử lý yêu cầu sửa chữa
+REQ-030, REQ-003, REQ-015, REQ-005 • Thiết kế demo theo SRS cũ
+end title
+hide footbox
+autonumber
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 13
+skinparam backgroundColor #FFFFFF
+skinparam sequenceMessageAlign left
+skinparam maxMessageSize 85
+skinparam sequenceParticipantBackgroundColor #EAF2F8
+skinparam sequenceGroupBackgroundColor #F8FAFC
+actor "Nhân viên kỹ thuật" as A
+boundary "Giao diện" as UI
+control "MaintenanceServlet" as C
+control "MaintenanceService\n<<đề xuất>>" as S
+participant "MaintenanceDAO" as D
+database "PostgreSQL\nSP / dữ liệu" as DB
+participant "Thông báo / Outbox\n<<đề xuất>>" as N
+note over C,DB
+Đã có: /maintenance/dashboard, /maintenance/complete-repair; usp_HoanThanhSuaChua.
+Tiếp nhận/gán người, ảnh, bảo hành, lịch hẹn và thông báo cần bổ sung.
+Các Service và bước ghi là thiết kế đích; xem bảng khoảng cách triển khai.
+end note
+ref over UI,C : Tiền điều kiện: đăng nhập, kiểm tra quyền phía server; Admin/Kế toán có 2FA
+A -> UI : Mở danh sách phiếu mới
+UI -> C : Tải yêu cầu sửa chữa
+C -> S : danhSachYeuCau()
+S -> D : getRepairRequests(); getSupplies()
+D -> DB : YEU_CAU_SUA_CHUA, VAT_TU; ảnh và phân loại cần bổ sung
+DB --> D : Phiếu, ưu tiên, tồn kho
+D --> UI : Danh sách / empty state
+A -> UI : Chọn phiếu; nhấn Tiếp nhận
+UI -> C : requestId
+C -> S : tiepNhan(requestId, kyThuatTuSession)
+S -> D : Gán nhân viên nếu trạng thái MOI (transaction đề xuất)
+D -> DB : Cập nhật có điều kiện MOI → DANG_XU_LY và người phụ trách
+alt Phiếu đã được người khác tiếp nhận
+  DB --> UI : Báo xung đột; tải lại danh sách
+else Tiếp nhận thành công
+  DB --> UI : Phiếu DANG_XU_LY
+  A -> A : Đến phòng kiểm tra thiết bị
+  alt EF-1: Phòng khóa; không thể vào
+    A -> UI : Ghi lý do và khung giờ hẹn lại
+    UI -> C : Cập nhật lịch hẹn
+    C -> S : henLaiSuaChua(...)
+    S -> D : Lưu ghi chú; giữ DANG_XU_LY (đề xuất)
+    D -> DB : Ghi lịch hẹn và outbox
+    S -> N : Gửi lịch hẹn lại cho sinh viên
+  else Có thể kiểm tra
+    alt AF-1: Thiết bị điện
+      A -> A : Ngắt cầu dao; sửa thiết bị điện an toàn
+    else AF-2: Hệ thống nước
+      A -> A : Khóa van; sửa đường nước
+    else AF-3: Cần đơn vị bảo hành ngoài
+      A -> UI : Ghi đơn vị và ngày dự kiến hoàn tất
+      UI -> C : Chuyển chờ bảo hành
+      C -> S : capNhatBaoHanh(...)
+      S -> D : Lưu trạng thái chờ và outbox (đề xuất)
+      D -> DB : Cần bổ sung trạng thái / dữ liệu bảo hành
+      S -> N : Thông báo tiến độ
+    end
+    opt Đã sửa xong (không còn chờ bảo hành)
+      A -> UI : Nội dung công việc; vật tư/số lượng; Hoàn thành
+      UI -> C : requestId, supplyId, quantity, note
+      C -> S : hoanThanh(kyThuat, phieu, vatTu)
+      S -> S : Kiểm tra người phụ trách, trạng thái, số lượng hợp lệ
+      S -> D : completeRepair(requestId, supplyId, quantity, worker, note)
+      D -> DB : usp_HoanThanhSuaChua(..., OUT status, message)
+      opt Có xuất vật tư
+        DB -> DB : Khóa VAT_TU FOR UPDATE; kiểm tra tồn
+      end
+      alt EF-2: Không đủ vật tư
+        DB --> D : ERROR_50011; chưa trừ kho / chưa hoàn thành
+        D --> S : Thiếu vật tư
+        S -> D : Tạo đề xuất mua bổ sung (đề xuất)
+        D -> DB : Lưu đề xuất; phiếu giữ DANG_XU_LY
+        S --> UI : Cảnh báo thiếu vật tư; chờ bổ sung
+      else Đủ vật tư hoặc không cần xuất
+        DB -> DB : Trừ VAT_TU; ghi XUAT_VAT_TU nếu có\nPhiếu HOAN_THANH, ngày hoàn thành, ghi chú
+        D -> DB : Lưu lịch sử, audit và outbox cùng transaction (đề xuất)
+        DB --> D : SUCCESS
+        D --> S : Đã hoàn thành
+        S -> N : <<include>> Gửi nghiệm thu và link đánh giá
+        N -> N : Retry nếu email/SMS lỗi
+        S --> UI : Hoàn thành; cập nhật tồn kho và lịch sử phòng
+      end
+    end
+  end
+end
+@enduml
