@@ -12,6 +12,7 @@ import { lazy, Suspense } from 'react'
 import { AccountsPage } from '@/features/accounts/AccountsPage'
 import { BookingPage } from '@/features/booking/BookingPage'
 import { RegistrationReviewPage } from '@/features/registration-review/RegistrationReviewPage'
+import { InvoiceIssuancePage } from '@/features/invoice-issuance/InvoiceIssuancePage'
 
 const WorkspacePreview = import.meta.env.DEV ? lazy(() => import('./WorkspacePreview')) : null
 
@@ -28,7 +29,7 @@ export default function AppRoutes() {
           <Route path={workspacePath(workspace)} element={<AppShell workspace={workspace} />}>
             <Route index element={<OverviewPage workspace={workspace} />} />
             {workspace.navigation.filter((item) => item.path).map((item) => (
-              <Route key={item.path} path={item.path} element={workspace.id === 'admin' && item.path === 'accounts' ? <AccountsPage /> : workspace.id === 'admin' && item.path === 'bookings' ? <RegistrationReviewPage /> : workspace.id === 'student' && item.path === 'stay' ? <BookingPage /> : <FeatureFrame workspace={workspace} item={item} />} />
+              <Route key={item.path} path={item.path} element={workspace.id === 'admin' && item.path === 'accounts' ? <AccountsPage /> : workspace.id === 'admin' && item.path === 'bookings' ? <RegistrationReviewPage /> : workspace.id === 'student' && item.path === 'stay' ? <BookingPage /> : workspace.id === 'accountant' && item.path === 'invoices' ? <InvoiceIssuancePage /> : <FeatureFrame workspace={workspace} item={item} />} />
             ))}
             <Route path="*" element={<NotFoundPage home={workspacePath(workspace)} />} />
           </Route>

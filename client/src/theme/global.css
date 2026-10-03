@@ -4,6 +4,7 @@
 @import './accounts.css';
 @import './booking.css';
 @import './workflow.css';
+@import './invoice-issuance.css';
 
 :root {
   font-family: var(--app-font);
