@@ -53,6 +53,19 @@ pnpm dev
 
 Vite proxy `/api` đến localhost8080; Nginx triển khai dùng cùng origin nên không cần CORS khác domain.
 
+## Cách viết backend đơn giản
+
+Repository gọi SQL là class Java thông thường, được tạo bằng constructor trong
+`DatabaseConfiguration`. Kiểm tra tham số dùng các hàm `requiredText`, `positive`,
+`optionalText`; không cần `@Repository`, `@Validated` hay `@Transactional` trên các class này.
+Tham số sai phát sinh `IllegalArgumentException`; DTO sai vẫn phát sinh
+`ConstraintViolationException` từ Validator được gọi trực tiếp.
+
+`DormitoryProcedureRepository` dùng `TransactionTemplate` và vẫn bắt buộc caller mở
+transaction JDBC trước khi ghi. Lỗi từ procedure đánh dấu transaction để rollback.
+Annotation JPA trên entity và validation trên DTO được giữ vì phục vụ ánh xạ database
+và hợp đồng API. Chưa thêm controller/service cho các UC.
+
 ## Kiểm thử
 
 ```bash

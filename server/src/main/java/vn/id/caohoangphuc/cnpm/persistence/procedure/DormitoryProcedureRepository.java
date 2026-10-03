@@ -3,22 +3,18 @@ package vn.id.caohoangphuc.cnpm.persistence.procedure;
 import java.math.BigDecimal;
 import java.sql.Types;
 import java.util.Collections;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.*;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 import org.springframework.jdbc.core.CallableStatementCreator;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.validation.annotation.Validated;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 import vn.id.caohoangphuc.cnpm.api.dto.ApprovalDto;
 import vn.id.caohoangphuc.cnpm.api.dto.EntryDto;
 import vn.id.caohoangphuc.cnpm.api.dto.MeterDto;
 
 /** Existing SQL contracts only. Actors/student identity must come from a trusted Service. */
-@Repository
-@Validated
-@Transactional(propagation = Propagation.MANDATORY, transactionManager = "transactionManager")
 public class DormitoryProcedureRepository {
     public enum PaymentMethod { VNPAY, MOMO, VIETQR, TIEN_MAT }
     public enum ViolationLevel { LOW, MEDIUM, HIGH, CRITICAL }
@@ -37,53 +33,118 @@ public class DormitoryProcedureRepository {
         Procedure(String name, int[] outputs) { this.name = name; this.outputs = outputs; }
     }
     private final JdbcTemplate jdbc;
-    public DormitoryProcedureRepository(JdbcTemplate jdbc) { this.jdbc = jdbc; }
+    private final Validator validator;
+    private final TransactionTemplate transaction;
 
-    public ProcedureResult bookBed(@NotBlank @Size(max=20) String studentId,
-                                    @NotBlank @Size(max=20) String bedId) {
+    public DormitoryProcedureRepository(JdbcTemplate jdbc, Validator validator,
+                                        PlatformTransactionManager manager) {
+        this.jdbc = jdbc;
+        this.validator = validator;
+        this.transaction = new TransactionTemplate(manager);
+        this.transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_MANDATORY);
+    }
+
+    public ProcedureResult bookBed(String studentId, String bedId) {
+        requiredText(studentId, 20, "studentId");
+        requiredText(bedId, 20, "bedId");
         return call(Procedure.BOOK, studentId, bedId);
     }
-    public ProcedureResult decideBooking(@NotNull @Positive Integer registrationId,
-            @NotNull ApprovalDto.Decision decision, @Size(max=1000) String reason) {
+    public ProcedureResult decideBooking(Integer registrationId,
+            ApprovalDto.Decision decision, String reason) {
+        positive(registrationId, "registrationId");
+        required(decision, "decision");
+        optionalText(reason, 1000, "reason");
         if (decision == ApprovalDto.Decision.TU_CHOI && (reason == null || reason.isBlank()))
             throw new IllegalArgumentException("A rejection requires a reason");
         return call(Procedure.APPROVE, registrationId, decision.name(), reason);
     }
-    public ProcedureResult recordMeter(@NotNull @Valid MeterDto reading,
-                                       @NotBlank @Size(max=50) String actor) {
+    public ProcedureResult recordMeter(MeterDto reading, String actor) {
+        required(reading, "reading");
+        requiredText(actor, 50, "actor");
+        var violations = validator.validate(reading);
+        if (!violations.isEmpty()) throw new ConstraintViolationException(violations);
         // Current SQL columns are int4; do not silently truncate target API int64 values.
         return call(Procedure.METER, reading.roomId(), reading.month(),
             Math.toIntExact(reading.oldElectricity()), Math.toIntExact(reading.newElectricity()),
             Math.toIntExact(reading.oldWater()), Math.toIntExact(reading.newWater()), actor);
     }
-    public ProcedureResult issueInvoice(@NotBlank @Size(max=20) String roomId,
-            @NotNull @Pattern(regexp="^\\d{4}-(0[1-9]|1[0-2])$") String month) {
+    public ProcedureResult issueInvoice(String roomId, String month) {
+        requiredText(roomId, 20, "roomId");
+        required(month, "month");
+        if (!month.matches("^\\d{4}-(0[1-9]|1[0-2])$"))
+            throw new IllegalArgumentException("month must use YYYY-MM");
         return call(Procedure.INVOICE, roomId, month);
     }
-    public ProcedureResult confirmPayment(@NotBlank @Size(max=100) String reference,
-            @NotNull PaymentMethod method, @NotNull @Positive @Digits(integer=15, fraction=0) BigDecimal amount,
-            @NotBlank @Size(max=50) String actor) {
+    public ProcedureResult confirmPayment(String reference,
+            PaymentMethod method, BigDecimal amount,
+            String actor) {
+        requiredText(reference, 100, "reference");
+        required(method, "method");
+        required(amount, "amount");
+        if (amount.signum() <= 0 || amount.stripTrailingZeros().scale() > 0
+                || amount.compareTo(new BigDecimal("999999999999999")) > 0)
+            throw new IllegalArgumentException("amount must be a positive integer of at most 15 digits");
+        requiredText(actor, 50, "actor");
         return call(Procedure.PAYMENT, reference, method.name(), amount, actor);
     }
-    public ProcedureResult completeRepair(@NotNull @Positive Integer repairId,
-            @NotBlank @Size(max=20) String supplyId, @NotNull @Positive Integer quantity,
-            @NotBlank @Size(max=50) String actor, @Size(max=1000) String note) {
+    public ProcedureResult completeRepair(Integer repairId,
+            String supplyId, Integer quantity,
+            String actor, String note) {
+        positive(repairId, "repairId");
+        requiredText(supplyId, 20, "supplyId");
+        positive(quantity, "quantity");
+        requiredText(actor, 50, "actor");
+        optionalText(note, 1000, "note");
         return call(Procedure.REPAIR, repairId, supplyId, quantity, actor, note);
     }
-    public ProcedureResult recordEntry(@NotBlank @Size(max=20) String studentId,
-            @NotNull EntryDto.Type type, @NotBlank @Size(max=50) String actor, @Size(max=255) String note) {
+    public ProcedureResult recordEntry(String studentId,
+            EntryDto.Type type, String actor, String note) {
+        requiredText(studentId, 20, "studentId");
+        required(type, "type");
+        requiredText(actor, 50, "actor");
+        optionalText(note, 255, "note");
         return call(Procedure.GATE, studentId, type.name(), actor, note);
     }
-    public ProcedureResult handleDiscipline(@NotNull @Positive Integer violationId,
-            @NotNull ViolationLevel level, @NotBlank @Size(max=255) String decision,
-            @NotBlank @Size(max=50) String actor) {
+    public ProcedureResult handleDiscipline(Integer violationId,
+            ViolationLevel level, String decision,
+            String actor) {
+        positive(violationId, "violationId");
+        required(level, "level");
+        requiredText(decision, 255, "decision");
+        requiredText(actor, 50, "actor");
         return call(Procedure.DISCIPLINE, violationId, level.name(), decision, actor);
     }
-    public ProcedureResult registerCommunity(@NotBlank @Size(max=20) String studentId,
-                                              @NotBlank @Size(max=20) String activityId) {
+    public ProcedureResult registerCommunity(String studentId, String activityId) {
+        requiredText(studentId, 20, "studentId");
+        requiredText(activityId, 20, "activityId");
         return call(Procedure.COMMUNITY, studentId, activityId);
     }
+    private static void required(Object value, String field) {
+        if (value == null) throw new IllegalArgumentException(field + " is required");
+    }
+
+    private static void requiredText(String value, int max, String field) {
+        required(value, field);
+        if (value.isBlank()) throw new IllegalArgumentException(field + " must not be blank");
+        optionalText(value, max, field);
+    }
+
+    private static void optionalText(String value, int max, String field) {
+        if (value != null && value.length() > max)
+            throw new IllegalArgumentException(field + " must have at most " + max + " characters");
+    }
+
+    private static void positive(Integer value, String field) {
+        required(value, field);
+        if (value <= 0) throw new IllegalArgumentException(field + " must be positive");
+    }
+
     private ProcedureResult call(Procedure procedure, Object... inputs) {
+        // Join the caller's JDBC transaction; a failed procedure marks it for rollback.
+        return transaction.execute(status -> execute(procedure, inputs));
+    }
+
+    private ProcedureResult execute(Procedure procedure, Object... inputs) {
         int count = inputs.length + procedure.outputs.length;
         String sql = "{call " + procedure.name + "(" + String.join(",", Collections.nCopies(count, "?")) + ")}";
         ProcedureResult result = jdbc.execute((CallableStatementCreator) connection -> {
