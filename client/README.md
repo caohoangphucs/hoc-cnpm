@@ -4,7 +4,7 @@ Thư mục giao diện chính của KTX Smart Hub, lựa chọn **React + TypeSc
 
 ## Trạng thái hiện tại
 
-Đã khởi tạo React + TypeScript bằng template Vite `react-ts`, cấu hình React Router, ESLint, alias `@/`, biến môi trường, proxy dev và hàm gọi API dùng chung. Đã có khung ứng dụng theo 5 vai trò, điều hướng thích ứng và theme theo Material Design 3. Các màn hình nghiệp vụ hiện là khung nội dung, chưa gọi API hay thực hiện thao tác nghiệp vụ.
+Đã khởi tạo React + TypeScript bằng template Vite `react-ts`, cấu hình React Router, ESLint, alias `@/`, biến môi trường, proxy dev và hàm gọi API dùng chung. Đã có khung ứng dụng theo 5 vai trò, điều hướng thích ứng và theme theo Material Design 3. Giao diện xác thực và quản lý tài khoản đã có; các màn hình nghiệp vụ khác hiện là khung nội dung.
 
 ### Khung giao diện và điều hướng
 
@@ -33,6 +33,14 @@ Backend mới nằm trong server/, dùng Spring Boot/JAR và PostgreSQL. API JSO
 Backend hiện chỉ có nền tảng dữ liệu/Security và chưa expose `/auth/*`. Frontend đã nối theo contract trong `docs/demo/api/`, nhưng chưa thể đăng nhập thật khi chưa có các endpoint. Không có tài khoản giả hay tùy chọn bỏ qua guard trong sản phẩm. Kiểm thử luồng giao diện dùng response mô phỏng trong trình duyệt; không thay cho kiểm thử tích hợp backend.
 
 Đã kiểm tra login/2FA/logout cho 5 vai trò, CSRF, guard, lỗi HTTP/kết nối, session sai định dạng, phiên hết hạn, chống submit trùng, responsive light/dark từ 320 đến 1440px. `pnpm test` kiểm tra role/session/đường dẫn đích và health; dùng native TypeScript stripping của Node với cờ `--experimental-strip-types`, không thêm test runner hoặc browser dependency vào client.
+
+### Giao diện tài khoản và vai trò
+
+- `/admin/accounts`: danh sách tài khoản của Ban quản lý theo REQ-014 / UC-01, vẫn được bảo vệ bằng session và 2FA. Chưa có endpoint quản lý tài khoản nên trang hiển thị trạng thái chưa thể tải dữ liệu.
+- Đã có tìm kiếm tên/tên đăng nhập/email (hỗ trợ tìm không dấu), lọc vai trò/trạng thái, sắp xếp và phân trang; panel chi tiết, dialog chọn một trong 5 vai trò và xác nhận khóa/mở tài khoản.
+- Chạy `pnpm dev`, mở `/preview/admin/accounts` để thử giao diện bằng dữ liệu minh họa. Thay đổi chỉ giữ trong bộ nhớ; tải lại trang hoặc khôi phục dữ liệu mẫu sẽ đặt lại. Có lựa chọn xem trạng thái đang tải, danh sách trống và lỗi.
+- Route xem trước và dữ liệu minh họa chỉ có trong Vite dev, không nằm trong bản build production. Không tạo session giả hoặc bỏ guard của `/admin/accounts`; chưa gửi request thay đổi tài khoản.
+- Dùng chung theme, component và style xanh dương của layout. Dialog hỗ trợ Tab/Escape và phục hồi focus; bảng cuộn ngang trong vùng riêng trên màn hình nhỏ.
 
 ## 1. Công nghệ và môi trường
 
