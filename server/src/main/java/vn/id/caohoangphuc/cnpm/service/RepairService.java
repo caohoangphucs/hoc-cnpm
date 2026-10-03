@@ -7,6 +7,7 @@ import vn.id.caohoangphuc.cnpm.api.dto.AssignmentDto;
 import vn.id.caohoangphuc.cnpm.api.dto.CommandResultDto;
 import vn.id.caohoangphuc.cnpm.api.dto.RepairCompleteDto;
 import vn.id.caohoangphuc.cnpm.api.dto.RepairDto;
+import vn.id.caohoangphuc.cnpm.api.dto.CommandResultDto;
 import vn.id.caohoangphuc.cnpm.persistence.service.RepairRepository;
 import vn.id.caohoangphuc.cnpm.persistence.service.ServiceRepository;
 
@@ -67,6 +68,44 @@ public class RepairService {
             return repository.listForStudent(account.studentId(), page, size);
           return repository.list(account.role(), account.id(), page, size);
         });
+  }
+
+  /** Reads one repair request while enforcing student ownership and technician assignment. */
+  public RepairRepository.Repair get(Actor actor, int id) {
+    context.positive(id, "repairId");
+    return context.transaction(() -> {
+      var account = context.require(actor, "SINHVIEN", "KYTHUAT", "ADMIN");
+      var repair = repository.repair(id, false);
+      if (repair == null) throw ServiceException.notFound("Repair");
+      if ("SINHVIEN".equals(account.role()) && !account.studentId().equals(repair.studentId()))
+        throw ServiceException.notFound("Repair");
+      if ("KYTHUAT".equals(account.role())) {
+        var assignment = repository.assignment(id, false);
+        if (assignment == null || assignment.technicianId() != account.id())
+          throw ServiceException.notFound("Repair");
+      }
+      return repair;
+    });
+  }
+
+  /** Deletes an unassigned request owned by the student, or any eligible request for an admin. */
+  public CommandResultDto delete(Actor actor, RequestContext request, int id) {
+    context.positive(id, "repairId");
+    return context.write(actor, request, "DELETE:/api/v1/repairs/" + id, id,
+        CommandResultDto.class, () -> {
+          var account = context.require(actor, "SINHVIEN", "ADMIN");
+          var repair = repository.repair(id, true);
+          if (repair == null) throw ServiceException.notFound("Repair");
+          if ("SINHVIEN".equals(account.role()) && !account.studentId().equals(repair.studentId()))
+            throw ServiceException.notFound("Repair");
+          if (!"MOI".equals(repair.status()) || repository.hasHistory(id))
+            throw ServiceException.conflict("Only unassigned repair requests can be deleted");
+          if (!repository.deleteUnassigned(id)) throw ServiceException.notFound("Repair");
+          context.event(actor, request, "REPAIR_DELETED", Integer.toString(id),
+              java.util.Map.of("studentId", repair.studentId(), "roomId", repair.roomId()));
+          return new CommandResultDto(Integer.toString(id), "DELETED", repair.version() + 1,
+              request.requestId());
+        }, "SINHVIEN", "ADMIN");
   }
 
   /** Giao phiếu sửa chữa cho kỹ thuật viên. */

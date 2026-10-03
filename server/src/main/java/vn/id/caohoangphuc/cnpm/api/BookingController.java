@@ -22,11 +22,31 @@ import vn.id.caohoangphuc.cnpm.service.ServiceException;
 public class BookingController {
     private final BookingService bookings;
     private final AccountCredentialsRepository accounts;
+    private final ApiSupport api;
 
     /** Connects the booking endpoint to its service and account lookup. */
-    public BookingController(BookingService bookings, AccountCredentialsRepository accounts) {
+    public BookingController(BookingService bookings, AccountCredentialsRepository accounts, ApiSupport api) {
         this.bookings = bookings;
         this.accounts = accounts;
+        this.api = api;
+    }
+
+    /** Lists the authenticated student's bookings, or all bookings for administrators. */
+    public ServerResponse list(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> bookings.list(actor,
+                api.integerParameter(request, "page", 1), api.integerParameter(request, "pageSize", 20)));
+    }
+
+    /** Reads a booking visible to the authenticated student or administrator. */
+    public ServerResponse get(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> bookings.get(actor,
+                Integer.parseInt(request.pathVariable("id"))));
+    }
+
+    /** Deletes a pending booking and releases its bed. */
+    public ServerResponse delete(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> bookings.delete(actor, context,
+                Integer.parseInt(request.pathVariable("id"))));
     }
 
     /** Creates a room booking using the account established by the login middleware. */

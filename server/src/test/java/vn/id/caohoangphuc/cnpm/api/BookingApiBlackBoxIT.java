@@ -117,6 +117,35 @@ class BookingApiBlackBoxIT {
     }
 
     @Test
+    void studentCanReadAndDeleteOwnPendingBookingOverHttp() throws Exception {
+        var student = onlyStudent();
+        var session = login(student);
+        var created = postBooking(session, bookingBody(student.files().subList(0, 3), true), UUID.randomUUID());
+        int bookingId = Integer.parseInt(json.readTree(created.body()).path("id").asString());
+
+        var detail = send(session.client(), HttpRequest.newBuilder(uri(
+                        ApiRoutes.BOOKING.replace("{id}", Integer.toString(bookingId))))
+                .GET().build());
+        assertEquals(200, detail.statusCode(), detail.body());
+        assertEquals(bookingId, json.readTree(detail.body()).path("id").asInt());
+        assertEquals(student.studentId(), json.readTree(detail.body()).path("studentId").asString());
+
+        var list = send(session.client(), HttpRequest.newBuilder(uri(ApiRoutes.BOOKINGS + "?page=1&pageSize=10"))
+                .GET().build());
+        assertEquals(200, list.statusCode(), list.body());
+        assertEquals(1, json.readTree(list.body()).path("total").asInt());
+
+        var deleted = send(session.client(), HttpRequest.newBuilder(uri(
+                        ApiRoutes.BOOKING.replace("{id}", Integer.toString(bookingId))))
+                        .header("X-CSRF-TOKEN", session.csrfToken())
+                        .header("Idempotency-Key", UUID.randomUUID().toString())
+                .DELETE().build());
+        assertEquals(200, deleted.statusCode(), deleted.body());
+        assertEquals(0, bookingCount());
+        assertEquals("TRONG", bedStatus());
+    }
+
+    @Test
     void unauthenticatedHttpRequestIsRejected() throws Exception {
         var anonymous = sessionClient();
         var response = postBooking(anonymous.client(), anonymous.csrfToken(),

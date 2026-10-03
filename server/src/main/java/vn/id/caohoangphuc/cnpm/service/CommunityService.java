@@ -78,6 +78,43 @@ public class CommunityService {
         "ADMIN");
   }
 
+  /** Replaces activity details before students have created any registration history. */
+  public ActivityResourceDto updateActivity(
+      Actor actor, RequestContext request, long id, ActivityDto input) {
+    context.validate(input);
+    context.positive(id, "activityId");
+    return context.write(actor, request, "PUT:/api/v1/activities/" + id, input,
+        ActivityResourceDto.class, () -> {
+          context.require(actor, "ADMIN");
+          var current = repository.activity(id, true);
+          if (current == null) throw ServiceException.notFound("Activity");
+          if (repository.hasRegistrationHistory(current.id()))
+            throw ServiceException.conflict("Activity with registration history cannot be edited");
+          requireFutureActivity(input);
+          repository.updateActivity(id, input.semesterId(), input.title(), input.startAt().toInstant(),
+              input.endAt().toInstant(), Math.toIntExact(input.capacity()), Math.toIntExact(input.points()));
+          context.event(actor, request, "ACTIVITY_UPDATED", current.id(), Map.of("title", input.title()));
+          return resource(repository.activity(id, false));
+        }, "ADMIN");
+  }
+
+  /** Deletes an activity only before its registration history begins. */
+  public CommandResultDto deleteActivity(Actor actor, RequestContext request, long id) {
+    context.positive(id, "activityId");
+    return context.write(actor, request, "DELETE:/api/v1/activities/" + id, id,
+        CommandResultDto.class, () -> {
+          context.require(actor, "ADMIN");
+          var current = repository.activity(id, true);
+          if (current == null) throw ServiceException.notFound("Activity");
+          if (repository.hasRegistrationHistory(current.id()))
+            throw ServiceException.conflict("Activity with registration history cannot be deleted");
+          repository.deleteActivity(id);
+          context.event(actor, request, "ACTIVITY_DELETED", current.id(), Map.of("id", id));
+          return new CommandResultDto(Long.toString(id), "COMPLETED", current.version() + 1,
+              request.requestId());
+        }, "ADMIN");
+  }
+
   /** Registers a student after checking capacity, duplicate registration and schedule conflicts. */
   public RegistrationReceipt register(Actor actor, RequestContext request, long activityPublicId) {
     context.positive(activityPublicId, "activityId");
