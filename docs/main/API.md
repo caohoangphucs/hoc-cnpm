@@ -42,7 +42,7 @@ Body đăng nhập: `{"username":"sv001","password":"123456"}`. Body xác minh/c
 
 ## API nghiệp vụ
 
-Trong bảng dưới, đường dẫn đã bao gồm `/api/v1`. Các API phòng/giường dùng `page` (mặc định `1`) và `pageSize` (mặc định `20`, tối đa `100`). Các danh sách UC khác dùng `page` (mặc định `1`) và `size` (mặc định `20`).
+Trong bảng dưới, path ghi phần sau base path `/api/v1`; ví dụ `GET /rooms` gọi tại `/api/v1/rooms`. Phòng/giường, booking, invoice và payment dùng `page` (mặc định `1`) cùng `pageSize` (mặc định `20`, tối đa `100`). Repair, entries, visitors, violations và activities dùng `page` (mặc định `1`) cùng `size` (mặc định `20`).
 
 | UC | Method và path | Role | Body/query và tác vụ |
 |---|---|---|---|
@@ -208,6 +208,127 @@ Mỗi ID phải có version tương ứng trong `versions`. Khiếu nại body `
 ### UC-30 công ích
 
 Tạo hoạt động: `{"semesterId":1,"title":"Ngày Chủ nhật xanh","startAt":"2026-10-10T07:00:00Z","endAt":"2026-10-10T11:00:00Z","capacity":30,"points":2}`. `endAt` phải sau `startAt`. Đăng ký không có body; kết quả đăng ký cung cấp QR token để điểm danh. Điểm danh QR do `ADMIN` thực hiện với body `{"qrToken":"..."}`. Hủy dùng version đăng ký; xác nhận nhận danh sách ID đăng ký; điểm cần `semesterId`; quy đổi DRL từ 1 đến 5; yêu cầu chứng nhận chỉ cần `semesterId`.
+
+## Hợp đồng request/response cho các API CRUD
+
+Các ví dụ dưới đây là JSON thực tế theo DTO/controller hiện tại. Với các endpoint ghi, cần gửi `Content-Type: application/json`, session cookie và `X-CSRF-TOKEN`; `Idempotency-Key` được yêu cầu ở `POST /bookings` và tùy chọn ở các command khác. `X-Request-Id` tùy chọn. Dấu `—` nghĩa là endpoint không đọc body/query tương ứng.
+
+### UC-04 phòng, giường và đăng ký
+
+| Method và path | Path/query params | Request body | Response thành công |
+|---|---|---|---|
+| `GET /rooms` | `page` (mặc định 1), `pageSize` (mặc định 20, tối đa 100) | — | `{"items":[{"id":"A-101","buildingId":"TOA-A","roomType":"Phòng tiêu chuẩn","gender":"NAM","capacity":4,"availableBeds":2}],"page":1,"pageSize":20,"total":1}` |
+| `GET /rooms/{id}` | `id`: mã phòng | — | `{"id":"A-101","buildingId":"TOA-A","roomType":"Phòng tiêu chuẩn","gender":"NAM","capacity":4,"availableBeds":2}` |
+| `POST /rooms`, `PUT /rooms/{id}` | `PUT`: `id` phải trùng `body.id` | `{"id":"A-101","buildingId":"TOA-A","roomTypeId":"RT-01","number":"101","floor":1,"capacity":4,"basePrice":1500000,"status":"CON_CHO"}` | `{"id":"A-101","status":"COMPLETED","version":1,"requestId":"<uuid>"}` |
+| `DELETE /rooms/{id}` | `id`: mã phòng | — | `{"id":"A-101","status":"COMPLETED","version":1,"requestId":"<uuid>"}`; `409` nếu phòng còn dữ liệu vận hành liên kết. |
+| `GET /rooms/{id}/beds` | `id`: mã phòng; `page`, `pageSize` như danh sách phòng | — | `{"items":[{"id":"G-A-101-1","number":"G-01","status":"TRONG","version":1}],"page":1,"pageSize":20,"total":1}` |
+| `POST /beds`, `PUT /beds/{id}` | `PUT`: `id` phải trùng `body.id` | `{"id":"G-A-101-1","roomId":"A-101","number":"G-01","position":"Cửa sổ","status":"TRONG"}` | `{"id":"G-A-101-1","status":"COMPLETED","version":1,"requestId":"<uuid>"}` |
+| `DELETE /beds/{id}` | `id`: mã giường | — | `{"id":"G-A-101-1","status":"COMPLETED","version":1,"requestId":"<uuid>"}`; `409` nếu đã có đăng ký/lưu trú. |
+| `POST /bookings` | — | `{"bedId":"G-A-101-1","windowId":1,"fileIds":["<uuid-1>","<uuid-2>"],"acceptedTerms":true}` | `{"id":"12","status":"CHO_DUYET","version":1,"requestId":"<uuid>"}` |
+| `GET /bookings` | `page` (mặc định 1), `pageSize` (mặc định 20) | — | `{"items":[{"id":12,"bedId":"G-A-101-1","studentId":"21110001","status":"CHO_DUYET","expiresAt":"2026-10-04T12:00:00+07:00","profileState":"COMPLETE","version":1,"fileIds":["<uuid>"],"reason":null}],"page":1,"pageSize":20,"total":1}` |
+| `GET /bookings/{id}` | `id`: mã đăng ký | — | Một `BookingResourceDto` như phần tử `items` ở response danh sách. |
+| `DELETE /bookings/{id}` | `id`: mã đăng ký đang chờ duyệt | — | `{"id":"12","status":"DELETED","version":2,"requestId":"<uuid>"}`; `409` nếu không còn trạng thái chờ. |
+
+### UC-17 hóa đơn
+
+| Method và path | Path/query params | Request body | Response thành công |
+|---|---|---|---|
+| `POST /invoice-drafts` | — | `{"month":"2026-10","roomIds":["A-101"]}` | `{"id":"<uuid>","version":1,"month":"2026-10","rooms":[{"roomId":"A-101","oldElectricity":100,"newElectricity":110,"oldWater":20,"newWater":22,"electricityPrice":3000,"waterPrice":10000,"roomPrice":1000000,"discount":0,"extras":0,"total":1050000,"warnings":[]}],"inputHash":"<hash>"}`. |
+| `POST /invoices/issue` | — | `{"draftId":"<uuid>","version":1}` | Danh sách kết quả phát hành theo phòng, mỗi phần tử gồm `roomId`, `status`, `invoiceId`, `message`. |
+| `GET /invoices` | `page` (mặc định 1), `pageSize` (mặc định 20) | — | `{"items":[{"id":1,"roomId":"A-101","month":"2026-10","lines":[{"name":"Điện","quantity":10,"unitPrice":3000,"total":30000}],"discount":0,"total":30000,"paid":0,"balance":30000,"dueDate":"2026-10-15","status":"CHUA_TT"}],"page":1,"pageSize":20,"total":1}` |
+| `GET /invoices/{id}` | `id`: mã hóa đơn | — | Một `InvoiceResourceDto` như phần tử `items` ở response danh sách. |
+| `PUT /invoices/{id}` | `id`: mã hóa đơn | `{"dueDate":"2026-10-20"}` | `{"id":"1","status":"CHUA_TT","version":1,"requestId":"<uuid>"}` |
+| `DELETE /invoices/{id}` | `id`: mã hóa đơn chưa thanh toán và chưa có payment | — | `{"id":"1","status":"DELETED","version":1,"requestId":"<uuid>"}`; nếu đã thanh toán/có giao dịch thì `409`. |
+
+### UC-08 phiên thanh toán
+
+| Method và path | Path/query params | Request body | Response thành công |
+|---|---|---|---|
+| `POST /payment-sessions` | — | `{"invoiceIds":[1],"gateway":"VNPAY"}` (`gateway`: `VNPAY` hoặc `MOMO`) | `{"id":"<uuid>","gateway":"VNPAY","providerRef":"<uuid>","amount":30000,"invoiceIds":[1],"status":"PENDING","payUrl":"https://...","expiresAt":"2026-10-03T13:00:00Z"}`. Gateway chưa cấu hình trả `503`. |
+| `GET /payment-sessions` | `page` (mặc định 1), `pageSize` (mặc định 20) | — | Mảng `PaymentResourceDto`; sinh viên chỉ thấy phiên của mình. |
+| `GET /payment-sessions/{id}` | `id`: UUID phiên | — | Một `PaymentResourceDto` như phần tử danh sách. |
+| `DELETE /payment-sessions/{id}` | `id`: UUID phiên đang chờ | — | `{"id":"<uuid>","status":"DELETED","version":1,"requestId":"<uuid>"}`; chỉ xóa được trước khi provider xử lý/callback. |
+
+### UC-22 yêu cầu sửa chữa
+
+| Method và path | Path/query params | Request body | Response thành công |
+|---|---|---|---|
+| `POST /repairs` | — | `{"title":"Đèn hỏng","description":"Đèn không sáng","priority":"TRUNG_BINH","fileIds":[]}` | `{"id":"8","status":"MOI","version":1,"requestId":"<uuid>"}` |
+| `GET /repairs` | `page` (mặc định 1), `size` (mặc định 20) | — | Mảng record sửa chữa: `id`, `roomId`, `studentId`, `title`, `priority`, `status`, `version`. |
+| `GET /repairs/{id}` | `id`: mã phiếu | — | Một record sửa chữa với các trường như trên. |
+| `DELETE /repairs/{id}` | `id`: phiếu mới, chưa phân công/chưa có lịch sử | — | `{"id":"8","status":"DELETED","version":2,"requestId":"<uuid>"}`; nếu đã xử lý trả `409`. |
+
+### UC-25 lượt ra/vào và khách thăm
+
+| Method và path | Path/query params | Request body | Response thành công |
+|---|---|---|---|
+| `POST /entries` | — | `{"eventId":"<uuid>","cardToken":"<token>","type":"VAO","deviceId":"GATE-01","note":null}` | `{"eventId":"<uuid>","studentId":"21110001","type":"VAO","time":"2026-10-03T12:00:00+07:00","barrierStatus":"PENDING","violationId":null}`; `cardToken` không được trả về. |
+| `GET /entries` | `page` (mặc định 1), `size` (mặc định 20) | — | `{"items":[{"eventId":"<uuid>","studentId":"21110001","type":"VAO","time":"2026-10-03T12:00:00+07:00","barrierStatus":"OPENED","violationId":null}],"page":1,"pageSize":20,"total":1}` |
+| `GET /entries/{eventId}` | `eventId`: UUID sự kiện | — | Một `EntryResourceDto` như phần tử `items`. Đây là audit log, không hỗ trợ sửa/xóa trực tiếp. |
+| `POST /visitors` | — | `{"hostStudentId":"21110001","name":"Nguyen Van A","identity":"<so-giay-to>","validFrom":"2026-10-03T12:00:00Z","validTo":"2026-10-03T16:00:00Z"}` | `{"id":"3","status":"PENDING","version":1,"requestId":"<uuid>"}`; dữ liệu định danh lưu ở dạng mã hóa. |
+| `GET /visitors` | `page` (mặc định 1), `size` (mặc định 20) | — | Mảng `{ "id":3, "hostStudentId":"21110001", "state":"PENDING", "validFrom":"...", "validTo":"...", "version":1 }`; không trả tên/giấy tờ đã mã hóa. |
+| `GET /visitors/{id}` | `id`: mã khai báo | — | Một record visitor với các trường như trên. |
+| `DELETE /visitors/{id}` | `id`: visitor còn `PENDING` | — | `{"id":"3","status":"DELETED","version":2,"requestId":"<uuid>"}`; sau khi duyệt không được xóa. |
+
+### UC-14 vi phạm
+
+| Method và path | Path/query params | Request body | Response thành công |
+|---|---|---|---|
+| `GET /violations`, `GET /violations/pending` | `page` (mặc định 1), `size` (mặc định 20) | — | Mảng `ViolationResourceDto`: `id`, `studentId`, `semesterId`, `content`, `level`, `status`, `semesterCount`, `decisions`, `version`. |
+| `GET /violations/{id}` | `id`: mã vi phạm | — | Một `ViolationResourceDto` cùng các revision quyết định trong `decisions`. |
+| `POST /violations` | — | `{"studentId":"21110001","content":"Vi phạm nội quy","level":"LOW","occurredAt":"2026-10-03T12:00:00+07:00"}`; `occurredAt` có thể bỏ qua để dùng giờ hiện tại, nhưng ngày phải thuộc học kỳ cấu hình. | Một `ViolationResourceDto` có `status` là `CHUA_XU_LY`, `version`: 1 và `decisions`: `[]`. |
+| `PUT /violations/{id}` | `id`: mã vi phạm chưa xử lý | `{"content":"Nội dung đã hiệu chỉnh","level":"MEDIUM","version":1}` | Một `ViolationResourceDto` đã cập nhật, `version` tăng lên 2. |
+| `DELETE /violations/{id}` | `id`: vi phạm chờ, tạo thủ công, chưa liên kết lượt cổng/decision | — | `{"id":"3","status":"DELETED","version":1,"requestId":"<uuid>"}`; dữ liệu có lịch sử trả `409` và được giữ lại. |
+
+### UC-30 hoạt động
+
+| Method và path | Path/query params | Request body | Response thành công |
+|---|---|---|---|
+| `GET /activities` | `page` (mặc định 1), `size` (mặc định 20) | — | Mảng `ActivityResourceDto`: `id`, `semesterId`, `title`, `startAt`, `endAt`, `capacity`, `remaining`, `points`, `status`, `version`. |
+| `POST /activities`, `PUT /activities/{id}` | `PUT`: `id` là mã hoạt động | `{"semesterId":1,"title":"Ngày Chủ nhật xanh","startAt":"2026-10-10T07:00:00Z","endAt":"2026-10-10T11:00:00Z","capacity":30,"points":2}` | `ActivityResourceDto` như trên; sửa chỉ được trước khi có lịch sử đăng ký. |
+| `DELETE /activities/{id}` | `id`: mã hoạt động chưa có đăng ký | — | `{"id":"2","status":"COMPLETED","version":2,"requestId":"<uuid>"}`; có lịch sử đăng ký trả `409`. |
+
+## Request/response cho các thao tác nghiệp vụ khác
+
+| Method và path | Params | Request body | Response thành công |
+|---|---|---|---|
+| `POST /bookings/{id}/decision` | `id`: mã booking | `{"decision":"DUYET","reason":null,"version":1}` | `CommandResultDto`: `{"id":"12","status":"DA_DUYET","version":2,"requestId":"<uuid>"}`. `decision` nhận `DUYET`/`TU_CHOI`; từ chối phải có `reason`. |
+| `POST /repairs/{id}/assignment` | `id`: mã phiếu | `{"technicianAccountId":3,"scheduledAt":"2026-10-05T09:00:00Z","version":1}` | `CommandResultDto` gồm `id`, `status`, `version`, `requestId`. |
+| `PUT /repairs/{id}/schedule` | `id`: mã phiếu | `{"version":2,"scheduledAt":"2026-10-06T09:00:00Z","warrantyUntil":"2026-11-06","note":"Khách đổi lịch"}` | `CommandResultDto` gồm `id`, `status`, `version`, `requestId`. |
+| `POST /repairs/{id}/complete` | `id`: mã phiếu | `{"version":3,"note":"Đã thay bóng","supplies":[{"supplyId":"BONG-LED","quantity":1}],"warrantyUntil":"2026-11-06"}` | `{"status":"HOAN_THANH","result":{"id":"8","status":"HOAN_THANH","version":4,"requestId":"<uuid>"},"shortages":[]}`; thiếu vật tư trả trạng thái/`shortages` để xử lý bổ sung. |
+| `POST /visitors/{id}/approval` | `id`: mã khai báo | `{"decision":"DUYET","reason":null,"version":1}` | `CommandResultDto` gồm `id`, trạng thái `APPROVED` hoặc `REJECTED`, version và requestId. |
+| `POST /visitors/{id}/check-in`, `POST /visitors/{id}/check-out` | `id`: mã khách đang được duyệt | — | `CommandResultDto` gồm `id`, trạng thái lượt khách, version và requestId. |
+| `POST /violations/decisions` | — | `{"violationIds":[1],"decision":"NHAC_NHO","reason":"Vi phạm nội quy","evidenceFileId":"<uuid>","versions":{"1":1}}` | Mảng `ViolationResourceDto` sau quyết định; mỗi phần tử có lịch sử `decisions` và `version` mới. |
+| `POST /decisions/{id}/appeals` | `id`: mã decision | `{"content":"Đề nghị xem xét lại"}` | `CommandResultDto` với trạng thái `OPEN`. |
+| `POST /appeals/{id}/response` | `id`: mã appeal | `{"accepted":false,"reason":"Không đủ căn cứ","version":1}` | `CommandResultDto` với trạng thái `REJECTED` hoặc `ACCEPTED`. |
+| `POST /activities/{id}/registrations` | `id`: mã hoạt động | — | `{"id":4,"activityId":"2","status":"REGISTERED","qrToken":"<token>…","version":1}`. QR token dùng cho điểm danh; không ghi/chia sẻ trong log công khai. |
+| `DELETE /activities/{id}/registrations` | `id`: mã hoạt động; version nằm trong body | `{"version":1}` | `CommandResultDto` với `status` là `CANCELLED` và version mới. |
+| `POST /activities/attendance` | — | `{"qrToken":"<token>"}` | `CommandResultDto` cho đăng ký được điểm danh. |
+| `POST /activities/completion` | — | `{"registrationIds":[4,5]}` | Mảng `CommandResultDto`, một phần tử cho mỗi đăng ký xác nhận. |
+| `GET /activities/points` | Query bắt buộc `semesterId` | — | `{"semesterId":1,"earned":10,"available":10,"convertedDrl":0,"ledger":[]}`. |
+| `POST /activities/conversions` | — | `{"semesterId":1,"drl":1}` | `{"id":"<uuid>","status":"PENDING","pointsSpent":10,"drl":1,"externalState":"PENDING"}`. |
+| `POST /activities/certificates` | — | `{"semesterId":1}` | `{"id":"<uuid>","status":"PENDING","downloadUrl":null,"sha256":null,"signedAt":null}`. |
+| `POST /payment-callbacks/{gateway}` | `gateway`: `vnpay` hoặc `momo`; tham số callback do provider gửi dạng query/form | — | `PaymentResourceDto` của phiên được cập nhật. Callback không dùng cookie/CSRF; adapter phải xác minh chữ ký trước khi thay đổi trạng thái. |
+
+## Hợp đồng endpoint xác thực
+
+| Method và path | Params | Request body | Response thành công |
+|---|---|---|---|
+| `GET /auth/session` | Cookie session nếu có | — | `{"authenticated":false,"role":null,"twoFactorVerified":false,"csrfToken":"<token>","idleExpiresAt":null}`; khi đăng nhập, `authenticated`/`role`/`idleExpiresAt` phản ánh session hiện tại. |
+| `POST /auth/login` | Header `X-CSRF-TOKEN` lấy từ session trước | `{"username":"sv001","password":"123456"}` | `SessionDto`; đồng thời server đặt session cookie. Sai thông tin trả `401 INVALID_CREDENTIALS`. |
+| `POST /auth/2fa`, `POST /auth/2fa/setup/confirm` | Header `X-CSRF-TOKEN` | `{"code":"123456"}` | `SessionDto` với `twoFactorVerified` được cập nhật; setup confirm kích hoạt secret đã cấp trước. |
+| `POST /auth/2fa/setup` | Header `X-CSRF-TOKEN` | — | `{"secret":"<base32>","provisioningUri":"otpauth://totp/..."}`; response đặt `Cache-Control: no-store`. |
+| `POST /auth/logout` | Header `X-CSRF-TOKEN` | — | Session kết thúc và trả `SessionDto` chưa xác thực cùng CSRF token mới. |
+
+### Response lệnh và lỗi
+
+Các endpoint lệnh xóa/cập nhật đơn giản trả `CommandResultDto`:
+
+```json
+{"id":"12","status":"DELETED","version":2,"requestId":"<uuid>"}
+```
+
+`requestId` là UUID do client gửi qua `X-Request-Id` hoặc server tự sinh. Status và version cụ thể phụ thuộc lệnh; ví dụ tạo booking trả `CHO_DUYET`, còn xóa trả `DELETED`. Nếu request không hợp lệ, không đủ quyền, không thấy tài nguyên hoặc sai trạng thái, API trả error JSON như phần dưới; bảng trên ghi các trường hợp `409` quan trọng theo nghiệp vụ.
 
 ## Response và lỗi
 

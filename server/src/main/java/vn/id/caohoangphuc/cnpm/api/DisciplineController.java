@@ -10,7 +10,7 @@ import vn.id.caohoangphuc.cnpm.api.dto.ViolationWriteDto;
 import vn.id.caohoangphuc.cnpm.api.dto.ViolationUpdateDto;
 import vn.id.caohoangphuc.cnpm.service.DisciplineService;
 
-/** HTTP query for the administrator's unresolved violation queue. */
+/** HTTP endpoints for violation records, decisions, and appeals. */
 @Component
 public class DisciplineController {
     private final DisciplineService discipline;
@@ -48,13 +48,13 @@ public class DisciplineController {
                 request.body(ViolationWriteDto.class)));
     }
 
-    /** Updates the student, description, and severity fields allowed by the service. */
+    /** Updates the description and severity of a version-matched pending violation. */
     public ServerResponse update(ServerRequest request) throws Exception {
         return api.handle(request, (actor, context) -> discipline.update(actor, context,
                 Long.parseLong(request.pathVariable("id")), request.body(ViolationUpdateDto.class)));
     }
 
-    /** Deletes a violation and its associated decisions and appeals. */
+    /** Deletes only a pending manual violation that has no gate or decision history. */
     public ServerResponse delete(ServerRequest request) throws Exception {
         return api.handle(request, (actor, context) -> discipline.delete(actor, context,
                 Long.parseLong(request.pathVariable("id"))));
