@@ -6,6 +6,7 @@
 @import './workflow.css';
 @import './invoice-issuance.css';
 @import './payments.css';
+@import './maintenance.css';
 
 :root {
   font-family: var(--app-font);
