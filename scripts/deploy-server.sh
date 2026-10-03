@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deploy locally tested images with Compose; never alter production DB data.
+# Deploy tested images with Compose and apply the reviewed database migrations.
 set -Eeuo pipefail
 umask 077
 sha=${1:?Commit SHA required}
@@ -47,7 +47,8 @@ trap rollback ERR
 # Apply non-destructive database migrations before starting code that uses them.
 for migration in \
   V20261003__add_totp_secret.sql \
-  V20261004__service_runtime_schema.sql; do
+  V20261004__service_runtime_schema.sql \
+  V20261005__repair_room_type_utf8.sql; do
   echo "Applying database migration $migration"
   docker exec "$database_container" pg_isready -U "$database_user" -d "$database_name"
   docker exec -i "$database_container" psql -X -v ON_ERROR_STOP=1 --single-transaction \

@@ -135,6 +135,16 @@ class RoomCatalogApiBlackBoxIT {
     }
 
     @Test
+    void roomApiReturnsVietnameseRoomTypeTextOverHttp() throws Exception {
+        var student = login("sv001");
+        var response = send(student.client(), HttpRequest.newBuilder(uri(
+                ApiRoutes.ROOM.replace("{id}", "A-101"))).GET().build());
+
+        assertEquals(200, response.statusCode(), response.body());
+        assertEquals("Phòng Tiêu Chuẩn 4 Giường", json.readTree(response.body()).path("roomType").asString());
+    }
+
+    @Test
     void accountingRoleCannotReadRoomCatalogue() throws Exception {
         var accountant = login("ketoan1");
         var response = send(accountant.client(), HttpRequest.newBuilder(uri(ApiRoutes.ROOMS))
