@@ -42,10 +42,12 @@ Body đăng nhập: `{"username":"sv001","password":"123456"}`. Body xác minh/c
 
 ## API nghiệp vụ
 
-Trong bảng dưới, đường dẫn đã bao gồm `/api/v1`. `page` mặc định là `1`, `size` mặc định là `20` ở các endpoint danh sách.
+Trong bảng dưới, đường dẫn đã bao gồm `/api/v1`. Các API phòng/giường dùng `page` (mặc định `1`) và `pageSize` (mặc định `20`, tối đa `100`). Các danh sách UC khác dùng `page` (mặc định `1`) và `size` (mặc định `20`).
 
 | UC | Method và path | Role | Body/query và tác vụ |
 |---|---|---|---|
+| UC-04 | `GET /rooms?page=1&pageSize=20` | `SINHVIEN`, `ADMIN` | Danh sách phòng, thông tin tòa/loại phòng/giới tính áp dụng, sức chứa và số giường có thể đặt. |
+| UC-04 | `GET /rooms/{id}/beds?page=1&pageSize=20` | `SINHVIEN`, `ADMIN` | Danh sách giường thuộc phòng, gồm mã, số giường, trạng thái và version. Trả `404` nếu phòng không tồn tại. |
 | UC-04 | `POST /bookings` | `SINHVIEN` | Tạo đăng ký/giữ chỗ. Body xem [Đăng ký phòng](#uc-04-đăng-ký-phòng). Bắt buộc `Idempotency-Key`. |
 | UC-12 | `POST /bookings/{id}/decision` | `ADMIN` | Duyệt hoặc từ chối đăng ký; body gồm `decision`, `reason`, `version`. |
 | UC-17 | `POST /invoice-drafts` | `KETOAN` | Tạo bản xem trước hóa đơn theo tháng/phòng. |
@@ -80,6 +82,34 @@ Trong bảng dưới, đường dẫn đã bao gồm `/api/v1`. `page` mặc đ�
 ## Cấu trúc body theo UC
 
 ### UC-04 đăng ký phòng
+
+Tra cứu danh sách phòng và giường bằng `GET /api/v1/rooms?page=1&pageSize=20` và `GET /api/v1/rooms/{id}/beds?page=1&pageSize=20`. Hai API chỉ cho sinh viên và Admin; kết quả được phân trang và gồm cả trạng thái/version giường để giao diện biết tình trạng mới nhất. Số giường có thể đặt chỉ đếm giường `TRONG` ở phòng không bị khóa, sửa chữa hoặc đầy. Trạng thái có thể đổi sau khi tải danh sách, nên service vẫn kiểm tra lại khi gửi đăng ký.
+
+Ví dụ response danh sách phòng:
+
+```json
+{
+  "items":[
+    {"id":"A-101","buildingId":"TOA-A","roomType":"Phòng Tiêu Chuẩn 4 Giường","gender":"NAM","capacity":4,"availableBeds":1}
+  ],
+  "page":1,
+  "pageSize":20,
+  "total":20
+}
+```
+
+Ví dụ response giường của phòng:
+
+```json
+{
+  "items":[
+    {"id":"G-A-101-4","number":"G-04","status":"TRONG","version":1}
+  ],
+  "page":1,
+  "pageSize":20,
+  "total":4
+}
+```
 
 ```json
 {

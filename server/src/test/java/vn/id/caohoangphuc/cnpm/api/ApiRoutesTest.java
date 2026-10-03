@@ -22,6 +22,7 @@ class ApiRoutesTest {
     @BeforeEach
     void setUp() throws Exception {
         var auth = mock(AuthController.class);
+        var rooms = mock(RoomController.class);
         var bookings = mock(BookingController.class);
         var registrations = mock(RegistrationController.class);
         var invoices = mock(InvoiceController.class);
@@ -36,6 +37,8 @@ class ApiRoutesTest {
         when(auth.beginTwoFactorSetup(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
         when(auth.confirmTwoFactorSetup(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
         when(auth.logout(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
+        when(rooms.list(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
+        when(rooms.beds(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
         when(bookings.create(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
         when(registrations.decide(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
         when(invoices.preview(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
@@ -68,17 +71,19 @@ class ApiRoutesTest {
         when(community.requestCertificate(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
 
         mvc = MockMvcBuilders.routerFunctions(new ApiRoutes().apiRouter(
-                auth, bookings, registrations, invoices, payments, repairs, gate, discipline, community)).build();
+                auth, rooms, bookings, registrations, invoices, payments, repairs, gate, discipline, community)).build();
     }
 
     @Test
-    void declaresAuthenticationAndFirstBusinessRoutesInOnePlace() throws Exception {
+    void declaresAuthenticationAndBusinessRoutesInOnePlace() throws Exception {
         mvc.perform(get(ApiRoutes.AUTH_SESSION)).andExpect(status().isOk());
         mvc.perform(post(ApiRoutes.AUTH_LOGIN)).andExpect(status().isOk());
         mvc.perform(post(ApiRoutes.AUTH_TWO_FACTOR)).andExpect(status().isOk());
         mvc.perform(post(ApiRoutes.AUTH_TWO_FACTOR_SETUP)).andExpect(status().isOk());
         mvc.perform(post(ApiRoutes.AUTH_TWO_FACTOR_CONFIRM)).andExpect(status().isOk());
         mvc.perform(post(ApiRoutes.AUTH_LOGOUT)).andExpect(status().isOk());
+        mvc.perform(get(ApiRoutes.ROOMS)).andExpect(status().isOk());
+        mvc.perform(get(ApiRoutes.ROOM_BEDS.replace("{id}", "A-101"))).andExpect(status().isOk());
         mvc.perform(post(ApiRoutes.BOOKINGS)).andExpect(status().isOk());
         mvc.perform(post(ApiRoutes.BOOKING_DECISION.replace("{id}", "1"))).andExpect(status().isOk());
         mvc.perform(post(ApiRoutes.INVOICE_DRAFTS)).andExpect(status().isOk());

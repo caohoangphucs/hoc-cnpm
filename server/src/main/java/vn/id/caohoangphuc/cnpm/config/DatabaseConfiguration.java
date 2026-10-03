@@ -52,6 +52,11 @@ public class DatabaseConfiguration {
   }
 
   @Bean
+  RoomCatalogRepository roomCatalogRepository(JdbcTemplate jdbc) {
+    return new RoomCatalogRepository(jdbc);
+  }
+
+  @Bean
   InvoiceRepository invoiceRepository(JdbcTemplate jdbc) {
     return new InvoiceRepository(jdbc);
   }
@@ -94,6 +99,11 @@ public class DatabaseConfiguration {
   @Bean
   BookingService bookingService(BookingRepository repository, ServiceContext context) {
     return new BookingService(repository, context);
+  }
+
+  @Bean
+  RoomCatalogService roomCatalogService(RoomCatalogRepository repository, ServiceContext context) {
+    return new RoomCatalogService(repository, context);
   }
 
   @Bean
