@@ -68,6 +68,16 @@ jobs:
           psql -v ON_ERROR_STOP=1 --single-transaction -f database/migrations/V20261004__service_runtime_schema.sql
           test "$(psql -Atc "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name LIKE 'svc_%'")" = 23
           test "$(psql -Atc "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='public' AND ((table_name IN ('giuong','dang_ky_phong','yeu_cau_sua_chua','vi_pham','hoat_dong','dang_ky_cong_ich') AND column_name='version') OR (table_name IN ('hoc_ky','hoat_dong') AND column_name='public_id'))")" = 8
+      - name: Verify room type mojibake migration restores Vietnamese labels
+        run: |
+          psql -v ON_ERROR_STOP=1 --single-transaction <<'SQL'
+          UPDATE loai_phong
+          SET tenloaiphong=convert_from(convert_to(tenloaiphong,'UTF8'),'LATIN1')
+          WHERE maloaiphong IN ('LP-2','LP-4','LP-6');
+          SQL
+          psql -v ON_ERROR_STOP=1 --single-transaction -f database/migrations/V20261005__repair_room_type_utf8.sql
+          psql -v ON_ERROR_STOP=1 --single-transaction -f database/migrations/V20261005__repair_room_type_utf8.sql
+          test "$(psql -Atc "SELECT COUNT(*) FROM loai_phong WHERE (maloaiphong='LP-2' AND tenloaiphong='Phòng VIP 2 Giường') OR (maloaiphong='LP-4' AND tenloaiphong='Phòng Tiêu Chuẩn 4 Giường') OR (maloaiphong='LP-6' AND tenloaiphong='Phòng Tiêu Chuẩn 6 Giường')")" = 3
       - name: Build backend and run Java unit tests
         run: docker build --target build -t "cnpm-server-build:$CI_SHA" server
       - name: Run controller tests with MockMvc (no real HTTP or database)
