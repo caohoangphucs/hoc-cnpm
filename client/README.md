@@ -77,7 +77,7 @@ Preview/fixture đăng ký, duyệt hồ sơ, hóa đơn, thanh toán, sửa ch�
 - Mutation gửi `Idempotency-Key` và `X-Request-Id` ổn định theo method/path/payload để retry. Chỉ báo thành công khi server xác nhận; version/ownership/điều kiện nghiệp vụ vẫn do backend kiểm tra.
 - Test engine demo đã được thay bằng test DTO/payload, phân trang, version, timezone, URL thanh toán và lỗi API. Giữ test xác thực/health và các test cần thiết; không xóa test backend.
 - Kiểm tra bằng `pnpm run lint`, `pnpm run test`, `pnpm run typecheck`, `pnpm run build`. Test contract không thay thế kiểm thử tích hợp các mutation trên môi trường QA.
-- Kiểm tra đọc API local ngày 2026-10-03: 29 kiểm tra danh sách/chi tiết/DTO/quyền đọc đạt. Có 5 trường hợp GET trả 500 từ backend: ADMIN đọc bookings/visitors/entries; BAOVE đọc visitors/entries. Log PostgreSQL báo không xác định kiểu tham số NULL trong BookingRepository/GateRepository; frontend hiển thị lỗi và retry, không thay dữ liệu bằng demo. Lượt tích hợp này không sửa backend.
+- Kiểm tra đọc API local ngày 2026-10-03: 29 kiểm tra danh sách/chi tiết/DTO/quyền đọc đạt. Sau khi đồng bộ bản sửa backend `37208ce` từ develop và build lại server, cả 5 GET từng trả 500 đều trả 200 qua proxy Vite: ADMIN đọc bookings/visitors/entries; BAOVE đọc visitors/entries. Dữ liệu local hiện trống; đã kiểm tra cấu trúc danh sách và tổng phân trang khi API cung cấp, chưa kiểm tra lại với danh sách có dữ liệu. Bản sửa backend ép kiểu bộ lọc NULL trong BookingRepository/GateRepository; client không cần đổi cách gọi API.
 - Trạng thái hồ sơ hợp lệ để duyệt là `VALID` theo RegistrationService thực tế; ví dụ `COMPLETE` trong docs không đủ để mở nút duyệt.
 
 ## 1. Công nghệ và môi trường
