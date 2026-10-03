@@ -15,9 +15,10 @@ import { RegistrationReviewPage } from '@/features/registration-review/Registrat
 import { InvoiceIssuancePage } from '@/features/invoice-issuance/InvoiceIssuancePage'
 import { PaymentsPage } from '@/features/payments/PaymentsPage'
 import { MaintenancePage } from '@/features/maintenance/MaintenancePage'
+import { featurePages, type FeaturePageModule } from './featurePages'
 
 const WorkspacePreview = import.meta.env.DEV ? lazy(() => import('./WorkspacePreview')) : null
-const pages = { 'admin/accounts': AccountsPage, 'admin/bookings': RegistrationReviewPage, 'student/stay': BookingPage, 'accountant/invoices': InvoiceIssuancePage, 'student/invoices': PaymentsPage, 'technician/repairs': MaintenancePage }
+const pages = { 'admin/accounts': AccountsPage, 'admin/bookings': RegistrationReviewPage, 'student/stay': BookingPage, 'accountant/invoices': InvoiceIssuancePage, 'student/invoices': PaymentsPage, 'technician/repairs': MaintenancePage, ...featurePages(import.meta.glob<FeaturePageModule>('../features/*/route.tsx', { eager: true })) }
 
 export default function AppRoutes() {
   return (
