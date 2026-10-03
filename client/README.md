@@ -4,7 +4,7 @@ Thư mục giao diện chính của KTX Smart Hub, lựa chọn **React + TypeSc
 
 ## Trạng thái hiện tại
 
-Đã khởi tạo React + TypeScript bằng template Vite `react-ts`, cấu hình React Router, ESLint, alias `@/`, biến môi trường, proxy dev và hàm gọi API dùng chung. Đã có khung ứng dụng theo 5 vai trò, điều hướng thích ứng và theme theo Material Design 3. Giao diện xác thực, quản lý tài khoản, đăng ký phòng UC-04, duyệt hồ sơ UC-12 và phát hành hóa đơn UC-17 đã có; các màn hình nghiệp vụ khác hiện là khung nội dung.
+Đã khởi tạo React + TypeScript bằng template Vite `react-ts`, cấu hình React Router, ESLint, alias `@/`, biến môi trường, proxy dev và hàm gọi API dùng chung. Đã có khung ứng dụng theo 5 vai trò, điều hướng thích ứng và theme theo Material Design 3. Giao diện xác thực, quản lý tài khoản, đăng ký phòng UC-04, duyệt hồ sơ UC-12, phát hành hóa đơn UC-17 và thanh toán UC-08 đã có; các màn hình nghiệp vụ khác hiện là khung nội dung.
 
 ### Khung giao diện và điều hướng
 
@@ -59,6 +59,14 @@ Backend đã expose session/login/logout theo contract trong `docs/demo/api/`. X
 - Theo BR-06/07/08 của phạm vi demo: điện nước bằng mức sử dụng × đơn giá, không lũy tiến; chia tiền phòng theo lưu trú đầu kỳ, số dư theo MSSV tăng dần; giảm cao nhất đã xác định cho từng sinh viên, chỉ giảm tiền phòng và làm tròn xuống. Tính bằng số nguyên/BigInt, kiểm giới hạn tiền.
 - Phòng thiếu/sai dữ liệu hoặc đã phát hành bị chặn; có thể chọn bỏ qua phòng lỗi. Thay đổi kỳ/phòng/chi phí làm mất hiệu lực nháp; xung đột khi phát hành yêu cầu tạo lại nháp, lỗi dịch vụ giữ nháp để thử lại. Kết quả hiển thị riêng từng phòng, hạn trả bằng ngày phát hành tại Việt Nam + 15 ngày; có mô phỏng lỗi một phòng để thử lại và chống phát hành trùng.
 - Preview/fixture chỉ có ở dev; thao tác trong bộ nhớ, tải lại sẽ đặt lại. Excel đánh dấu nháp minh họa, chưa phát hành. Chưa lưu hóa đơn, gửi thông báo, tạo QR thanh toán hoặc thay đổi backend; nhập chỉ số/đơn giá thuộc UC khác.
+
+### Giao diện thanh toán hóa đơn — UC-08
+
+- `/student/invoices` giữ guard Sinh viên. API hóa đơn/phiên thanh toán/biên lai chưa được nối; trang thật hiển thị trạng thái chưa thể tải dữ liệu. `/preview/student/invoices` chỉ có ở Vite dev, với hóa đơn minh họa của phòng lưu trú và thao tác trong bộ nhớ.
+- Một trang gồm danh sách hóa đơn, tìm/lọc kỳ/trạng thái, chi tiết khoản thu, chọn một hoặc nhiều hóa đơn và khung thanh toán. Có VNPAY/MoMo theo `PaymentDto`, không nhập số tiền tùy ý: lấy toàn bộ dư nợ, lưu phân bổ cố định, kiểm VND nguyên đồng/giới hạn tổng tiền. Desktop có khung thanh toán cạnh danh sách; màn hình nhỏ chuyển thành một cột với liên kết đến phần thanh toán.
+- Xác nhận tạo phiên có hạn 15 phút, đếm ngược từng giây và chặn tạo thêm khi đang chờ hoặc cần đối soát. Retry lỗi tạo phiên giữ cùng request key; tạo phiên mới sau kết quả cuối dùng key mới. Quay về từ cổng hoặc đóng cửa sổ không gạch nợ; chỉ phản hồi thành công đã xác nhận mới cập nhật, kiểm tra lặp không cộng tiền lần hai.
+- Xem trước hỗ trợ pending/success/failed/canceled, sai tiền/kết quả không hợp lệ, hết hạn và thành công đến muộn. Thất bại/hủy/hết hạn giữ dư nợ; tiền đến muộn hoặc dữ liệu không khớp chuyển sang đối soát, chưa cho thanh toán lại. Có lịch sử phiên và biên lai minh họa sau thành công; nút in dùng chế độ in của trình duyệt, chỉ in nội dung biên lai có dấu minh họa.
+- Chưa redirect đến cổng thật, tạo QR, xác minh IPN/chữ ký ở browser, tự polling API, thu tiền hoặc cấp biên lai chính thức. Quyền sở hữu, số tiền, chữ ký và kết quả thanh toán thật phải do backend xác minh theo BR-09/10; fixture xem trước không nằm trong build production. Chưa triển khai tải PDF hóa đơn UC-02 trong nhánh UC-08.
 
 ## 1. Công nghệ và môi trường
 
