@@ -63,9 +63,9 @@ Trong bảng dưới, path ghi phần sau base path `/api/v1`; ví dụ `GET /ro
 | UC-04 | `DELETE /bookings/{id}` | `SINHVIEN`, `ADMIN` | Xóa đăng ký đang chờ duyệt và trả giường về trạng thái trống; trạng thái khác trả `409`. |
 | UC-12 | `POST /bookings/{id}/decision` | `ADMIN` | Duyệt hoặc từ chối đăng ký; body gồm `decision`, `reason`, `version`. |
 | UC-17 | `POST /invoice-drafts` | `KETOAN` | Tạo bản xem trước hóa đơn theo tháng/phòng. |
-| UC-17 | `GET /invoices?page=1&pageSize=20` | `SINHVIEN`, `KETOAN`, `ADMIN` | Danh sách hóa đơn; sinh viên chỉ xem hóa đơn phòng đã ở trong kỳ đó. |
+| UC-17 | `GET /invoices?page=1&pageSize=20` | `SINHVIEN`, `KETOAN`, `ADMIN` | Danh sách hóa đơn; sinh viên được lọc theo quyền hóa đơn bên dưới. |
 | UC-17 | `POST /invoices/issue` | `KETOAN` | Phát hành từ bản xem trước; body gồm `draftId`, `version`. |
-| UC-17 | `GET /invoices/{id}` | `SINHVIEN`, `KETOAN`, `ADMIN` | Chi tiết hóa đơn và các dòng phí; quyền sinh viên giới hạn theo lưu trú. |
+| UC-17 | `GET /invoices/{id}` | `SINHVIEN`, `KETOAN`, `ADMIN` | Chi tiết hóa đơn và các dòng phí; quyền sinh viên áp dụng giống danh sách và thanh toán. |
 | UC-17 | `PUT /invoices/{id}` | `KETOAN`, `ADMIN` | Đổi hạn thanh toán khi hóa đơn chưa thanh toán. Body `{"dueDate":"YYYY-MM-DD"}`. |
 | UC-17 | `DELETE /invoices/{id}` | `KETOAN`, `ADMIN` | Xóa hóa đơn chưa thanh toán và chưa có giao dịch thanh toán. |
 | UC-08 | `POST /payment-sessions` | `SINHVIEN` | Tạo phiên thanh toán cho hóa đơn của sinh viên. Hiện trả `503 PAYMENT_GATEWAY_UNAVAILABLE` nếu chưa cấu hình adapter tương ứng. |
@@ -162,6 +162,14 @@ Ví dụ response giường của phòng:
 ```
 
 `decision` là `DUYET` hoặc `TU_CHOI`; từ chối cần có `reason`. `version` phải khớp phiên bản đăng ký đang xử lý.
+
+Quyền hóa đơn của sinh viên dùng chung cho danh sách, chi tiết và thanh toán:
+
+- Nếu hóa đơn có snapshot lúc phát hành, chỉ sinh viên trong `occupants` được truy cập.
+- Nếu chưa có snapshot, đối chiếu khoảng ngày lưu trú với tháng hóa đơn (bao gồm ngày đầu/cuối tháng).
+- Với dữ liệu cũ chưa có bất kỳ lịch sử lưu trú nào, chỉ sinh viên `DANG_O` có `MaPhongHienTai` trùng phòng hóa đơn được truy cập. Khi đã có lịch sử hoặc snapshot, không dùng quy tắc tương thích này.
+
+Migration `V20261007` bổ sung ba hoạt động demo và học kỳ còn thiếu cho database cũ. Migration chỉ thêm bản ghi chưa tồn tại, không đổi hoạt động đã chỉnh sửa và không tạo đăng ký/điểm công ích giả; số đăng ký của hoạt động mới là 0.
 
 ### UC-17 hóa đơn
 
