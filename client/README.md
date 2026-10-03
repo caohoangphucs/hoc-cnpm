@@ -4,7 +4,7 @@ Thư mục giao diện chính của KTX Smart Hub, lựa chọn **React + TypeSc
 
 ## Trạng thái hiện tại
 
-Đã khởi tạo React + TypeScript bằng template Vite `react-ts`, cấu hình React Router, ESLint, alias `@/`, biến môi trường, proxy dev và hàm gọi API dùng chung. Đã có khung ứng dụng theo 5 vai trò, điều hướng thích ứng và theme theo Material Design 3. Giao diện xác thực, quản lý tài khoản, đăng ký phòng UC-04, duyệt hồ sơ UC-12, phát hành hóa đơn UC-17, thanh toán UC-08 và xử lý sửa chữa UC-22 đã có; các màn hình nghiệp vụ khác hiện là khung nội dung.
+Client dùng React + TypeScript + Vite, pnpm, React Router và theme Material Design 3 theo 5 vai trò. Đã nối API thật cho xác thực, sửa chữa, kiểm soát cổng/khách thăm, danh sách vi phạm và công ích. Tài khoản, đăng ký/duyệt phòng và hóa đơn/thanh toán vẫn có preview dev riêng; chưa nối các API tra cứu mới hoặc còn thiếu endpoint/phần tích hợp cần thiết. Các phần đã nối API sử dụng route thật với session guard.
 
 ### Khung giao diện và điều hướng
 
@@ -18,7 +18,7 @@ Thư mục giao diện chính của KTX Smart Hub, lựa chọn **React + TypeSc
 
 Đã kiểm tra khung layout trên dev và production preview: route theo 5 vai trò, responsive từ 320 đến 1600px, active state, drawer/Tab/Escape/focus, trang 404, theme sáng/tối và reduced motion. Lint, typecheck, build đều đạt. Sau khi chỉnh theo mẫu, đối chiếu lại font, sidebar, app bar và card ở desktop/mobile. Đây là kiểm tra khung giao diện, chưa kiểm thử API hoặc xác thực.
 
-Backend mới nằm trong server/, dùng Spring Boot/JAR và PostgreSQL. Đã có controller session/login/logout và POST /api/v1/bookings; các API tra cứu phòng/giường, đợt đăng ký và upload hồ sơ chưa hoàn chỉnh. Nginx proxy cùng origin và /api/health kiểm readiness thật.
+Backend nằm trong `server/`, dùng Spring Boot/JAR và PostgreSQL. Danh sách endpoint hiện tại nằm trong [API.md](../docs/main/API.md). Nginx proxy cùng origin và `/api/health` kiểm readiness thật.
 
 ### Giao diện xác thực
 
@@ -30,7 +30,7 @@ Backend mới nằm trong server/, dùng Spring Boot/JAR và PostgreSQL. Đã c�
 - Giữ đường dẫn đích trong router state để trở lại sau đăng nhập/2FA, chỉ chấp nhận đường dẫn trong không gian của vai trò server trả về.
 - Style dùng chung Google Sans/Roboto, palette xanh dương, token surface/shape của layout; bổ sung token error cho light/dark. Nginx CSP cho phép đúng hai origin Google Fonts cần cho font của mẫu.
 
-Backend đã expose session/login/logout theo contract trong `docs/demo/api/`. Xác minh 2FA thật chưa hoàn chỉnh vì chưa có TOTP secret được đăng ký. Client chưa kiểm thử tích hợp với backend mới trong nhánh giao diện này. Không có tài khoản giả hay tùy chọn bỏ qua guard trong sản phẩm. Kiểm thử luồng giao diện dùng response mô phỏng trong trình duyệt; không thay cho kiểm thử tích hợp backend.
+Backend expose session/login/logout và các route TOTP. Client dùng trạng thái `twoFactorVerified` thực tế từ session; chưa có giao diện thiết lập secret TOTP. Đã kiểm tra đăng nhập và điều hướng theo vai trò với backend local. Không có tài khoản giả hoặc tùy chọn bỏ qua guard trong sản phẩm.
 
 Đã kiểm tra login/2FA/logout cho 5 vai trò, CSRF, guard, lỗi HTTP/kết nối, session sai định dạng, phiên hết hạn, chống submit trùng, responsive light/dark từ 320 đến 1440px. `pnpm test` kiểm tra role/session/đường dẫn đích và health; dùng native TypeScript stripping của Node với cờ `--experimental-strip-types`, không thêm test runner hoặc browser dependency vào client.
 
@@ -68,14 +68,45 @@ Backend đã expose session/login/logout theo contract trong `docs/demo/api/`. X
 - Xem trước hỗ trợ pending/success/failed/canceled, sai tiền/kết quả không hợp lệ, hết hạn và thành công đến muộn. Thất bại/hủy/hết hạn giữ dư nợ; tiền đến muộn hoặc dữ liệu không khớp chuyển sang đối soát, chưa cho thanh toán lại. Có lịch sử phiên và biên lai minh họa sau thành công; nút in dùng chế độ in của trình duyệt, chỉ in nội dung biên lai có dấu minh họa.
 - Chưa redirect đến cổng thật, tạo QR, xác minh IPN/chữ ký ở browser, tự polling API, thu tiền hoặc cấp biên lai chính thức. Quyền sở hữu, số tiền, chữ ký và kết quả thanh toán thật phải do backend xác minh theo BR-09/10; fixture xem trước không nằm trong build production. Chưa triển khai tải PDF hóa đơn UC-02 trong nhánh UC-08.
 
-### Giao diện xử lý sửa chữa — UC-22
+### Sửa chữa — UC-22 và gửi sự cố
 
-- `/technician/repairs` giữ guard Kỹ thuật; chưa nối API phiếu, phân công/lịch sử và vật tư nên trang thật hiển thị trạng thái chưa thể tải dữ liệu. Chạy `pnpm dev`, mở `/preview/technician/repairs` để thử; dữ liệu và thao tác minh họa chỉ có ở dev, trong bộ nhớ.
-- Một trang danh sách với tìm phiếu/phòng/sự cố/người báo, lọc trạng thái/ưu tiên/người phụ trách, sắp xếp và phân trang. Panel chi tiết gồm mô tả, người phụ trách, lịch, ghi chú, vật tư đã xuất và lịch sử; bảng cuộn ngang trong vùng riêng trên màn hình nhỏ.
-- Theo [UC-22](../docs/demo/THIET_KE_XU_LY.md) và BR-11: tiếp nhận phiếu mới cho chính mình, hẹn lại khi phòng khóa, ghi đơn vị bảo hành/ngày dự kiến mà giữ trạng thái đang xử lý; xác nhận bàn giao trước khi hoàn thành. Lịch nhập luôn theo UTC+7, không phụ thuộc múi giờ máy. Phiếu người khác phụ trách chỉ cho xem; phiếu hoàn thành/hủy không được xử lý lại.
-- Form hoàn thành có nội dung bắt buộc, hạn bảo hành tùy chọn, nhiều vật tư/số lượng nguyên dương, chặn trùng vật tư. Đủ tồn thì xuất kho cùng hoàn thành một lần; thiếu bất kỳ món nào thì tạo đề nghị mua phần thiếu, không trừ món nào và không hoàn thành. Không tự tăng tồn. Cho hủy phiếu đang phụ trách trước hoàn thành với lý do lưu lịch sử.
-- Có loading/empty/error, lỗi tại trường, chống submit lặp, mô phỏng xung đột/gián đoạn giữ thông tin nhập. Retry trong cùng form và payload giữ request key; đề nghị mua lặp với cùng key không tạo thêm dòng. Quay lại chi tiết/đóng form chủ động sẽ bỏ nội dung form chưa gửi.
-- Chưa gọi API sửa chữa, ghi/xuất kho, gửi thông báo/link đánh giá hoặc xử lý ảnh thật. Backend hiện có service tiếp nhận/hẹn/xuất vật tư; contract ảnh, đơn vị bảo hành ngoài và hủy phiếu cần bổ sung khi tích hợp. Gửi yêu cầu sửa chữa của Sinh viên (UC-03) và quản lý/nhập kho vật tư (UC-15) nằm ngoài nhánh này.
+- `/student/repairs`: `GET /repairs` theo sinh viên đang đăng nhập; `POST /repairs` gửi tiêu đề, mô tả và ưu tiên, không giả lập tệp đính kèm.
+- `/technician/repairs`: danh sách công việc đã phân công cho kỹ thuật viên, tìm/lọc trên trang hiện tại và phân trang máy chủ. `PUT /repairs/{id}/schedule` đổi lịch; `POST /repairs/{id}/complete` gửi version và vật tư thực tế đã dùng.
+- Thiếu tồn kho: hiển thị danh sách mã thiếu và đề nghị mua, giữ phiếu đang xử lý; không báo đã xuất kho/hoàn thành. Khi sửa payload, request key mới được tạo; retry cùng payload lỗi mạng giữ cả hai header chống lặp.
+- Mô tả, lịch sử, lịch hẹn hiện tại và danh mục tồn kho chưa có API đọc; không dựng dữ liệu thay thế. Session chưa trả account ID và chưa có API chọn kỹ thuật viên nên giao diện tiếp nhận/phân công chưa khả dụng. Hủy phiếu và bảo hành ngoài cũng chưa có endpoint.
+- Preview sửa chữa đã xóa. `/preview/technician/repairs` chuyển sang route thật, yêu cầu đăng nhập.
+
+### Kiểm soát cổng và khách thăm — UC-25
+
+- `/security/gate`: `POST /entries` gửi mã thẻ, hướng, thiết bị và UUID sự kiện; dùng thời điểm, vi phạm và trạng thái barrier do server trả về. Trạng thái `PENDING` không được coi là cổng đã mở. Không mô phỏng phản hồi thiết bị hoặc tạo vi phạm phía client.
+- `/student/visitors`: `POST /visitors` khai báo khách với MSSV của tài khoản, giấy tờ và khoảng thời gian UTC+7. Sau khi gửi, hiển thị mã phiếu để người dùng lưu lại.
+- `/security/visitors`: `POST /visitors/{id}/check-in` hoặc `check-out` sau khi đối chiếu giấy tờ/phiếu; dùng mã khai báo thực. Giao diện chưa nối API tra cứu khách hoặc nhật ký đầy đủ. Danh sách lượt vừa ghi chỉ giữ trong phiên trang và được ghi nhãn rõ.
+- Preview cổng/khách thăm đã xóa; đường dẫn cũ chuyển sang route thật.
+
+### Vi phạm và kỷ luật — UC-14
+
+- `/admin/discipline`: `GET /violations/pending` tải hồ sơ chờ xử lý, số lần đã xác nhận theo học kỳ và lịch sử quyết định. Tìm trên trang hiện tại; phân trang từ server, không tính lại số lần bằng số dòng đang hiển thị.
+- Ra quyết định cần UUID minh chứng đã lưu, nhưng chưa có endpoint upload/tra cứu minh chứng. Giao diện không gửi UUID hoặc tên tệp giả; thao tác này chưa khả dụng. API đọc quyết định/khiếu nại dành cho sinh viên cũng chưa có.
+- Preview vi phạm và mô phỏng quyết định/khiếu nại đã xóa.
+
+### Công ích — UC-30
+
+- `/student/community`, `/admin/community`: `GET /activities`, phân trang máy chủ; mở hoạt động qua `POST /activities`, đăng ký qua `POST /activities/{activityId}/registrations`.
+- Phiếu dùng QR token thật server trả về. Hủy qua `DELETE /activities/{registrationId}/registrations` với version; ID ở đường dẫn là **mã đăng ký**, không phải mã hoạt động.
+- Ban quản lý dùng `POST /activities/attendance` và `POST /activities/completion`. Danh sách phiếu hoặc lượt điểm danh trong phiên chỉ gồm kết quả đã xác nhận từ server; chưa có endpoint đọc toàn bộ lịch tham gia/danh sách người tham gia.
+- Sinh viên chọn mã học kỳ để đọc `GET /activities/points`, quy đổi qua `POST /activities/conversions`, yêu cầu giấy qua `POST /activities/certificates`. Quy đổi hiển thị chờ xác nhận; giấy chưa có API tải/poll PDF. Không tự cộng điểm hoặc mô phỏng hệ thống rèn luyện.
+- Đã sửa lỗi service quy đổi truyền mã học kỳ nội bộ vào repository yêu cầu mã số công khai; test hồi quy giữ phân biệt hai loại mã.
+- Preview công ích và dữ liệu mẫu đã xóa.
+
+Các API CRUD và tra cứu phòng/giường, hồ sơ, hóa đơn, khách thăm, nhật ký vừa được bổ sung trên `develop` đã được đồng bộ vào nhánh. Đợt frontend này giữ phạm vi đã triển khai; việc nối các endpoint mới còn lại cần một lượt triển khai tiếp theo.
+
+### API dùng chung và kiểm tra
+
+- `src/shared/api/client.ts`: base URL, cookie và CSRF. `hooks.ts`: tải/hủy request khi đổi trang, loading/error/retry, khóa submit, đọc session/CSRF mới trước mutation. `protocol.ts`: kiểm tra dữ liệu JSON, báo lỗi an toàn và giữ request identity khi retry.
+- Mỗi mutation gửi `Idempotency-Key` và `X-Request-Id` ổn định theo endpoint/method/payload. Không cập nhật thành công trước khi server xác nhận; lỗi giữ nội dung để kiểm tra hoặc retry.
+- Giữ test xác thực, đăng ký phòng, hóa đơn, thanh toán và health. Test engine demo của bốn phần vừa nối được thay bằng test DTO/payload, mã đăng ký, version, timezone, điểm và trạng thái thiếu tồn/chờ xác nhận. Không xóa test backend hiện có.
+- Chạy `pnpm run lint`, `pnpm run typecheck`, `pnpm run test`, `pnpm run build` trong `client/`. Backend chạy test hồi quy service cùng bộ unit test khi build bằng Maven.
+- Đã kiểm tra trên backend/PostgreSQL local: đăng nhập, tải/tạo phiếu sửa chữa, thiếu vật tư, hoàn thành/xuất vật tư, đọc vi phạm, đăng ký/hủy công ích, điểm danh/hoàn thành và quy đổi. Nhập ngày giờ/khai báo khách và ghi lượt cổng cần kiểm tra riêng; không coi unit test là nghiệm thu toàn bộ API.
 
 ## 1. Công nghệ và môi trường
 
@@ -250,4 +281,4 @@ Không commit dependencies đã cài, bản build, cấu hình môi trường ri
 
 ## CI/CD và deploy
 
-client/Dockerfile dùng pnpm theo version/lockfile của dự án, chạy lint/test/typecheck/build và đóng gói SPA bằng Nginx. Root Compose phục vụ frontend port8091 và backend8080 nội bộ; không đổi API_BASE_URL sang một domain khác khi deploy. Trang tổng quan8UC là scaffold, chưa có màn hình nghiệp vụ. Xem [CI/CD](../docs/main/CI_CD.md).
+client/Dockerfile dùng pnpm theo version/lockfile của dự án, chạy lint/test/typecheck/build và đóng gói SPA bằng Nginx. Root Compose phục vụ frontend port8091 và backend8080 nội bộ; không đổi API_BASE_URL sang một domain khác khi deploy. Các phần nối API và phần còn chờ contract được liệt kê ở đầu tài liệu. Xem [CI/CD](../docs/main/CI_CD.md).

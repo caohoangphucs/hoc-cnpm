@@ -69,7 +69,7 @@ export function InvoiceIssuancePage({ rooms = [], initialPeriod, failedRoom, ...
   function closeConfirm() { setConfirm(false); action.setError('') }
   const disabled = action.busy || !options.preview
 
-  return <WorkflowPage title="Phát hành hóa đơn" description="Kiểm tra chi phí theo kỳ, xem bản nháp và phát hành hóa đơn cho từng phòng." view={options.view}>
+  return <WorkflowPage title="Phát hành hóa đơn" description="Kiểm tra chi phí theo kỳ, xem bản nháp và phát hành hóa đơn cho từng phòng." view={options.view} error={options.preview ? undefined : 'Danh sách phòng, chỉ số điện nước và đơn giá chưa sẵn sàng. Chưa thể lập hóa đơn từ dữ liệu thực.'}>
     <div className="invoice-workflow">
       <Feedback notice={action.notice} error={!confirm ? action.error : undefined} />
       <Summary items={[{ label: 'Phòng đã chọn', tone: 'primary', value: selected.length }, { label: 'Đủ dữ liệu để lập nháp', tone: 'success', value: eligible.length }, { label: 'Tổng dự kiến', tone: 'tertiary', value: money(totalOf(eligible)) }]} />
