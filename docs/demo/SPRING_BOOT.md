@@ -1,6 +1,6 @@
 # Kiến trúc Spring Boot cho demo 8 UC
 
-Quyết định công nghệ ngày 02/10/2026: chuyển thiết kế đích sang **Spring Boot 4.1.1, Java 17, PostgreSQL 16**. Java 17 đáp ứng yêu cầu của phiên bản này; runtime chọn executable JAR với Tomcat 11 nhúng theo [system requirements](https://docs.spring.io/spring-boot/system-requirements.html). Nền mới đã có trong server/ (JAR, entity/read repository/JDBC/DTO); client/ dùng React/TypeScript/Vite và Nginx. Service/Controller/auth HTTP/8UC vẫn cần triển khai.
+Quyết định công nghệ ngày 02/10/2026: chuyển thiết kế đích sang **Spring Boot 4.1.1, Java 17, PostgreSQL 16**. Java 17 đáp ứng yêu cầu của phiên bản này; runtime chọn executable JAR với Tomcat 11 nhúng theo [system requirements](https://docs.spring.io/spring-boot/system-requirements.html). Nền mới trong server/ có JAR, entity/read repository và DTO. Service/repository Java cho 8 UC đã có; client/ dùng React/TypeScript/Vite và Nginx. Controller/API, auth HTTP và UI nghiệp vụ vẫn cần triển khai.
 
 ## Stack và cách đóng gói
 
@@ -10,8 +10,8 @@ Quyết định công nghệ ngày 02/10/2026: chuyển thiết kế đích sang
 | Giao diện | React/TypeScript/Vite trong client/, Nginx phục vụ SPA và proxy /api; backend trong server/ |
 | Phân quyền | Spring Security, session JSESSIONID, RBAC và ownership; 2FA cho ADMIN/KETOAN |
 | Validation/lỗi | Jakarta Bean Validation trên DTO, @RestControllerAdvice giữ Error schema hiện hành |
-| Dữ liệu | Spring JDBC JdbcTemplate/NamedParameterJdbcTemplate, HikariCP, pgJDBC; PostgreSQL procedure giữ nghiệp vụ nhiều bảng |
-| Transaction | @Transactional ở public Service bean; JdbcTransactionManager, một DataSource |
+| Dữ liệu | Spring JDBC JdbcTemplate/NamedParameterJdbcTemplate, HikariCP, pgJDBC; Quy tắc nghiệp vụ trong Java service; repository chạy SQL trực tiếp |
+| Transaction | TransactionTemplate qua ServiceContext; JdbcTransactionManager, một DataSource |
 | Khởi tạo DB | database/01_schema.sql → 02_seed.sql cho DB demo mới; cập nhật SQL thủ công cho DB có dữ liệu |
 | Tác vụ | @Scheduled điều phối job; outbox/lease PostgreSQL cho nhiều instance |
 | Đóng gói | Maven, spring-boot-maven-plugin, executable JAR; java -jar, không deploy WAR lên Tomcat10.1 |
@@ -38,11 +38,11 @@ Giữ package gốc vn.id.caohoangphuc.cnpm; KtxApplication đặt tại gốc �
 
 Legacy được ghi trong bảng để đối chiếu. Tầng service/repository Java theo 8 UC hiện nằm trong `server/src/main/java/.../service` và `persistence/service`; các sequence/class vẫn là nguồn quy tắc nghiệp vụ. Controller, auth HTTP và React API integration chưa có. Khi bổ sung, React sẽ gọi JSON/API cùng origin qua Nginx; không dùng JSP/Thymeleaf.
 
-## Transaction và gọi PostgreSQL
+## Transaction và truy cập PostgreSQL
 
-@Transactional đặt trên phương thức public của Service bean, gọi từ bean khác qua proxy. Self-invocation không tạo transaction mới; phải tách bean hoặc dùng TransactionTemplate cho worker/luồng cần ranh giới riêng. Cấu hình rollbackFor=Exception.class cho thao tác ghi, chuyển status SP thất bại thành DomainException trước khi thoát service; controller advice chỉ bắt lỗi sau khi rollback. Không bắt lỗi và trả SUCCESS trong transaction. Các quy tắc proxy/rollback theo [Spring transaction](https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative/annotations.html).
+Service dùng `ServiceContext`/`TransactionTemplate` để đặt ranh giới transaction tường minh, không cần đặt `@Transactional` trên từng service. Service gọi repository Java; repository dùng `JdbcTemplate` và tham số hóa SQL. `JdbcTemplate` tham gia connection/transaction Spring hiện hành; không tự commit/rollback trong repository. Lỗi nghiệp vụ được ném từ service để transaction rollback. JPA chỉ phục vụ read model/entity hiện có, không dùng để ghi nghiệp vụ 8 UC.
 
-@Repository nhận JdbcTemplate bằng constructor. Query function đăng nhập bằng SELECT * FROM usp_DangNhap(?). Procedure dùng JdbcTemplate.execute với CallableStatementCreator/Callback: cú pháp {call ...}, bind IN và đăng ký OUT chính xác theo DU_LIEU_VA_SP. DataSource đặt escapeSyntaxCallMode=callIfNoReturn. Không dựa metadata tự suy chữ ký, không dùng JPA để cập nhật thay SP. JdbcTemplate dùng Connection gắn transaction của Spring; repository không tự getConnection/commit/rollback/đóng Connection được Spring quản lý. Có thể đóng Statement/ResultSet theo callback lifecycle.
+Schema còn function/procedure legacy, nhưng 8 UC không gọi chúng. Không thêm procedure mới để triển khai nghiệp vụ. Chi tiết bảng service và trách nhiệm từng repository tại [DU_LIEU_VA_SQL.md](DU_LIEU_VA_SQL.md).
 
 Gateway tạo URL/request sau khi transaction tạo phiên PENDING commit. Callback chỉ xác minh/parsing ở adapter, rồi gọi một Service transactional để ghi nhận; trả ACK sau commit. Outbox ghi cùng transaction với nghiệp vụ, worker gọi mạng ngoài transaction và xác nhận kết quả ở transaction ngắn khác. Không chỉ dùng @Async/event trong bộ nhớ thay outbox bền vững.
 
@@ -59,7 +59,7 @@ Chỉ ngoại lệ CSRF đúng /api/v1/payments/vnpay/ipn và /api/v1/payments/m
 application.yml và profiles local/demo/test/prod sẽ được viết lúc code. Cấu hình chuẩn:
 
 - spring.datasource.url lấy SPRING_DATASOURCE_URL, host local localhost:54321, container cnpm-db:5432; username/password từ SPRING_DATASOURCE_USERNAME/PASSWORD. DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASS legacy chỉ được dùng làm placeholder adapter nếu cần, không tạo pool thứ hai.
-- spring.datasource.hikari.data-source-properties.escapeSyntaxCallMode=callIfNoReturn; options=-c TimeZone=Asia/Ho_Chi_Minh; maxPoolSize15, minimumIdle3, connectionTimeout10000ms.
+- options=-c TimeZone=Asia/Ho_Chi_Minh; maxPoolSize15, minimumIdle3, connectionTimeout10000ms.
 - server.port=8080 trong container; host mapping8091; server.servlet.session.timeout=15m; multipart max-file-size5MB, max-request-size26MB cho5ảnh và metadata; limit số file/MIME còn kiểm tại service.
 - spring.sql.init.mode=never; schema quản lý bằng SQL thủ công; app không khởi tạo/reset DB hoặc seed khi startup. Chỉ bật thông tin lỗi chi tiết ở log đã lọc, không trả ra HTTP.
 - Backend dùng mvn -f server/pom.xml spring-boot:run; frontend dùng Vite dev server trong client/, proxy /api đến localhost8080. Không dùng JSP mount hoặc Thymeleaf.
@@ -68,14 +68,14 @@ Không tự lấy image Tomcat10.1 legacy để chạy Boot4.1. Runtime containe
 
 ## Quản lý schema bằng SQL
 
-Không dùng Flyway/Liquibase hoặc migration tự động. Nguồn schema là database/01_schema.sql (27bảng,5view,1function,9procedure); seed demo là database/02_seed.sql. DB demo mới/được phép reset: nạp01 rồi02 bằng psql -v ON_ERROR_STOP=1, hoặc để Docker entrypoint nạp trên volume mới. Restart với volume hiện hữu không tự cập nhật schema.
+Không dùng Flyway/Liquibase hoặc migration tự động. Nguồn schema là database/01_schema.sql (27 bảng, 5 view, function đăng nhập và procedure legacy); seed demo là database/02_seed.sql. DB demo mới/được phép reset: nạp01 rồi02 bằng psql -v ON_ERROR_STOP=1, hoặc để Docker entrypoint nạp trên volume mới. Restart với volume hiện hữu không tự cập nhật schema.
 
 DB cần giữ dữ liệu: backup/preflight, chuẩn bị SQL ALTER/CREATE OR REPLACE đã review theo chênh lệch schema, chạy thủ công trong transaction phù hợp và đối chiếu dữ liệu. Không chạy01 có DROP hoặc replay seed. Giữ biên bản script/checksum/người thực hiện; không tạo schema history hay V1/V2. Ứng dụng chỉ kết nối DB đã chuẩn bị; quy trình triển khai kiểm cấu trúc và dừng khi không tương thích. Nếu dùng JPA ở đợt sau, chỉ validate schema; không dùng ddl-auto=create/update để thay SQL.
 
 ## Các bước chuyển và nghiệm thu công nghệ
 
 1. Boot skeleton/JAR, security/DTO/advice/datasource; health fail khi DB unavailable.
-2. Repository gọi function và9procedure qua JdbcTemplate, Testcontainers PG16; chứng minh rollback/shared connection và status→exception.
+2. Repository dùng SQL tham số hóa qua JdbcTemplate, Testcontainers PostgreSQL 16; chứng minh transaction/rollback và các quy tắc nghiệp vụ ở Java service.
 3. Triển khai React và8module theo từng đợt, giữ API/BR/SRS IDs; kiểm requestId, schema, session/CSRF/2FA.
 4. Kiểm DB mới nạp schema/seed và DB có dữ liệu được cập nhật SQL thủ công; no-drop DB cần giữ; startup không tự chạy DDL/seed.
 5. Docker/CI JAR, joblease/outbox,51case nghiệp vụ + test Spring ở KIEM_THU. Nghiệm thu mock/sandbox theo TICH_HOP.
@@ -84,7 +84,7 @@ Không đánh dấu hoàn thành 8UC bằng entity/DTO hoặc scaffold. Nền Sp
 
 ## Nền dữ liệu đã viết
 
-27 entity immutable ánh xạ đúng bảng/cột/kiểu ID hiện hành; FK hiện giữ bằng scalar ID để tránh tự tải graph. 27 read repository không có save/delete. JPA dùng jpaReadTransactionManager trên cùng pool, không trộn boundary JPA đọc với JDBC ghi. Write Service dùng transactionManager (JdbcTransactionManager) và gọi DormitoryProcedureRepository; repository yêu cầu MANDATORY và ném ProcedureRejectedException khi status lỗi. Gate VIOLATION_RECORDED là kết quả ghi nhận thành công có vi phạm.
+27 entity immutable ánh xạ đúng bảng/cột/kiểu ID hiện hành; FK hiện giữ bằng scalar ID để tránh tự tải graph. 27 repository đọc legacy không có save/delete. JPA dùng jpaReadTransactionManager trên cùng pool, không trộn boundary JPA đọc với JDBC ghi. Service nghiệp vụ dùng ServiceContext/TransactionTemplate; repository cho 8 UC chạy SQL trực tiếp bằng JdbcTemplate, không gọi procedure. Gate VIOLATION_RECORDED là kết quả ghi nhận thành công có vi phạm.
 
 DTO record được tạo thành56DTO theo OpenAPI, gồm request/response/list; không có endpoint tự động chỉ vì đã có DTO. ID API đích (bigint/UUID), version, file/profile/payment session vẫn cần adapter/schema mở rộng. Entity chỉ dùng ID varchar/int4 hiện có; không bịa version hoặc UUID cho dữ liệu chưa có. Meter hiện đổi int64 sang int4 có kiểm overflow. Money DB dùng BigDecimal, timestamp without time zone dùng LocalDateTime; API RFC3339 dùng OffsetDateTime và cần mapping timezone tại Service.
 

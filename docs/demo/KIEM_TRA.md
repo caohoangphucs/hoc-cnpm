@@ -15,6 +15,6 @@ Ngày 02/10/2026.
 | Server | PostgreSQL đã deploy qua Actions thành công tại 4633afe; dữ liệu được bảo toàn |
 | Runtime nền mới | Spring Boot/JAR trong server/, React/Nginx trong client/; service/repository 8 UC có, API/UI nghiệp vụ chưa triển khai |
 
-Sau đợt dọn, code/config/script/CI chỉ dùng PostgreSQL; không có thành phần DB khác trong quy trình vận hành. CI bổ sung kiểm OUT/JDBC cả 9 procedure; Compose/env/reset đồng bộ cổng và credentials. Nguồn DDL/seed duy nhất nằm trong database/, CD không chạy DDL/seed trên DB có dữ liệu.
+Sau đợt dọn, code/config/script/CI chỉ dùng PostgreSQL; không có thành phần DB khác trong quy trình vận hành. CI có kiểm tra JDBC tương thích 9 procedure legacy; đây không phải đường xử lý nghiệp vụ của 8 UC; Compose/env/reset đồng bộ cổng và credentials. Nguồn DDL/seed duy nhất nằm trong database/, CD không chạy DDL/seed trên DB có dữ liệu.
 
 Các test thiết kế 8 UC, IPN/sandbox, kiểm quyền/ownership đầy đủ và tranh chấp cần triển khai/kiểm riêng trước nghiệm thu. CI xanh không thay thế nghiệm thu E2E. File lock Word người dùng được giữ nguyên.

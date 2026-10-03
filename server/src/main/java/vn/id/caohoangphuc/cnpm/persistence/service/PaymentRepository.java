@@ -7,8 +7,7 @@ import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 public class PaymentRepository {
-  public record Invoice(
-      int id, String roomId, BigDecimal total, BigDecimal paid, String status, String studentId) {}
+  public record Invoice(int id, String roomId, BigDecimal total, BigDecimal paid, String status) {}
 
   public record Session(
       UUID id,
@@ -36,10 +35,8 @@ public class PaymentRepository {
     var rows =
         jdbc.query(
             """
-SELECT h.mahoadon,h.maphong,h.tongtien,h.dathanhtoan,h.trangthai,s.masinhvien
-FROM hoa_don h JOIN luu_tru l ON l.trangthai='DANG_O'
-JOIN giuong g ON g.magiuong=l.magiuong AND g.maphong=h.maphong JOIN sinh_vien s ON s.masinhvien=l.masinhvien
-WHERE h.mahoadon=? ORDER BY s.masinhvien LIMIT 1
+SELECT h.mahoadon,h.maphong,h.tongtien,h.dathanhtoan,h.trangthai
+FROM hoa_don h WHERE h.mahoadon=?
 """
                 + (lock ? " FOR UPDATE OF h" : ""),
             (r, n) ->
@@ -48,10 +45,38 @@ WHERE h.mahoadon=? ORDER BY s.masinhvien LIMIT 1
                     r.getString(2),
                     r.getBigDecimal(3),
                     r.getBigDecimal(4),
-                    r.getString(5),
-                    r.getString(6)),
+                    r.getString(5)),
             id);
     return rows.isEmpty() ? null : rows.get(0);
+  }
+
+  /** Checks the resident list captured when the bill was issued; legacy bills use residency dates. */
+  public boolean belongsToStudent(int invoiceId, String studentId) {
+    return Boolean.TRUE.equals(
+        jdbc.queryForObject(
+            """
+            SELECT EXISTS (
+              SELECT 1
+              FROM svc_invoice_snapshot snap,
+                   jsonb_array_elements(snap.inputs->'occupants') occupant
+              WHERE snap.invoice_id=? AND occupant->>'studentId'=?
+              UNION ALL
+              SELECT 1
+              FROM hoa_don h
+              JOIN giuong g ON g.maphong=h.maphong
+              JOIN luu_tru l ON l.magiuong=g.magiuong
+              WHERE h.mahoadon=? AND l.masinhvien=?
+                AND l.ngaybatdau <=
+                    (to_date(h.kythang || '-01','YYYY-MM-DD') + INTERVAL '1 month - 1 day')::date
+                AND (l.ngayketthuc IS NULL OR
+                     l.ngayketthuc >= to_date(h.kythang || '-01','YYYY-MM-DD'))
+            )
+            """,
+            Boolean.class,
+            invoiceId,
+            studentId,
+            invoiceId,
+            studentId));
   }
 
   public Session create(

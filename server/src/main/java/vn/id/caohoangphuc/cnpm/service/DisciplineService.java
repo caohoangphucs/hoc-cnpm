@@ -208,7 +208,7 @@ public class DisciplineService {
             int revision = repository.nextRevision(violation.id());
             repository.decide(
                 violation.id(),
-                appeal.decisionId(),
+                violation.semesterId(),
                 revision,
                 actor.accountId(),
                 "REVIEW: " + input.reason(),

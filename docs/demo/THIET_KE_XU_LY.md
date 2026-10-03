@@ -3,9 +3,9 @@
 Áp dụng 5 bước theo TODO cho từng đặc tả [SRS cũ](NGUON.md). Đây là thiết kế
 đích; [kế hoạch demo](README.md) phân biệt rõ code hiện có và phần đề xuất.
 Class Diagram đích: [thiết kế lớp demo](class-diagrams/README.md).
-Quy tắc chi tiết và hợp đồng SP tại [quy tắc](QUY_TAC_NGHIEP_VU.md) và [dữ liệu](DU_LIEU_VA_SP.md).
+Quy tắc chi tiết và ranh giới SQL/repository tại [quy tắc](QUY_TAC_NGHIEP_VU.md) và [dữ liệu](DU_LIEU_VA_SQL.md).
 
-Spring Boot @RestController nhận DTO @Valid; SecurityFilterChain và @PreAuthorize kiểm quyền/2FA, Service @Transactional điều phối; @Repository dùng JdbcTemplate gọi SP. React/Bootstrap giữ loading/empty state và lỗi theo trường. Xem [mapping và ranh giới transaction](SPRING_BOOT.md). Danh mục class legacy ở phần bước5 dưới đây được thay bằng class đích; toàn bộ còn là thiết kế, chưa có code Boot.
+Các luồng bên dưới là thiết kế theo SRS; mức hiện thực được đối chiếu trong [báo cáo rà soát 8 UC](RA_SOAT_NGHIEP_VU_8UC.md). Tầng Java service/repository cho 8 UC hiện đã có. Service điều phối transaction và quy tắc; repository dùng SQL qua JdbcTemplate. Controller/API, xác thực HTTP, giao diện nghiệp vụ và adapter/job ngoài hệ thống chưa hoàn tất. Các nhãn procedure trong sequence lịch sử chỉ là tên bước nghiệp vụ; sequence hiện hành và service mới dùng SQL trực tiếp.
 
 ## UC-04 Đăng ký phòng
 
@@ -18,7 +18,7 @@ Spring Boot @RestController nhận DTO @Valid; SecurityFilterChain và @PreAutho
 ```text
 kiểm tra quyền SV, đợt mở, hợp đồng, giới tính, cam kết
 kiểm tra JPG/PNG <=5MB; mã hóa dữ liệu nhạy cảm
-transaction: lưu hồ sơ; gọi usp_DatGiuong(sv, bed)
+BookingService kiểm tra và ghi đơn/hồ sơ/trạng thái giường bằng repository SQL trong một transaction
 status != SUCCESS: rollback hồ sơ mới; trả lỗi; làm mới giường
 SUCCESS: ghi audit; commit; trả mã đơn và hạn 48 giờ theo SRS
 rời trang trước submit: cảnh báo; không tạo giữ chỗ từ bản nháp
@@ -27,7 +27,7 @@ rời trang trước submit: cảnh báo; không tạo giữ chỗ từ bản nh
 **Bước 4 — Sequence Diagram:** [PlantUML](../sequence-diagrams/demo/UC-04_dang-ky-phong.puml)
 · [SVG](../sequence-diagrams/demo/UC-04_dang-ky-phong.svg).
 
-**Bước 5 — Lớp tham gia và phần bổ sung:** BookingController/BookingService/RoomRepository/BookingRequestDTO; DataSource và JdbcTemplate do Spring quản lý. SP cần thời hạn 48 giờ; schema hồ sơ/ảnh và audit cần bổ sung.
+**Bước 5 — Lớp tham gia và phần bổ sung:** BookingService và BookingRepository đã có; BookingController/API, tra cứu sơ đồ phòng, xem hồ sơ/ảnh, xác minh nội dung hồ sơ và xử lý ưu tiên còn thiếu. Giữ chỗ 48 giờ và ghi audit đã có trong service.
 
 ## UC-12 Duyệt đăng ký
 
@@ -40,9 +40,9 @@ rời trang trước submit: cảnh báo; không tạo giữ chỗ từ bản nh
 ```text
 kiểm tra Admin + 2FA; nạp hồ sơ và minh chứng
 từng đơn: khóa đơn/giường/phòng; kiểm tra CHO_DUYET, hạn, giường không khóa
-gọi usp_DuyetDangKy(id, decision, reason)
-duyệt: SP đồng bộ lưu trú/SV/phòng/giường; tạo hợp đồng dự thảo
-từ chối: SP trả giường TRONG
+RegistrationService lưu quyết định bằng repository SQL
+duyệt: service tạo lưu trú/hợp đồng; cập nhật SV, giường và sức chứa phòng
+từ chối: service trả giường về TRONG
 ghi người duyệt, audit, outbox; commit
 gửi email sau commit; lỗi kênh gửi thì retry, không đảo quyết định
 ```
@@ -50,7 +50,7 @@ gửi email sau commit; lỗi kênh gửi thì retry, không đảo quyết đ�
 **Bước 4 — Sequence Diagram:** [PlantUML](../sequence-diagrams/demo/UC-12_duyet-dang-ky.puml)
 · [SVG](../sequence-diagrams/demo/UC-12_duyet-dang-ky.svg).
 
-**Bước 5 — Lớp tham gia và phần bổ sung:** RegistrationController/RegistrationService/RoomRepository/ApprovalDecisionDTO/NotificationService/Outbox. Hợp đồng, người duyệt, hồ sơ, khóa và audit cần bổ sung.
+**Bước 5 — Lớp tham gia và phần bổ sung:** RegistrationService/BookingRepository và ghi outbox đã có. Controller/API, danh sách hồ sơ, kiểm duyệt nội dung hồ sơ, duyệt hàng loạt theo ưu tiên và worker email/SMS còn thiếu.
 
 ## UC-17 Tạo hóa đơn tháng
 
@@ -66,8 +66,7 @@ cảnh báo phòng thiếu số đo; cho chọn bỏ qua theo SRS
 tính (mới-cũ)*đơn giá; cộng tiền phòng/dịch vụ; giảm theo hồ sơ đã duyệt
 preview và Excel nháp; nhận chi phí có ghi chú
 khi phát hành: nạp lại dữ liệu/kiểm tra phiên bản
-từng phòng: gọi usp_PhatHanhHoaDon trong transaction
-mở rộng SP để số tiền ghi khớp preview, chính sách và giá theo kỳ
+từng phòng: InvoiceService khóa phòng, đối chiếu snapshot và ghi hóa đơn/chi tiết bằng repository SQL
 ghi QR/audit/outbox; commit hoặc rollback phòng lỗi
 gửi hóa đơn; trả thành công/bỏ qua/lỗi
 ```
@@ -75,7 +74,7 @@ gửi hóa đơn; trả thành công/bỏ qua/lỗi
 **Bước 4 — Sequence Diagram:** [PlantUML](../sequence-diagrams/demo/UC-17_tao-hoa-don.puml)
 · [SVG](../sequence-diagrams/demo/UC-17_tao-hoa-don.svg).
 
-**Bước 5 — Lớp tham gia và phần bổ sung:** InvoiceController/InvoiceService/InvoiceRepository/InvoiceDraftDTO/PricingService. Schema giá theo kỳ/chính sách cần bổ sung; không mặc định tính lũy tiến.
+**Bước 5 — Lớp tham gia và phần bổ sung:** InvoiceService/InvoiceRepository, giá theo kỳ, giảm giá, snapshot và chi phí riêng đã có. Controller/API, nhập chi phí riêng, chọn bỏ qua phòng lỗi, Excel, QR và worker gửi hóa đơn còn thiếu. Phát hành hiện độc lập theo phòng nhưng lỗi ở một phòng làm dừng batch.
 
 ## UC-08 Thanh toán online
 
@@ -92,7 +91,7 @@ tạo URL/QR theo hợp đồng cổng; không lưu thẻ trong app KTX
 IPN: xác minh chữ ký, ref, số tiền và kết quả
 transaction: khóa giao dịch/hóa đơn; đọc lại trạng thái
 đã SUCCESS: trả kết quả cũ, không cộng DaThanhToan lần hai
-thành công mới: usp_XacNhanThanhToan; outbox; commit
+thành công mới: PaymentService đối soát dư nợ; repository cập nhật thanh toán/hóa đơn và outbox trong transaction
 thất bại: giữ dư nợ; ghi kết quả; cho thử lại
 ACK đúng giao thức; biên lai sau commit
 quá 15 phút: hết hạn phiên; IPN muộn vẫn phải đối soát tiền thực thu
@@ -101,7 +100,7 @@ quá 15 phút: hết hạn phiên; IPN muộn vẫn phải đối soát tiền t
 **Bước 4 — Sequence Diagram:** [PlantUML](../sequence-diagrams/demo/UC-08_thanh-toan-truc-tuyen.puml)
 · [SVG](../sequence-diagrams/demo/UC-08_thanh-toan-truc-tuyen.svg).
 
-**Bước 5 — Lớp tham gia và phần bổ sung:** PaymentController/PaymentCallbackController/PaymentService/PaymentRepository/GatewayAdapter/PaymentResultDTO; SP được kế thừa. Cần chống xử lý lặp, tạo giao dịch và phân bổ gộp; return URL không tự gạch nợ.
+**Bước 5 — Lớp tham gia và phần bổ sung:** PaymentService/PaymentRepository, phiên PENDING, phân bổ gộp và chống callback lặp đã có. Controller/IPN, adapter provider thật, đối soát callback muộn, ACK theo giao thức và biên lai/worker còn thiếu; return URL không tự gạch nợ.
 
 ## UC-22 Xử lý sửa chữa
 
@@ -116,7 +115,7 @@ tiếp nhận có điều kiện MOI->DANG_XU_LY; gán kỹ thuật; chống nh�
 phòng khóa: lưu lịch hẹn; giữ DANG_XU_LY; gửi hẹn lại
 sửa điện/ngắt cầu dao; sửa nước/khóa van; bảo hành ngoài lưu ngày dự kiến
 hoàn thành: kiểm tra người phụ trách, trạng thái và số lượng
-gọi usp_HoanThanhSuaChua trong transaction; khóa tồn kho
+RepairService khóa phiếu/vật tư; repository xuất kho và cập nhật phiếu trong transaction
 thiếu tồn: không trừ kho/không hoàn thành; tạo đề xuất mua
 thành công: lịch sử/audit/outbox; commit; gửi thông báo và link đánh giá
 ```
@@ -124,7 +123,7 @@ thành công: lịch sử/audit/outbox; commit; gửi thông báo và link đán
 **Bước 4 — Sequence Diagram:** [PlantUML](../sequence-diagrams/demo/UC-22_xu-ly-sua-chua.puml)
 · [SVG](../sequence-diagrams/demo/UC-22_xu-ly-sua-chua.svg).
 
-**Bước 5 — Lớp tham gia và phần bổ sung:** RepairController/RepairService/RepairRepository/RepairCompletionDTO/NotificationService. Cần ảnh, người phụ trách, lịch hẹn/bảo hành, mua bổ sung và audit.
+**Bước 5 — Lớp tham gia và phần bổ sung:** RepairService/RepairRepository, giao phiếu, lịch hẹn, xuất kho, đề nghị mua bù và lịch sử đã có. Controller/API, hủy phiếu, luồng bảo hành ngoài, upload ảnh và worker thông báo/link đánh giá còn thiếu.
 
 ## UC-25 Ghi nhận về KTX
 
@@ -137,7 +136,7 @@ thành công: lịch sử/audit/outbox; commit; gửi thông báo và link đán
 ```text
 khách: tìm khai báo còn hiệu lực; thiếu thì liên hệ SV/khai báo
 SV: tra thẻ/hợp đồng; hết hạn thì báo đỏ và không mở cổng
-gọi usp_GhiNhanRaVao; ghi RA_VAO và VI_PHAM khi qua giới nghiêm
+GateService ghi RA_VAO, VI_PHAM khi về trễ và trạng thái barrier chờ xử lý
 outbox cảnh báo; commit; barrier chỉ mở sau ghi thành công
 gửi cảnh báo SV; vi phạm xuất hiện trong báo cáo Admin
 kiểm tra đúng 23:00, sau 23:00, qua nửa đêm theo quy tắc được chốt
@@ -146,7 +145,7 @@ kiểm tra đúng 23:00, sau 23:00, qua nửa đêm theo quy tắc được ch�
 **Bước 4 — Sequence Diagram:** [PlantUML](../sequence-diagrams/demo/UC-25_ghi-nhan-ra-vao.puml)
 · [SVG](../sequence-diagrams/demo/UC-25_ghi-nhan-ra-vao.svg).
 
-**Bước 5 — Lớp tham gia và phần bổ sung:** GateController/GateService/GateRepository/GateEntryDTO/BarrierAdapter/VisitorRepository. SP tạo vi phạm trực tiếp, không có trigger. Khách phải lưu riêng, không dùng RA_VAO bắt buộc MSSV.
+**Bước 5 — Lớp tham gia và phần bổ sung:** GateService/GateRepository đã có ghi nhận thẻ, vi phạm, khách mã hóa và check-in/out. Controller, đối chiếu CCCD khách tại cổng, phân quyền/duyệt khách đúng SRS và adapter barrier/outbox worker còn thiếu. Lượt khách được lưu riêng, không dùng RA_VAO bắt buộc MSSV.
 
 ## UC-14 Xử lý kỷ luật
 
@@ -170,7 +169,7 @@ Admin giữ nguyên hoặc tạo phiên bản quyết định mới; không xóa
 **Bước 4 — Sequence Diagram:** [PlantUML](../sequence-diagrams/demo/UC-14_xu-ly-ky-luat.puml)
 · [SVG](../sequence-diagrams/demo/UC-14_xu-ly-ky-luat.svg).
 
-**Bước 5 — Lớp tham gia và phần bổ sung:** VI_PHAM và usp_XuLyKyLuat cơ bản có sẵn; DisciplineController/DisciplineService/DisciplineRepository/DisciplineDecisionDTO. Cần schema minh chứng, quyết định, học kỳ và khiếu nại.
+**Bước 5 — Lớp tham gia và phần bổ sung:** DisciplineService/DisciplineRepository, minh chứng, quyết định theo revision, đếm theo học kỳ, batch và khiếu nại đã có. Controller/API, báo cáo cảnh báo bền vững và xử lý adapter thông báo còn thiếu.
 
 ## UC-30 Đăng ký công ích
 
@@ -196,4 +195,4 @@ PDF: chỉ hoạt động hoàn thành; chữ ký số BQL và QR kiểm chứng
 **Bước 4 — Sequence Diagram:** [PlantUML](../sequence-diagrams/demo/UC-30_dang-ky-cong-ich.puml)
 · [SVG](../sequence-diagrams/demo/UC-30_dang-ky-cong-ich.svg).
 
-**Bước 5 — Lớp tham gia và phần bổ sung:** CommunityController/CommunityService/CommunityRepository/CommunityRegistrationDTO/PointConversionService/CTSVAdapter/CertificateService. Đã có4bảng hoạt động/đăng ký/điểm/quy đổi; cần hoàn thiện constraints/SP và bổ sung chứng nhận/outbox.
+**Bước 5 — Lớp tham gia và phần bổ sung:** CommunityService/CommunityRepository, hoạt động, đăng ký, hủy, điểm danh/xác nhận, sổ điểm, yêu cầu quy đổi và yêu cầu chứng nhận đã có. Controller/API, worker CTSV và bù điểm, ký PDF/QR, tự đóng hoạt động hết chỗ và adapter thông báo còn thiếu.

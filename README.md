@@ -8,7 +8,7 @@ Hệ thống quản lý ký túc xá, phạm vi demo **8 UC**: UC-04, UC-12, UC-
 
 ## Trạng thái triển khai
 
-Đã thay nền Servlet/JSP bằng Spring Boot executable JAR, cấu hình DataSource, 27 entity theo schema hiện hành, repository đọc và JDBC function/9 procedure, DTO theo OpenAPI và các test nền. Frontend hiện là khung tổng quan chức năng với trạng thái kết nối thật.
+Đã thay nền Servlet/JSP bằng Spring Boot executable JAR, cấu hình DataSource, 27 entity theo schema hiện hành, repository đọc, DTO theo OpenAPI và các test nền. Tầng service/repository cho 8 UC dùng Java và SQL trực tiếp; các function/procedure trong schema chỉ còn là thành phần legacy, không được service mới gọi. Frontend hiện là khung tổng quan chức năng với trạng thái kết nối thật.
 
 Tầng Java service/repository cho 8 UC đã được bổ sung; quy tắc nghiệp vụ nằm trong service Java, còn repository chỉ đọc/ghi SQL đơn giản. Tầng controller/API, đăng nhập HTTP/2FA và giao diện nghiệp vụ **chưa triển khai**, vì vậy ngoài health các thao tác vẫn chưa được mở qua HTTP. Adapter thanh toán và ký chứng nhận cũng cần tích hợp cấu hình provider trước khi dùng. Mật khẩu seed `123456` chỉ phục vụ dữ liệu demo và test DB. Không coi frontend scaffold hay CI xanh là nghiệm thu end-to-end 8 UC.
 
@@ -16,7 +16,7 @@ Tầng Java service/repository cho 8 UC đã được bổ sung; quy tắc nghi�
 
 | Thư mục | Nội dung |
 |---|---|
-| `server/src/main/java/` | Spring Boot, config, entity/read repository, procedure repository, DTO |
+| `server/src/main/java/` | Spring Boot, config, entity/read repository, service/repository cho 8 UC, DTO |
 | `server/src/main/resources/` | Cấu hình ứng dụng và profile production |
 | `server/src/test/java/` | JUnit unit test và integration test PostgreSQL |
 | `server/pom.xml`, `server/Dockerfile` | Build/test và đóng gói backend JAR |
@@ -61,10 +61,10 @@ Repository gọi SQL là class Java thông thường, được tạo bằng cons
 Tham số sai phát sinh `IllegalArgumentException`; DTO sai vẫn phát sinh
 `ConstraintViolationException` từ Validator được gọi trực tiếp.
 
-`DormitoryProcedureRepository` dùng `TransactionTemplate` và vẫn bắt buộc caller mở
-transaction JDBC trước khi ghi. Lỗi từ procedure đánh dấu transaction để rollback.
-Annotation JPA trên entity và validation trên DTO được giữ vì phục vụ ánh xạ database
-và hợp đồng API. Chưa thêm controller/service cho các UC.
+Các service điều phối quy tắc và transaction qua `ServiceContext`; repository dùng
+`JdbcTemplate` cho SQL trực tiếp. Controller/API, đăng nhập HTTP/2FA và giao diện
+nghiệp vụ chưa triển khai. Annotation JPA trên entity và validation trên DTO được
+giữ vì phục vụ ánh xạ database và hợp đồng API.
 
 ## Kiểm thử
 

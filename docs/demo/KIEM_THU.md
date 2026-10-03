@@ -1,6 +1,6 @@
 # Test case và fixture demo
 
-Mặc định tất cả NOT_RUN. Fixture chỉ dùng dữ liệu giả, DB local/test riêng; không sửa đồng hồ hệ thống. Adapter Clock được inject ở test; SP thời gian được kiểm bằng tham số test nội bộ hoặc fixture hạn/biên giờ, API công khai không cho client đổi giờ.
+Mặc định tất cả NOT_RUN. Fixture chỉ dùng dữ liệu giả, DB local/test riêng; không sửa đồng hồ hệ thống. Adapter Clock được inject ở test; quy tắc thời gian được kiểm qua Clock/fixture hạn/biên giờ, API công khai không cho client đổi giờ.
 
 ## Bộ fixture bắt buộc
 
@@ -81,7 +81,7 @@ Nhánh thêm: duyệt hàng loạt phải có kết quả từng đơn và ưu t
 | SB-01 | @SpringBootTest khởi động JAR/profile test với PostgreSQL 16 | Context healthy, đúng DataSource/timezone, không static DBContext | NOT_RUN |
 | SB-02 | MockMvc role/ownership/2FA/sessionidle15min | Đúng401/403/404/Error JSON, trangHTMLredirect đúng | NOT_RUN |
 | SB-03 | GET session trước login; POST login thiếu CSRF/có CSRF; rotate token | Thiếu403, hợp lệ có session; token mới sau login/logout | NOT_RUN |
-| SB-04 | JdbcTemplate function và7 procedure, OUT/status lỗi; inject lỗi giữa transaction | Đúng typedDTO; DomainException rollback mọi bảng/outbox | NOT_RUN |
+| SB-04 | Service/repository SQL trực tiếp; kiểm quy tắc và inject lỗi giữa transaction | Đúng typedDTO; DomainException rollback mọi bảng/outbox | NOT_RUN |
 | SB-05 | Nạp01/02 trên DB test mới; cập nhật SQL thủ công trên bản sao DB cũ | SQL đúng hậu điều kiện; app startup không tự DDL/seed; DB cũ giữ dữ liệu | NOT_RUN |
 | SB-06 | Mở 8 màn hình React, form/JSON/upload/static/fragments | Binding/validation/CSRF đầy đủ; không phụ thuộc JSPmount | NOT_RUN |
 | SB-07 | Gọi IPN không session và không CSRF; sai chữký | Callback hợp lệ được adapter xử lý; sai chữ ký không ghi tiền | NOT_RUN |

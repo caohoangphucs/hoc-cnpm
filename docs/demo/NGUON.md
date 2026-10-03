@@ -31,14 +31,12 @@ không được mô tả là chức năng đã chạy.
   điểm include; không gán lại một mã UC mới.
 - SRS cũ gọi UC-15 là áp dụng biểu giá mới; SRS mới dùng UC-15 cho vật tư.
   Sơ đồ dùng **REQ-034** để dẫn luồng áp dụng giá đã duyệt.
-- UC-04: SRS giữ giường 48 giờ, SP hiện giữ 3 ngày; đích demo theo SRS là 48 giờ.
-- UC-25: SRS ghi “sau 23:00”; SP hiện dùng `>= 23:00` hoặc `< 05:00`.
-  Quy tắc đích chốt tại BR-12: >23:00 hoặc <05:00, Asia/Ho_Chi_Minh.
+- UC-04: SRS yêu cầu giữ giường 48 giờ; Java service hiện đặt hạn 48 giờ.
+- UC-25: SRS ghi “sau 23:00”. Quy tắc Java chốt tại BR-12: >23:00 hoặc <05:00, Asia/Ho_Chi_Minh.
 - UC-17 theo SRS cũ: **lượng tiêu thụ × đơn giá**. Không tự thêm biểu giá
   lũy tiến vào phạm vi demo vì TODO hiện có yêu cầu rộng hơn đặc tả cũ.
 - SRS cũ gọi cấp giấy xác nhận và quy đổi điểm là nhánh UC-30.
   Hai nhánh này được giữ trong UC-30, không tính thành UC demo thứ 9 và 10.
-- Tên SP có sẵn được lấy từ `database/01_schema.sql`; schema hiện không có
-  trigger gán giường hay trigger tạo vi phạm. Các cập nhật nằm trực tiếp trong SP.
+- Tên function/procedure legacy có sẵn được lấy từ `database/01_schema.sql`; chúng không được service 8 UC gọi. Schema hiện không có trigger gán giường hay trigger tạo vi phạm; quy tắc và cập nhật 8 UC nằm trong Java service/repository SQL.
 
 Quyết định thiết kế cuối: [quy tắc nghiệp vụ](QUY_TAC_NGHIEP_VU.md).
