@@ -8,7 +8,8 @@ import { NotFoundPage } from './pages/NotFoundPage'
 const Accounts = lazy(()=>import('@/features/accounts/AccountsPreview').then(module=>({default:module.PreviewAccounts})))
 const Booking = lazy(()=>import('@/features/booking/BookingPreview').then(module=>({default:module.PreviewRegistration})))
 const Registration = lazy(()=>import('@/features/registration-review/RegistrationReviewPreview'))
-const pages = { 'admin/accounts': Accounts, 'student/stay': Booking, 'admin/bookings': Registration }
+const InvoiceIssuance = lazy(()=>import('@/features/invoice-issuance/InvoiceIssuancePreview'))
+const pages = { 'admin/accounts': Accounts, 'student/stay': Booking, 'admin/bookings': Registration, 'accountant/invoices': InvoiceIssuance }
 export default function WorkspacePreview() {
   const {workspaceId}=useParams(), workspace=workspaces.find(w=>w.id===workspaceId)
   if(!workspace)return <NotFoundPage standalone />
