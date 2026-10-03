@@ -46,7 +46,7 @@ Có nền mã/SQL không đồng nghĩa đã kiểm thử hay nghiệm thu.
 
 Các điểm phải xử lý trước demo ứng dụng:
 
-- 2FA chưa có nơi lưu secret TOTP; middleware chặn ADMIN/KETOAN khỏi API nghiệp vụ cho tới khi cấu hình xong. Account auth dùng BCrypt và từ chối hash hỏng.
+- ADMIN/KETOAN đăng ký TOTP qua API auth; secret được mã hóa trước khi lưu. Giao diện đăng ký TOTP chưa được nối. Account auth dùng BCrypt và từ chối hash hỏng.
 - rooms.jsp sinh cố định 4 lựa chọn giường, chưa lọc theo trạng thái giường.
 - StudentServlet ghi báo hỏng bằng SQL trực tiếp và ID mặc định khi session
   thiếu: đưa xuống DAO, kiểm tra lưu trú thực tế.

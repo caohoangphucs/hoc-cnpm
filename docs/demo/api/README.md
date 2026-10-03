@@ -1,11 +1,13 @@
 # API Spring Boot đích
 
-OpenAPI mô tả input, loại dữ liệu, headers và response lỗi. Output cụ thể dưới đây là contract bổ sung; đây là thiết kế chưa có endpoint runtime.
+OpenAPI mô tả input, loại dữ liệu, headers và response lỗi. Auth/TOTP, UC-04 booking, UC-12 duyệt đăng ký, UC-17 preview/phát hành hóa đơn, UC-08 phiên thanh toán, UC-22 báo hỏng, UC-25 ghi nhận cổng, UC-14 danh sách vi phạm và UC-30 danh sách hoạt động đã có các HTTP handler cốt lõi. Các thao tác còn lại trong bảng vẫn là contract đang triển khai.
 
 | Method | Path (sau /api/v1) | UC | Quyền | Schema body |
 |---|---|---|---|---|
 | POST | /auth/login | AUTH |  | Login |
 | POST | /auth/2fa | AUTH | ALL | Otp |
+| POST | /auth/2fa/setup | AUTH | ADMIN,KETOAN chưa cấu hình | — |
+| POST | /auth/2fa/setup/confirm | AUTH | ADMIN,KETOAN chưa cấu hình | Otp |
 | GET | /auth/session | AUTH | ALL | — |
 | POST | /auth/logout | AUTH | ALL | — |
 | GET | /rooms | UC-04 | SINHVIEN,ADMIN | — |

@@ -171,7 +171,8 @@ public class RepairRepository {
         jdbc.queryForObject(
             "INSERT INTO"
                 + " yeu_cau_sua_chua(maphong,masinhvien,tieude,motachitiet,mucdouutien,ngaytao)"
-                + " SELECT maphong,?,?,?, ?,? FROM sinh_vien WHERE masinhvien=? RETURNING mayeucau",
+                + " SELECT MaPhongHienTai,masinhvien,?,?,?,? FROM sinh_vien"
+                + " WHERE masinhvien=? RETURNING mayeucau",
             Integer.class,
             title,
             description,

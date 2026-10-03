@@ -43,7 +43,8 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers(ApiRoutes.AUTH_SESSION, ApiRoutes.AUTH_LOGIN).permitAll()
-                        .requestMatchers(ApiRoutes.AUTH_TWO_FACTOR, ApiRoutes.AUTH_LOGOUT).authenticated()
+                        .requestMatchers(ApiRoutes.AUTH_TWO_FACTOR, ApiRoutes.AUTH_TWO_FACTOR_SETUP,
+                                ApiRoutes.AUTH_TWO_FACTOR_CONFIRM, ApiRoutes.AUTH_LOGOUT).authenticated()
                         .anyRequest().access((authentication, context) -> new AuthorizationDecision(
                                 canAccessApi(authentication.get(), context.getRequest()))))
                 .formLogin(form -> form.disable())

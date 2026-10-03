@@ -65,8 +65,10 @@ jobs:
             -cp '/app/target/classes:/app/target/test-classes:/app/target/test-libs/*' \
             org.junit.platform.console.ConsoleLauncher execute \
             --select-class vn.id.caohoangphuc.cnpm.persistence.DatabaseFoundationIT \
-            --select-class vn.id.caohoangphuc.cnpm.service.UseCaseBlackBoxIT \
-            --fail-if-no-tests
+            --select-class vn.id.caohoangphuc.cnpm.service.ServiceAuthorizationIT \
+            --select-class vn.id.caohoangphuc.cnpm.api.BookingApiBlackBoxIT \
+            --select-class vn.id.caohoangphuc.cnpm.api.RemainingUseCasesApiBlackBoxIT \
+            --fail-if-no-tests --details=summary
       - name: Build immutable backend and frontend images locally
         run: |
           docker build --label "cnpm.commit=$CI_SHA" -t "cnpm-server-ci:$CI_SHA" server
