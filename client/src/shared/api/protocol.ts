@@ -14,6 +14,13 @@ export function text(value: unknown): string { if (typeof value !== 'string' || 
 export function integer(value: unknown, min = 0): number { if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < min) throw invalidResponse(); return value }
 export function instant(value: unknown): string { const s = text(value); if (!Number.isFinite(Date.parse(s))) throw invalidResponse(); return s }
 export function list<T>(value: unknown, decode: (item: unknown) => T): T[] { if (!Array.isArray(value)) throw invalidResponse(); return value.map(decode) }
+export type Page<T> = { items: T[]; page: number; pageSize: number; total: number }
+export function paged<T>(value: unknown, decode: (item: unknown) => T): Page<T> {
+  const v = object(value), result = { items: list(v.items, decode), page: integer(v.page, 1), pageSize: integer(v.pageSize, 1), total: integer(v.total) }
+  if (result.items.length > result.pageSize || result.items.length > result.total) throw invalidResponse()
+  return result
+}
+export function nullableText(value: unknown): string | null { return value == null ? null : text(value) }
 export function enumValue<T extends string>(value: unknown, allowed: readonly T[]): T { if (!allowed.includes(value as T)) throw invalidResponse(); return value as T }
 export function invalidResponse() { return new ApiError('Dữ liệu trả về chưa hợp lệ. Vui lòng tải lại hoặc liên hệ Ban quản lý.', 0, 'INVALID_RESPONSE') }
 export function errorMessage(error: unknown): string { return error instanceof ApiError ? `${error.message}${error.requestId ? ` Mã tra cứu: ${error.requestId}.` : ''}` : 'Không thể kết nối dịch vụ. Vui lòng thử lại.' }
@@ -26,7 +33,9 @@ export async function readJson<T>(response: Response, decode: (value: unknown) =
   const body: unknown = await response.json().catch(() => undefined)
   if (!response.ok) {
     const data = body && typeof body === 'object' ? body as Record<string, unknown> : {}
-    const message = response.status === 401 ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
+    const message = data.code === 'INVALID_OTP' ? 'Mã xác thực không đúng hoặc đã hết hạn. Nhập mã mới từ ứng dụng xác thực.'
+      : data.code === 'TWO_FACTOR_ALREADY_CONFIGURED' ? 'Tài khoản đã có ứng dụng xác thực. Liên hệ Ban quản lý nếu cần thay đổi thiết lập.'
+      : response.status === 401 ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
       : response.status === 403 ? 'Bạn chưa có quyền thực hiện thao tác hoặc phiên xác thực đã thay đổi. Tải lại trang trước khi thử lại.'
       : response.status === 404 ? 'Không tìm thấy bản ghi. Vui lòng kiểm tra lại.'
       : response.status === 409 ? 'Dữ liệu đã thay đổi hoặc yêu cầu không còn phù hợp. Tải lại và kiểm tra trước khi thử lại.'

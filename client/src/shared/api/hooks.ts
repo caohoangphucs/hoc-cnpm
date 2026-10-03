@@ -3,10 +3,10 @@ import { useAuth } from '@/features/auth/context'
 import { apiFetch } from './client'
 import { ApiError, errorMessage, readJson, requestIdentity, type RequestIdentity } from './protocol'
 
-export function useResource<T>(path: string | null, decode: (value: unknown) => T) {
+export function useResource<T>(path: string | null, decode: (value: unknown) => T, externalRevision = 0) {
   const [revision, setRevision] = useState(0)
   const [result, setResult] = useState<{ key: string; data?: T; error?: string }>({ key: '' })
-  const key = `${path}:${revision}`
+  const key = `${path}:${revision}:${externalRevision}`
   useEffect(() => {
     if (path === null) return
     const abort = new AbortController()

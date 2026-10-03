@@ -1,7 +1,11 @@
-import { enumValue, instant, integer, object, text, vietnamTime } from '../../shared/api/protocol.ts'
+import { enumValue, instant, integer, list, object, paged, text, vietnamTime } from '../../shared/api/protocol.ts'
 export type EntryType = 'VAO' | 'RA'
 export type BarrierStatus = 'PENDING' | 'OPENED' | 'FAILED'
 export type Entry = { eventId: string; studentId: string; type: EntryType; time: string; barrierStatus: BarrierStatus; violationId?: number }
+export const parseEntries = (v: unknown) => paged(v, parseEntry)
+export type Visitor = { id: number; hostStudentId: string; state: string; validFrom: string; validTo: string; version: number }
+export function parseVisitor(value: unknown): Visitor { const v = object(value); return { id: integer(v.id, 1), hostStudentId: text(v.hostStudentId), state: text(v.state), validFrom: instant(v.validFrom), validTo: instant(v.validTo), version: integer(v.version, 1) } }
+export const parseVisitors = (v: unknown) => list(v, parseVisitor)
 export const barrierLabels: Record<BarrierStatus, string> = { PENDING: 'Chờ thiết bị', OPENED: 'Đã mở', FAILED: 'Thiết bị lỗi' }
 export function parseEntry(value: unknown): Entry {
   const v = object(value)
