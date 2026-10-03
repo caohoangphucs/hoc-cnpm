@@ -4,8 +4,15 @@ import { type Workspace, workspacePath } from '../navigation'
 import { Icon } from '@/shared/components/Icon'
 import { ThemeToggle } from '@/shared/components/ThemeToggle'
 import { Navigation } from './Navigation'
+import { useAuth } from '@/features/auth/context'
+import { asAuthError, type AuthError } from '@/features/auth/api'
+import { AuthFeedback } from '@/features/auth/AuthFeedback'
+import { Button } from '@/shared/components/Button'
 
 export function AppShell({ workspace }: { workspace: Workspace }) {
+  const { logout } = useAuth()
+  const [signingOut, setSigningOut] = useState(false)
+  const [logoutError, setLogoutError] = useState<AuthError | null>(null)
   const { pathname } = useLocation()
   const mainRef = useRef<HTMLElement>(null)
   const drawerRef = useRef<HTMLDialogElement>(null)
@@ -39,6 +46,14 @@ export function AppShell({ workspace }: { workspace: Workspace }) {
 
   function closeDrawer() {
     drawerRef.current?.close()
+  }
+
+  async function signOut() {
+    if (signingOut) return
+    setSigningOut(true)
+    setLogoutError(null)
+    try { await logout() } catch (error) { setLogoutError(asAuthError(error)) }
+    finally { setSigningOut(false) }
   }
 
   function keepDrawerFocus(event: KeyboardEvent<HTMLDialogElement>) {
@@ -93,9 +108,12 @@ export function AppShell({ workspace }: { workspace: Workspace }) {
           </div>
           <div className="top-bar-end">
             <ThemeToggle />
+            <Button variant="text" pending={signingOut} onClick={signOut} aria-label="Đăng xuất" className="shell-logout"><Icon name="logout" /><span>{signingOut ? 'Đang đăng xuất…' : 'Đăng xuất'}</span></Button>
           </div>
         </header>
         <main ref={mainRef} id="main-content" className="workspace-content" tabIndex={-1}>
+          <AuthFeedback error={logoutError} />
+          <p className="form-status" role="status">{signingOut ? 'Đang đăng xuất khỏi tài khoản.' : ''}</p>
           <Outlet />
           <footer className="content-footer">KTX Smart Hub · Hệ thống quản lý ký túc xá</footer>
         </main>

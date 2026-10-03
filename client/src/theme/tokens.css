@@ -20,6 +20,10 @@
   --md-sys-color-outline: #71787e;
   --md-sys-color-outline-variant: #c1c7ce;
   --md-sys-color-scrim: #000000;
+  --md-sys-color-error: #ba1a1a;
+  --md-sys-color-on-error: #ffffff;
+  --md-sys-color-error-container: #ffdad6;
+  --md-sys-color-on-error-container: #410002;
   --md-sys-shape-corner-small: 8px;
   --md-sys-shape-corner-medium: 12px;
   --md-sys-shape-corner-large: 16px;
@@ -57,6 +61,10 @@
   --md-sys-color-on-surface-variant: #c1c7ce;
   --md-sys-color-outline: #8b9198;
   --md-sys-color-outline-variant: #41484d;
+  --md-sys-color-error: #ffb4ab;
+  --md-sys-color-on-error: #690005;
+  --md-sys-color-error-container: #93000a;
+  --md-sys-color-on-error-container: #ffdad6;
   --app-elevation-1: 0 1px 3px 1px rgb(0 0 0 / 30%), 0 1px 2px rgb(0 0 0 / 40%);
   --app-elevation-2: 0 2px 6px 2px rgb(0 0 0 / 35%), 0 1px 2px rgb(0 0 0 / 45%);
 }
