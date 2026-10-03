@@ -57,6 +57,9 @@ class RemainingUseCasesApiBlackBoxIT {
         jdbc.update("DELETE FROM vi_pham WHERE noidungvipham LIKE 'API CRUD violation%'");
         jdbc.update("DELETE FROM svc_gate_event WHERE device_id='API-CRUD-TEST'");
         jdbc.update("DELETE FROM ra_vao WHERE ghichu='API CRUD test entry'");
+        jdbc.update("DELETE FROM svc_visitor WHERE identity_encrypted='API GET read test'");
+        jdbc.update("DELETE FROM svc_gate_event WHERE device_id='API-GET-READ'");
+        jdbc.update("DELETE FROM ra_vao WHERE ghichu='API GET read test entry'");
         jdbc.update("DELETE FROM svc_payment_session WHERE provider_ref LIKE 'api-crud-test-%'");
     }
 
@@ -183,6 +186,38 @@ class RemainingUseCasesApiBlackBoxIT {
 
         assertEquals(1, jdbc.queryForObject(
                 "SELECT COUNT(*) FROM ra_vao WHERE maravao=?", Integer.class, entryId));
+    }
+
+    @Test
+    void administratorAndGuardCanReadBookingVisitorAndGateListsOverHttp() throws Exception {
+        int adminId = jdbc.queryForObject(
+                "SELECT mataikhoan FROM tai_khoan WHERE tendangnhap='admin'", Integer.class);
+        jdbc.update("INSERT INTO svc_visitor(host_student_id,name_encrypted,identity_encrypted,valid_from,valid_to,state)"
+                        + " VALUES('21110001','test-name','API GET read test',now()-interval '1 hour',"
+                        + "now()+interval '1 hour','APPROVED')");
+        int entryId = jdbc.queryForObject("INSERT INTO ra_vao(masinhvien,loaisukien,ghichu)"
+                + " VALUES('21110001','VAO','API GET read test entry') RETURNING maravao", Integer.class);
+        UUID eventId = UUID.randomUUID();
+        jdbc.update("INSERT INTO svc_gate_event(event_id,entry_id,device_id,payload_hash,actor_id,barrier_status)"
+                        + " VALUES(?,?, 'API-GET-READ','test-hash',?,'OPENED')",
+                eventId, entryId, adminId);
+
+        var admin = login("admin");
+        assertGetSucceeds(admin.client(), ApiRoutes.BOOKINGS + "?page=1&pageSize=20");
+        assertGetSucceeds(admin.client(), ApiRoutes.VISITORS + "?page=1&size=20");
+        var adminEntries = assertGetSucceeds(admin.client(), ApiRoutes.ENTRIES + "?page=1&size=20");
+        assertTrue(adminEntries.body().contains(eventId.toString()));
+
+        var guard = login("baove1");
+        assertGetSucceeds(guard.client(), ApiRoutes.VISITORS + "?page=1&size=20");
+        var guardEntries = assertGetSucceeds(guard.client(), ApiRoutes.ENTRIES + "?page=1&size=20");
+        assertTrue(guardEntries.body().contains(eventId.toString()));
+    }
+
+    private HttpResponse<String> assertGetSucceeds(HttpClient client, String path) throws Exception {
+        var response = send(client, HttpRequest.newBuilder(uri(path)).GET().build());
+        assertEquals(200, response.statusCode(), response.body());
+        return response;
     }
 
     @Test
