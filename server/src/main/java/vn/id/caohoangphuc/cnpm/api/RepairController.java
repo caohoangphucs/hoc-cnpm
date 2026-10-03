@@ -4,6 +4,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.function.ServerRequest;
 import org.springframework.web.servlet.function.ServerResponse;
 import vn.id.caohoangphuc.cnpm.api.dto.RepairDto;
+import vn.id.caohoangphuc.cnpm.api.dto.AssignmentDto;
+import vn.id.caohoangphuc.cnpm.api.dto.RepairCompleteDto;
+import vn.id.caohoangphuc.cnpm.api.dto.RepairScheduleDto;
 import vn.id.caohoangphuc.cnpm.service.RepairService;
 
 /** HTTP actions for reporting and listing repair requests. */
@@ -29,5 +32,26 @@ public class RepairController {
         return api.handle(request, (actor, context) -> repairs.list(actor,
                 api.integerParameter(request, "page", 1),
                 api.integerParameter(request, "size", 20)));
+    }
+
+    /** Assigns an open repair request to a technician. */
+    public ServerResponse assign(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> repairs.assign(actor, context,
+                Integer.parseInt(request.pathVariable("id")), request.body(AssignmentDto.class)));
+    }
+
+    /** Changes the technician's scheduled time and warranty date. */
+    public ServerResponse reschedule(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> {
+            var input = request.body(RepairScheduleDto.class);
+            return repairs.reschedule(actor, context, Integer.parseInt(request.pathVariable("id")),
+                    input.version(), input.scheduledAt(), input.warrantyUntil(), input.note());
+        });
+    }
+
+    /** Completes a repair and returns shortages when the required materials are unavailable. */
+    public ServerResponse complete(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> repairs.complete(actor, context,
+                Integer.parseInt(request.pathVariable("id")), request.body(RepairCompleteDto.class)));
     }
 }

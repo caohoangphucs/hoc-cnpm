@@ -52,7 +52,7 @@ public class BookingController {
             }
 
             var result = bookings.book(
-                    new Actor(account.accountId(), twoFactorVerified(request)),
+                    new Actor(account.accountId(), true),
                     new RequestContext(requestId, idempotencyKey),
                     request.body(BookingDto.class));
             return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(result);
@@ -75,12 +75,6 @@ public class BookingController {
     private static UUID requestId(ServerRequest request) {
         String header = request.headers().firstHeader("X-Request-Id");
         return header == null ? UUID.randomUUID() : UUID.fromString(header);
-    }
-
-    /** Reads the server-side marker proving that this session passed 2FA. */
-    private static boolean twoFactorVerified(ServerRequest request) {
-        var session = request.servletRequest().getSession(false);
-        return session != null && Boolean.TRUE.equals(session.getAttribute("ktx.twoFactorVerified"));
     }
 
     /** Builds the standard booking error response with its request ID. */

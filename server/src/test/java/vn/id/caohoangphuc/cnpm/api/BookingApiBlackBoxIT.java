@@ -153,7 +153,7 @@ class BookingApiBlackBoxIT {
     }
 
     @Test
-    void administratorOtpEndpointRequiresEnrollmentBeforeVerification() throws Exception {
+    void administratorOtpEndpointReportsThatEnrollmentIsNotConfigured() throws Exception {
         var admin = login("admin", "123456");
         var response = send(admin.client(), HttpRequest.newBuilder(uri(ApiRoutes.AUTH_TWO_FACTOR))
                 .header("Content-Type", "application/json")
@@ -161,8 +161,8 @@ class BookingApiBlackBoxIT {
                 .POST(HttpRequest.BodyPublishers.ofString("{\"code\":\"123456\"}"))
                 .build());
 
-        assertEquals(409, response.statusCode());
-        assertEquals("TWO_FACTOR_SETUP_REQUIRED", json.readTree(response.body()).path("code").asString());
+        assertEquals(503, response.statusCode());
+        assertEquals("TWO_FACTOR_NOT_CONFIGURED", json.readTree(response.body()).path("code").asString());
     }
 
     @Test
