@@ -22,5 +22,6 @@ export function usePreviewAction({ preview = false, outcome = 'success' }: Workf
       operation(); setNotice(`${message} (chỉ trong bản xem trước).`); return true
     } finally { lock.current = false; if (runId === generation.current) setBusy(false) }
   }
-  return { busy, notice, error, run, setError }
+  function showError(value: string) { setError(value); if (value) setNotice('') }
+  return { busy, notice, error, run, setError: showError }
 }
