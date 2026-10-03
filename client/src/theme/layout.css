@@ -40,11 +40,14 @@
 .section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
 .section-heading p { color: var(--md-sys-color-on-surface-variant); }
 .destination-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
-.destination-card { display: flex; align-items: flex-start; gap: 16px; padding: 18px 20px; min-width: 0; border: 1px solid var(--md-sys-color-outline-variant); border-radius: var(--md-sys-shape-corner-large); background: var(--md-sys-color-surface-container-lowest); box-shadow: var(--app-elevation-1); transition: box-shadow var(--app-duration) ease; }
-@media (hover: hover) { .destination-card:hover { box-shadow: var(--app-elevation-2); } }
+.destination-card { --destination-container: var(--md-sys-color-primary-container); --destination-foreground: var(--md-sys-color-on-primary-container); display: flex; align-items: flex-start; gap: 16px; padding: 18px 20px; min-width: 0; border: 1px solid var(--md-sys-color-outline-variant); border-radius: var(--md-sys-shape-corner-large); background: color-mix(in srgb, var(--destination-container) 20%, var(--md-sys-color-surface-container-lowest)); box-shadow: var(--app-elevation-1); transition: transform var(--app-duration) var(--app-easing), box-shadow var(--app-duration) var(--app-easing), border-color var(--app-duration) var(--app-easing); }
+@media (hover: hover) { .destination-card:hover { transform: translateY(-2px); box-shadow: var(--app-elevation-2); border-color: var(--md-sys-color-primary); } }
+.destination-card:active { transform: translateY(0); box-shadow: var(--app-elevation-1); }
 .destination-icon, .empty-symbol { display: grid; place-items: center; background: var(--md-sys-color-surface-container); color: var(--md-sys-color-primary); flex-shrink: 0; border-radius: var(--md-sys-shape-corner-large); }
-.destination-icon { width: 48px; height: 48px; background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); border-radius: var(--md-sys-shape-corner-medium); }
-.destination-card[data-icon='community'] .destination-icon { background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
+.destination-icon { width: 48px; height: 48px; background: var(--destination-container); color: var(--destination-foreground); border-radius: var(--md-sys-shape-corner-medium); }
+.destination-card:is([data-icon='community'], [data-icon='people']) { --destination-container: var(--md-sys-color-tertiary-container); --destination-foreground: var(--md-sys-color-on-tertiary-container); }
+.destination-card:is([data-icon='wallet'], [data-icon='pricing']) { --destination-container: var(--app-color-success-container); --destination-foreground: var(--app-color-on-success-container); }
+.destination-card:is([data-icon='tool'], [data-icon='shield'], [data-icon='bell']) { --destination-container: var(--app-color-warning-container); --destination-foreground: var(--app-color-on-warning-container); }
 .destination-copy { flex: 1; min-width: 0; }
 .destination-copy p { color: var(--md-sys-color-on-surface-variant); margin-top: 8px; }
 .icon.destination-arrow { width: 20px; height: 20px; margin-top: 4px; color: var(--md-sys-color-primary); }

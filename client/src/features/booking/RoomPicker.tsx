@@ -44,7 +44,7 @@ export function RoomPicker({ rooms, student, selectedRoom, bedId, onRoom, onBed,
       <div className="booking-section-heading"><h2 id="bed-panel-title">Chọn giường</h2><Icon name="bed" /></div>
       {!selectedRoom ? <div className="booking-bed-placeholder"><span><Icon name="bed" /></span><h3>Bắt đầu từ một phòng</h3><p>Chọn “Xem giường” để xem các giường và tình trạng hiện tại.</p></div> : <>
         <h3>Phòng {selectedRoom.name}</h3><p className="booking-subtle">{selectedRoom.buildingName} · {selectedRoom.roomType}</p>
-        <fieldset className="booking-beds"><legend className="sr-only">Giường phòng {selectedRoom.name}</legend>{selectedRoom.beds.map((bed) => <label key={bed.id} className={`booking-bed ${bed.status !== 'TRONG' ? 'is-unavailable' : ''} ${bedId === bed.id ? 'is-selected' : ''}`}>
+        <fieldset className="booking-beds"><legend className="sr-only">Giường phòng {selectedRoom.name}</legend>{selectedRoom.beds.map((bed) => <label key={bed.id} data-status={bed.status} className={`booking-bed ${bed.status !== 'TRONG' ? 'is-unavailable' : ''} ${bedId === bed.id ? 'is-selected' : ''}`}>
           <input type="radio" name="booking-bed" checked={bedId === bed.id} onChange={() => onBed(bed.id)} disabled={!allowed || !compatible(selectedRoom, student) || bed.status !== 'TRONG'} value={bed.id} />
           <Icon name={bed.status === 'KHOA' ? 'lock' : 'bed'} /><strong>Giường {bed.number}</strong><span>{bedLabels[bed.status]}</span>
         </label>)}</fieldset>
