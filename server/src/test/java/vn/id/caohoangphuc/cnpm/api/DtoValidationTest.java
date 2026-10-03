@@ -1,6 +1,9 @@
 package vn.id.caohoangphuc.cnpm.api;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -38,6 +41,30 @@ class DtoValidationTest {
     @Test void nestedSupplyQuantityMustBePositive() {
         var request = new RepairCompleteDto(1L, "Done", List.of(new SupplyLineDto("SUPPLY", 0)), null);
         assertFalse(validator.validate(request).isEmpty());
+    }
+
+    @Test void everyUseCaseRejectsMalformedPublicRequestData() {
+        var now = OffsetDateTime.of(2026, 10, 3, 12, 0, 0, 0, ZoneOffset.UTC);
+        var id = UUID.randomUUID();
+
+        assertInvalid(new BookingDto(" ", 0L, List.of(id, id), false));
+        assertInvalid(new ApprovalDto(ApprovalDto.Decision.TU_CHOI, " ", 1L));
+        assertInvalid(new InvoiceDraftDto("2026-13", List.of("ROOM", "ROOM")));
+        assertInvalid(new IssueDto(null, 0L));
+        assertInvalid(new PaymentDto(List.of(1L, 1L), null));
+        assertInvalid(new RepairDto("", "", null, List.of(id, id, id, id, id, id)));
+        assertInvalid(new AssignmentDto(0L, now, 1L));
+        assertInvalid(new RepairCompleteDto(1L, "Done", List.of(new SupplyLineDto("PART", 0)), null));
+        assertInvalid(new EntryDto(null, "", null, "", null));
+        assertInvalid(new VisitorDto("", "", "", now, now));
+        assertInvalid(new ActivityDto(1L, " ", now, now, 0L, 1L));
+        assertInvalid(new ConfirmDto(List.of(1L, 1L)));
+        assertInvalid(new ConvertDto(1L, 6));
+        assertInvalid(new DisciplineDto(List.of(1L, 1L), "", "", id, Map.of("V-1", 0L)));
+    }
+
+    private void assertInvalid(Object request) {
+        assertFalse(validator.validate(request).isEmpty(), request.getClass().getSimpleName());
     }
     @Test void secretsAreAbsentFromJsonAndToString() {
         var mapper = JsonMapper.builder().build();
