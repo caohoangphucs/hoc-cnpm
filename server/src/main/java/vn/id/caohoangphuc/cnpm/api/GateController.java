@@ -26,10 +26,41 @@ public class GateController {
                 actor, context, request.body(EntryDto.class)));
     }
 
+    /** Lists gate entries visible to the authenticated user. */
+    public ServerResponse entries(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> gate.entries(actor,
+                api.integerParameter(request, "page", 1), api.integerParameter(request, "size", 20)));
+    }
+
+    /** Reads one gate entry by its event UUID. */
+    public ServerResponse entry(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> gate.entry(actor,
+                java.util.UUID.fromString(request.pathVariable("id"))));
+    }
+
+    /** Deletes a gate event record as an administrator. */
     /** Submits a visit request for the authenticated student. */
     public ServerResponse declareVisitor(ServerRequest request) throws Exception {
         return api.handle(request, (actor, context) -> gate.declareVisitor(actor, context,
                 request.body(VisitorDto.class)));
+    }
+
+    /** Lists visitor requests within the caller's permitted scope. */
+    public ServerResponse visitors(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> gate.visitors(actor,
+                api.integerParameter(request, "page", 1), api.integerParameter(request, "size", 20)));
+    }
+
+    /** Reads one visitor request within the caller's permitted scope. */
+    public ServerResponse visitor(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> gate.visitor(actor,
+                Long.parseLong(request.pathVariable("id"))));
+    }
+
+    /** Deletes a pending visitor request before an administrator approves it. */
+    public ServerResponse deleteVisitor(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> gate.deleteVisitor(actor, context,
+                Long.parseLong(request.pathVariable("id"))));
     }
 
     /** Approves or rejects a visitor request as an administrator. */

@@ -5,6 +5,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
+import vn.id.caohoangphuc.cnpm.api.dto.InvoiceResourceDto;
+import vn.id.caohoangphuc.cnpm.api.dto.InvoiceLineDto;
 
 public class InvoiceRepository {
   public record Reading(long oldElectricity, long newElectricity, long oldWater, long newWater) {}
@@ -19,6 +21,8 @@ public class InvoiceRepository {
 
   public record Invoice(
       int id, String roomId, String month, BigDecimal total, BigDecimal paid, String status) {}
+
+  public record InvoicePage(List<InvoiceResourceDto> items, long total) {}
 
   private final JdbcTemplate jdbc;
 
@@ -245,5 +249,77 @@ VALUES(?,?,?,?,?,?,?,?,?,'CHUA_TT') RETURNING mahoadon
   /** Khóa phòng để ngăn hai lần phát hành hóa đơn đồng thời. */
   public void lockRoom(String roomId) {
     jdbc.queryForList("SELECT maphong FROM phong WHERE maphong=? FOR UPDATE", roomId);
+  }
+
+  /** Returns an invoice page, restricted to rooms the student occupied during that month. */
+  public InvoicePage invoices(String studentId, int page, int size) {
+    String visibility = studentId == null ? "" : "AND EXISTS (SELECT 1 FROM luu_tru l JOIN giuong g USING(magiuong) "
+        + "WHERE l.masinhvien=? AND g.maphong=i.maphong AND l.ngaybatdau<= "
+        + "(to_date(i.kythang || '-01','YYYY-MM-DD') + interval '1 month - 1 day')::date "
+        + "AND (l.ngayketthuc IS NULL OR l.ngayketthuc>=to_date(i.kythang || '-01','YYYY-MM-DD')))";
+    var args = new java.util.ArrayList<Object>();
+    if (studentId != null) args.add(studentId);
+    args.add(size);
+    args.add((page - 1) * size);
+    var ids = jdbc.query("SELECT i.mahoadon FROM hoa_don i WHERE true " + visibility
+            + " ORDER BY i.ngayphathanh DESC,i.mahoadon DESC LIMIT ? OFFSET ?",
+        (r, n) -> r.getInt(1), args.toArray());
+    long total;
+    if (studentId == null) {
+      total = jdbc.queryForObject("SELECT count(*) FROM hoa_don", Long.class);
+    } else {
+      total = jdbc.queryForObject("SELECT count(*) FROM hoa_don i WHERE true " + visibility,
+          Long.class, studentId);
+    }
+    return new InvoicePage(ids.stream().map(this::invoiceResource).toList(), total);
+  }
+
+  /** Reads a full invoice with its charge lines. */
+  public InvoiceResourceDto invoiceResource(int id) {
+    var rows = jdbc.query("""
+        SELECT mahoadon,maphong,kythang,giamgia,tongtien,dathanhtoan,hanthanhtoan,trangthai
+        FROM hoa_don WHERE mahoadon=?
+        """, (r, n) -> new InvoiceResourceDto((long) r.getInt(1), r.getString(2), r.getString(3),
+        invoiceLines(r.getInt(1)), r.getBigDecimal(4).longValue(), r.getBigDecimal(5).longValue(),
+        r.getBigDecimal(6).longValue(), r.getBigDecimal(5).subtract(r.getBigDecimal(6)).longValue(),
+        r.getObject(7, LocalDate.class), r.getString(8)), id);
+    return rows.isEmpty() ? null : rows.get(0);
+  }
+
+  /** Verifies that a student occupied the invoiced room during the invoice month. */
+  public boolean visibleToStudent(int id, String studentId) {
+    Integer count = jdbc.queryForObject("""
+        SELECT count(*) FROM hoa_don i JOIN giuong g ON g.maphong=i.maphong
+        JOIN luu_tru l ON l.magiuong=g.magiuong
+        WHERE i.mahoadon=? AND l.masinhvien=?
+          AND l.ngaybatdau<=(to_date(i.kythang || '-01','YYYY-MM-DD') + interval '1 month - 1 day')::date
+          AND (l.ngayketthuc IS NULL OR l.ngayketthuc>=to_date(i.kythang || '-01','YYYY-MM-DD'))
+        """, Integer.class, id, studentId);
+    return count != null && count > 0;
+  }
+
+  /** Reads itemized charges for a single invoice. */
+  private List<InvoiceLineDto> invoiceLines(int id) {
+    return jdbc.query("SELECT tenmuc,soluong,dongia,thanhtien FROM chi_tiet_hoa_don "
+            + "WHERE mahoadon=? ORDER BY machitiet",
+        (r, n) -> new InvoiceLineDto(r.getString(1), r.getBigDecimal(2),
+            r.getBigDecimal(3).longValue(), r.getBigDecimal(4).longValue()), id);
+  }
+
+  /** Changes an invoice due date without altering calculated totals or payment status. */
+  public boolean dueDate(int id, LocalDate date) {
+    return jdbc.update("UPDATE hoa_don SET hanthanhtoan=? WHERE mahoadon=?", date, id) == 1;
+  }
+
+  /** Checks whether a payment record prevents deleting an invoice. */
+  public boolean hasPayments(int id) {
+    Integer count = jdbc.queryForObject("SELECT count(*) FROM thanh_toan WHERE mahoadon=?", Integer.class, id);
+    return count != null && count > 0;
+  }
+
+  /** Deletes an unpaid invoice and its itemized lines. */
+  public boolean deleteUnpaid(int id) {
+    jdbc.update("DELETE FROM chi_tiet_hoa_don WHERE mahoadon=?", id);
+    return jdbc.update("DELETE FROM hoa_don WHERE mahoadon=? AND trangthai='CHUA_TT'", id) == 1;
   }
 }

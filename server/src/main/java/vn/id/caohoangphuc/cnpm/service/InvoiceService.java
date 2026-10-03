@@ -9,6 +9,10 @@ import java.util.UUID;
 import vn.id.caohoangphuc.cnpm.api.dto.DraftResourceDto;
 import vn.id.caohoangphuc.cnpm.api.dto.InvoiceDraftDto;
 import vn.id.caohoangphuc.cnpm.api.dto.IssueDto;
+import vn.id.caohoangphuc.cnpm.api.dto.InvoiceResourceDto;
+import vn.id.caohoangphuc.cnpm.api.dto.InvoiceResourceListDto;
+import vn.id.caohoangphuc.cnpm.api.dto.InvoiceUpdateDto;
+import vn.id.caohoangphuc.cnpm.api.dto.CommandResultDto;
 import vn.id.caohoangphuc.cnpm.api.dto.PreviewRoomDto;
 import vn.id.caohoangphuc.cnpm.persistence.service.InvoiceRepository;
 
@@ -36,6 +40,65 @@ public class InvoiceService {
   public InvoiceService(InvoiceRepository repository, ServiceContext context) {
     this.repository = repository;
     this.context = context;
+  }
+
+  /** Lists invoices visible to the student or to accounting and administrators. */
+  public InvoiceResourceListDto list(Actor actor, int page, int size) {
+    context.page(page, size);
+    return context.transaction(() -> {
+      var account = context.require(actor, "SINHVIEN", "KETOAN", "ADMIN");
+      String studentId = "SINHVIEN".equals(account.role()) ? account.studentId() : null;
+      var result = repository.invoices(studentId, page, size);
+      return new InvoiceResourceListDto(result.items(), (long) page, (long) size, result.total());
+    });
+  }
+
+  /** Reads an invoice while restricting student access to their occupied room and month. */
+  public InvoiceResourceDto get(Actor actor, int id) {
+    context.positive(id, "invoiceId");
+    return context.transaction(() -> {
+      var account = context.require(actor, "SINHVIEN", "KETOAN", "ADMIN");
+      var invoice = repository.invoiceResource(id);
+      if (invoice == null) throw ServiceException.notFound("Invoice");
+      if ("SINHVIEN".equals(account.role()) && !repository.visibleToStudent(id, account.studentId()))
+        throw ServiceException.notFound("Invoice");
+      return invoice;
+    });
+  }
+
+  /** Updates only the due date so calculated charges and payments remain intact. */
+  public CommandResultDto update(Actor actor, RequestContext request, int id, InvoiceUpdateDto input) {
+    context.validate(input);
+    context.positive(id, "invoiceId");
+    return context.write(actor, request, "PUT:/api/v1/invoices/" + id, input,
+        CommandResultDto.class, () -> {
+          context.require(actor, "KETOAN", "ADMIN");
+          var invoice = repository.invoiceResource(id);
+          if (invoice == null) throw ServiceException.notFound("Invoice");
+          if (!"CHUA_TT".equals(invoice.status()) && !"QUA_HAN".equals(invoice.status()))
+            throw ServiceException.conflict("Only unpaid invoices can be edited");
+          if (!repository.dueDate(id, input.dueDate())) throw ServiceException.notFound("Invoice");
+          context.event(actor, request, "INVOICE_UPDATED", Integer.toString(id),
+              Map.of("dueDate", input.dueDate()));
+          return new CommandResultDto(Integer.toString(id), invoice.status(), 1L, request.requestId());
+        }, "KETOAN", "ADMIN");
+  }
+
+  /** Deletes an unpaid invoice before it has any associated payment. */
+  public CommandResultDto delete(Actor actor, RequestContext request, int id) {
+    context.positive(id, "invoiceId");
+    return context.write(actor, request, "DELETE:/api/v1/invoices/" + id, id,
+        CommandResultDto.class, () -> {
+          context.require(actor, "KETOAN", "ADMIN");
+          var invoice = repository.invoiceResource(id);
+          if (invoice == null) throw ServiceException.notFound("Invoice");
+          if (!"CHUA_TT".equals(invoice.status()) || repository.hasPayments(id))
+            throw ServiceException.conflict("Only unpaid invoices without payments can be deleted");
+          if (!repository.deleteUnpaid(id)) throw ServiceException.notFound("Invoice");
+          context.event(actor, request, "INVOICE_DELETED", Integer.toString(id),
+              Map.of("roomId", invoice.roomId(), "month", invoice.month()));
+          return new CommandResultDto(Integer.toString(id), "DELETED", 1L, request.requestId());
+        }, "KETOAN", "ADMIN");
   }
 
   /** Tính bản xem trước hóa đơn phòng cùng snapshot và cảnh báo dữ liệu. */

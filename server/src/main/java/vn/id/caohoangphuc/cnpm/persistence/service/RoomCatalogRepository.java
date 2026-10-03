@@ -4,6 +4,8 @@ import java.util.List;
 import org.springframework.jdbc.core.JdbcTemplate;
 import vn.id.caohoangphuc.cnpm.api.dto.BedDto;
 import vn.id.caohoangphuc.cnpm.api.dto.RoomDto;
+import vn.id.caohoangphuc.cnpm.api.dto.RoomWriteDto;
+import vn.id.caohoangphuc.cnpm.api.dto.BedWriteDto;
 
 /** Read-only SQL queries for rooms and bed availability. */
 public class RoomCatalogRepository {
@@ -48,6 +50,28 @@ public class RoomCatalogRepository {
         return new RoomPage(items, total);
     }
 
+    /** Reads one room using the same public shape as the room list. */
+    public RoomDto room(String roomId) {
+        var rows = jdbc.query("""
+                        SELECT p.maphong,p.matoanha,COALESCE(l.tenloaiphong,p.maloaiphong,'Chưa phân loại'),
+                               COALESCE(t.gioitinhapdung,'TAT_CA'),p.succhua,
+                               COUNT(g.magiuong) FILTER (
+                                   WHERE g.trangthai='TRONG'
+                                     AND COALESCE(p.trangthai,'TRONG') NOT IN ('KHOA','DANG_SUA','DAY'))
+                        FROM phong p
+                        JOIN toa_nha t USING(matoanha)
+                        LEFT JOIN loai_phong l USING(maloaiphong)
+                        LEFT JOIN giuong g USING(maphong)
+                        WHERE p.maphong=?
+                        GROUP BY p.maphong,p.matoanha,l.tenloaiphong,p.maloaiphong,
+                                 t.gioitinhapdung,p.succhua
+                        """,
+                (rs, row) -> new RoomDto(rs.getString(1), rs.getString(2), rs.getString(3),
+                        rs.getString(4), rs.getLong(5), rs.getLong(6)),
+                roomId);
+        return rows.isEmpty() ? null : rows.get(0);
+    }
+
     /** Reads a page of beds in one room, including each bed's optimistic-lock version. */
     public BedPage beds(String roomId, int pageSize, long offset) {
         var items = jdbc.query("""
@@ -72,5 +96,73 @@ public class RoomCatalogRepository {
         Long count = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM phong WHERE maphong=?", Long.class, roomId);
         return count != null && count > 0;
+    }
+
+    /** Inserts a room using fields that have already passed service validation. */
+    public void createRoom(RoomWriteDto room) {
+        jdbc.update("""
+                INSERT INTO phong(maphong,matoanha,maloaiphong,sophong,tang,succhua,giaphongcoban,trangthai)
+                VALUES(?,?,?,?,?,?,?,?)
+                """, room.id(), room.buildingId(), room.roomTypeId(), room.number(), room.floor(),
+                room.capacity(), room.basePrice(), room.status());
+    }
+
+    /** Updates a room's editable catalogue fields. */
+    public boolean updateRoom(String id, RoomWriteDto room) {
+        return jdbc.update("""
+                UPDATE phong SET matoanha=?,maloaiphong=?,sophong=?,tang=?,succhua=?,giaphongcoban=?,trangthai=?
+                WHERE maphong=?
+                """, room.buildingId(), room.roomTypeId(), room.number(), room.floor(), room.capacity(),
+                room.basePrice(), room.status(), id) == 1;
+    }
+
+    /** Deletes a room and its dependent records according to the schema's FK rules. */
+    public boolean deleteRoom(String id) {
+        return jdbc.update("DELETE FROM phong WHERE maphong=?", id) == 1;
+    }
+
+    /** Inserts one bed into an existing room. */
+    public void createBed(BedWriteDto bed) {
+        jdbc.update("INSERT INTO giuong(magiuong,maphong,sogiuong,vitri,trangthai) VALUES(?,?,?,?,?)",
+                bed.id(), bed.roomId(), bed.number(), bed.position(), bed.status());
+    }
+
+    /** Updates the room, number, position, and status of a bed. */
+    public boolean updateBed(String id, BedWriteDto bed) {
+        return jdbc.update("UPDATE giuong SET maphong=?,sogiuong=?,vitri=?,trangthai=? WHERE magiuong=?",
+                bed.roomId(), bed.number(), bed.position(), bed.status(), id) == 1;
+    }
+
+    /** Deletes one bed according to the schema's FK rules. */
+    public boolean deleteBed(String id) {
+        return jdbc.update("DELETE FROM giuong WHERE magiuong=?", id) == 1;
+    }
+
+    /** Checks whether a bed identifier exists before an update. */
+    public boolean bedExists(String bedId) {
+        Long count = jdbc.queryForObject("SELECT COUNT(*) FROM giuong WHERE magiuong=?", Long.class, bedId);
+        return count != null && count > 0;
+    }
+
+    /** Prevents deleting a room while linked student, billing, or repair history exists. */
+    public boolean roomHasHistory(String roomId) {
+        Boolean exists = jdbc.queryForObject("""
+                SELECT EXISTS(SELECT 1 FROM sinh_vien WHERE maphonghientai=?)
+                    OR EXISTS(SELECT 1 FROM dang_ky_phong d JOIN giuong g USING(magiuong) WHERE g.maphong=?)
+                    OR EXISTS(SELECT 1 FROM luu_tru l JOIN giuong g USING(magiuong) WHERE g.maphong=?)
+                    OR EXISTS(SELECT 1 FROM hoa_don WHERE maphong=?)
+                    OR EXISTS(SELECT 1 FROM yeu_cau_sua_chua WHERE maphong=?)
+                    OR EXISTS(SELECT 1 FROM chi_so_dien_nuoc WHERE maphong=?)
+                """, Boolean.class, roomId, roomId, roomId, roomId, roomId, roomId);
+        return Boolean.TRUE.equals(exists);
+    }
+
+    /** Prevents deleting a bed while a registration or residency refers to it. */
+    public boolean bedHasHistory(String bedId) {
+        Boolean exists = jdbc.queryForObject("""
+                SELECT EXISTS(SELECT 1 FROM dang_ky_phong WHERE magiuong=?)
+                    OR EXISTS(SELECT 1 FROM luu_tru WHERE magiuong=?)
+                """, Boolean.class, bedId, bedId);
+        return Boolean.TRUE.equals(exists);
     }
 }

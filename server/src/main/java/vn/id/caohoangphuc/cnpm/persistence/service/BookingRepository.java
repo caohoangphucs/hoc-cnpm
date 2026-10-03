@@ -5,9 +5,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.jdbc.core.JdbcTemplate;
+import tools.jackson.databind.json.JsonMapper;
 import vn.id.caohoangphuc.cnpm.service.ServiceContext;
+import vn.id.caohoangphuc.cnpm.api.dto.BookingResourceDto;
 
 public class BookingRepository {
+  public record BookingPage(List<BookingResourceDto> items, long total) {}
   public record Student(String id, String gender, int accountId) {}
 
   public record Window(
@@ -26,10 +29,12 @@ public class BookingRepository {
       int id, String studentId, String bedId, Instant expiresAt, String status, long version) {}
 
   private final JdbcTemplate jdbc;
+  private final JsonMapper json;
 
   /** Khởi tạo repository đọc và cập nhật hồ sơ đăng ký chỗ ở. */
-  public BookingRepository(JdbcTemplate jdbc) {
+  public BookingRepository(JdbcTemplate jdbc, JsonMapper json) {
     this.jdbc = jdbc;
+    this.json = json;
   }
 
   /** Khóa sinh viên theo tài khoản và trả thông tin dùng để tạo đăng ký. */
@@ -86,6 +91,48 @@ FROM dot_dang_ky d JOIN hoc_ky h USING(mahocky) WHERE d.madot=?
             (rs, n) -> booking(rs),
             id);
     return rows.isEmpty() ? null : rows.get(0);
+  }
+
+  /** Removes profile metadata and a pending booking after the service releases its bed. */
+  public boolean deletePending(int id) {
+    jdbc.update("DELETE FROM svc_profile WHERE booking_id=?", id);
+    return jdbc.update("DELETE FROM dang_ky_phong WHERE madangky=?", id) == 1;
+  }
+
+  /** Reads one booking with the profile file list used by API clients. */
+  public BookingResourceDto bookingResource(int id) {
+    var rows = jdbc.query("""
+        SELECT d.madangky,d.magiuong,d.masinhvien,d.trangthai,d.ngayhethan,
+               COALESCE(p.state,'PENDING'),COALESCE(p.file_ids::text,'[]'),d.version,d.ghichulydo
+        FROM dang_ky_phong d LEFT JOIN svc_profile p ON p.booking_id=d.madangky
+        WHERE d.madangky=?
+        """, (rs, n) -> new BookingResourceDto(
+        (long) rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4),
+        rs.getObject(5, LocalDateTime.class).atZone(ServiceContext.ZONE).toOffsetDateTime(),
+        rs.getString(6), rs.getLong(8), java.util.Arrays.asList(json.readValue(
+                rs.getString(7), java.util.UUID[].class)), rs.getString(9)), id);
+    return rows.isEmpty() ? null : rows.get(0);
+  }
+
+  /** Returns a page of bookings, optionally restricted to one student's records. */
+  public BookingPage bookings(String studentId, int page, int size) {
+    var items = jdbc.query("""
+        SELECT d.madangky,d.magiuong,d.masinhvien,d.trangthai,d.ngayhethan,
+               COALESCE(p.state,'PENDING'),COALESCE(p.file_ids::text,'[]'),d.version,d.ghichulydo
+        FROM dang_ky_phong d LEFT JOIN svc_profile p ON p.booking_id=d.madangky
+        WHERE (? IS NULL OR d.masinhvien=?) ORDER BY d.ngaydangky DESC,d.madangky DESC LIMIT ? OFFSET ?
+        """, (rs, n) -> bookingResource(rs), studentId, studentId, size, (page - 1) * size);
+    Long total = jdbc.queryForObject("SELECT count(*) FROM dang_ky_phong WHERE (? IS NULL OR masinhvien=?)",
+        Long.class, studentId, studentId);
+    return new BookingPage(items, total == null ? 0 : total);
+  }
+
+  /** Maps a booking row to the detail contract shared by list and single reads. */
+  private BookingResourceDto bookingResource(java.sql.ResultSet rs) throws java.sql.SQLException {
+    return new BookingResourceDto((long) rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4),
+        rs.getObject(5, LocalDateTime.class).atZone(ServiceContext.ZONE).toOffsetDateTime(),
+        rs.getString(6), rs.getLong(8), java.util.Arrays.asList(json.readValue(
+            rs.getString(7), java.util.UUID[].class)), rs.getString(9));
   }
 
   /** Ánh xạ một dòng đăng ký từ SQL sang mô hình dùng trong service. */

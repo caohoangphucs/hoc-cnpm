@@ -47,8 +47,8 @@ public class DatabaseConfiguration {
   }
 
   @Bean
-  BookingRepository bookingRepository(JdbcTemplate jdbc) {
-    return new BookingRepository(jdbc);
+  BookingRepository bookingRepository(JdbcTemplate jdbc, tools.jackson.databind.json.JsonMapper json) {
+    return new BookingRepository(jdbc, json);
   }
 
   @Bean
