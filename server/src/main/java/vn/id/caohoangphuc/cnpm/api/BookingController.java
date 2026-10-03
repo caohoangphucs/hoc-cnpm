@@ -23,6 +23,7 @@ public class BookingController {
     private final BookingService bookings;
     private final AccountCredentialsRepository accounts;
 
+    /** Connects the booking endpoint to its service and account lookup. */
     public BookingController(BookingService bookings, AccountCredentialsRepository accounts) {
         this.bookings = bookings;
         this.accounts = accounts;
@@ -70,16 +71,19 @@ public class BookingController {
         }
     }
 
+    /** Reads the optional request ID and rejects malformed caller-provided values. */
     private static UUID requestId(ServerRequest request) {
         String header = request.headers().firstHeader("X-Request-Id");
         return header == null ? UUID.randomUUID() : UUID.fromString(header);
     }
 
+    /** Reads the server-side marker proving that this session passed 2FA. */
     private static boolean twoFactorVerified(ServerRequest request) {
         var session = request.servletRequest().getSession(false);
         return session != null && Boolean.TRUE.equals(session.getAttribute("ktx.twoFactorVerified"));
     }
 
+    /** Builds the standard booking error response with its request ID. */
     private static ServerResponse error(int status, String code, String message, UUID requestId) {
         return ServerResponse.status(status)
                 .contentType(MediaType.APPLICATION_JSON)

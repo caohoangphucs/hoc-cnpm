@@ -49,6 +49,7 @@ public class AuthController {
     private final Clock clock;
     private final TotpService totp;
 
+    /** Stores the authentication components used by the login and 2FA routes. */
     public AuthController(
             AuthenticationManager authenticationManager,
             SecurityContextRepository securityContextRepository,
@@ -66,18 +67,18 @@ public class AuthController {
         this.totp = totp;
     }
 
+    /** Returns the current login, role, 2FA and CSRF state for the browser session. */
     public ServerResponse session(ServerRequest request) {
         var servletRequest = request.servletRequest();
         var csrfToken = csrfToken(servletRequest, response());
         var authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null || !authentication.isAuthenticated()
-                || authentication instanceof org.springframework.security.authentication.AnonymousAuthenticationToken) {
+        if (isAnonymous(authentication)) {
             return json(new SessionDto(false, null, false, csrfToken, null));
         }
 
         var account = accounts.findByUsername(authentication.getName()).orElse(null);
-        if (account == null || !"ACTIVE".equals(account.status())) {
+        if (!isActiveAccount(account)) {
             return json(new SessionDto(false, null, false, csrfToken, null));
         }
 
@@ -89,6 +90,7 @@ public class AuthController {
                 new SessionDto(true, account.role(), twoFactorVerified, csrfToken, expiresAt));
     }
 
+    /** Authenticates credentials and starts a session with the required 2FA state. */
     public ServerResponse login(ServerRequest request) throws Exception {
         final LoginDto input;
         try {
@@ -96,17 +98,8 @@ public class AuthController {
         } catch (HttpMessageNotReadableException exception) {
             return error(HttpStatus.BAD_REQUEST, "INVALID_JSON", "Login request body is invalid", Map.of());
         }
-        if (input == null) {
-            return error(HttpStatus.BAD_REQUEST, "INVALID_JSON", "Login request body is required", Map.of());
-        }
-        var errors = validator.validate(input);
-        if (!errors.isEmpty()) {
-            var fields = errors.stream().collect(java.util.stream.Collectors.toMap(
-                    violation -> violation.getPropertyPath().toString(),
-                    violation -> "Invalid value",
-                    (first, ignored) -> first));
-            return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Invalid login request", fields);
-        }
+        var validationError = loginValidationError(input);
+        if (validationError != null) return validationError;
 
         final Authentication authenticated;
         try {
@@ -118,7 +111,7 @@ public class AuthController {
         }
 
         var account = accounts.findByUsername(authenticated.getName()).orElse(null);
-        if (account == null || !"ACTIVE".equals(account.status())) {
+        if (!isActiveAccount(account)) {
             return error(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS",
                     "Username or password is incorrect", Map.of());
         }
@@ -152,7 +145,7 @@ public class AuthController {
         if (input == null) {
             return error(HttpStatus.BAD_REQUEST, "INVALID_JSON", "Verification request body is required", Map.of());
         }
-        if (!validator.validate(input).isEmpty()) {
+        if (!isValidOtp(input)) {
             return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Invalid verification code",
                     Map.of("code", "Must contain six digits"));
         }
@@ -203,7 +196,7 @@ public class AuthController {
         } catch (HttpMessageNotReadableException exception) {
             return error(HttpStatus.BAD_REQUEST, "INVALID_JSON", "Verification request body is invalid", Map.of());
         }
-        if (input == null || !validator.validate(input).isEmpty()) {
+        if (!isValidOtp(input)) {
             return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Enter a six-digit verification code",
                     Map.of("code", "Must contain six digits"));
         }
@@ -227,11 +220,13 @@ public class AuthController {
         return currentSession(request);
     }
 
+    /** Resolves the currently authenticated principal to its active account record. */
     private AccountCredentials currentAccount() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication == null ? null : accounts.findByUsername(authentication.getName()).orElse(null);
     }
 
+    /** Builds the authenticated session response after login or successful 2FA. */
     private ServerResponse currentSession(ServerRequest request) {
         var account = currentAccount();
         var session = request.servletRequest().getSession(false);
@@ -241,8 +236,10 @@ public class AuthController {
                 session != null && Boolean.TRUE.equals(session.getAttribute(TWO_FACTOR_ATTRIBUTE)), token, expiresAt));
     }
 
+    /** Holds the authenticator secret and URI returned during account enrollment. */
     public record TwoFactorSetupDto(String secret, String provisioningUri) {}
 
+    /** Invalidates the authenticated session and issues a fresh anonymous CSRF token. */
     public ServerResponse logout(ServerRequest request) {
         var servletRequest = request.servletRequest();
         var servletResponse = response();
@@ -258,6 +255,7 @@ public class AuthController {
                 new CommandResultDto(null, "LOGGED_OUT", 1L, UUID.randomUUID()));
     }
 
+    /** Loads or creates the CSRF token associated with this browser session. */
     private String csrfToken(HttpServletRequest request, HttpServletResponse response) {
         CsrfToken token = csrfTokenRepository.loadToken(request);
         if (token == null) {
@@ -267,19 +265,56 @@ public class AuthController {
         return token.getToken();
     }
 
+    /** Identifies roles that must complete authenticator verification after password login. */
     private static boolean requiresTwoFactor(String role) {
         return "ADMIN".equals(role) || "KETOAN".equals(role);
     }
 
+    /** Checks whether Spring has an authenticated non-anonymous principal. */
+    private static boolean isAnonymous(Authentication authentication) {
+        return authentication == null
+                || !authentication.isAuthenticated()
+                || authentication instanceof org.springframework.security.authentication.AnonymousAuthenticationToken;
+    }
+
+    /** Checks that an account exists and is enabled for login. */
+    private static boolean isActiveAccount(AccountCredentials account) {
+        return account != null && "ACTIVE".equals(account.status());
+    }
+
+    /** Validates the login payload and returns its API error response, if invalid. */
+    private ServerResponse loginValidationError(LoginDto input) {
+        if (input == null) {
+            return error(HttpStatus.BAD_REQUEST, "INVALID_JSON", "Login request body is required", Map.of());
+        }
+
+        var violations = validator.validate(input);
+        if (violations.isEmpty()) return null;
+
+        var fields = violations.stream().collect(java.util.stream.Collectors.toMap(
+                violation -> violation.getPropertyPath().toString(),
+                violation -> "Invalid value",
+                (first, ignored) -> first));
+        return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Invalid login request", fields);
+    }
+
+    /** Checks that an OTP payload contains a valid six-digit code. */
+    private boolean isValidOtp(OtpDto input) {
+        return input != null && validator.validate(input).isEmpty();
+    }
+
+    /** Gets the servlet response associated with the current functional request. */
     private static HttpServletResponse response() {
         var attributes = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
         return attributes.getResponse();
     }
 
+    /** Wraps a response body in the standard JSON success response. */
     private static ServerResponse json(Object body) {
         return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(body);
     }
 
+    /** Builds the authentication API error body, including field-level validation errors. */
     private static ServerResponse error(
             HttpStatus status, String code, String message, Map<String, String> fieldErrors) {
         return ServerResponse.status(status)

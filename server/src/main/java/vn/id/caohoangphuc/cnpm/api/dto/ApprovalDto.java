@@ -20,6 +20,7 @@ public record ApprovalDto(
     @NotNull @DecimalMin("1") Long version
 ) {
     public enum Decision { DUYET, TU_CHOI }
+    /** Rejects a refusal decision that does not explain why the booking was denied. */
     @AssertTrue(message = "A rejection requires a reason")
     @JsonIgnore
     public boolean isRejectionReasonPresent() {

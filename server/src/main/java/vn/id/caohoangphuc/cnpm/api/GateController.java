@@ -12,6 +12,7 @@ public class GateController {
     private final GateService gate;
     private final ApiSupport api;
 
+    /** Connects gate routes to the service and shared HTTP request handling. */
     public GateController(GateService gate, ApiSupport api) {
         this.gate = gate;
         this.api = api;

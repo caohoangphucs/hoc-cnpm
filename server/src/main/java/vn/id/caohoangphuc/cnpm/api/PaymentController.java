@@ -13,6 +13,7 @@ public class PaymentController {
     private final PaymentService payments;
     private final ApiSupport api;
 
+    /** Connects payment routes to the service and shared HTTP request handling. */
     public PaymentController(PaymentService payments, ApiSupport api) {
         this.payments = payments;
         this.api = api;

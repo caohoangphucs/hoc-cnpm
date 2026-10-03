@@ -27,10 +27,12 @@ public class PaymentRepository {
 
   private final JdbcTemplate jdbc;
 
+  /** Khởi tạo repository cho phiên thanh toán và phân bổ hóa đơn. */
   public PaymentRepository(JdbcTemplate jdbc) {
     this.jdbc = jdbc;
   }
 
+  /** Đọc hóa đơn và tùy chọn khóa trước khi ghi nhận khoản thanh toán. */
   public Invoice invoice(int id, boolean lock) {
     var rows =
         jdbc.query(
@@ -79,6 +81,7 @@ FROM hoa_don h WHERE h.mahoadon=?
             studentId));
   }
 
+  /** Tạo phiên thanh toán mới và trả lại phiên đã khóa. */
   public Session create(
       UUID id, int actor, String gateway, String ref, BigDecimal amount, Instant expires) {
     jdbc.update(
@@ -93,6 +96,7 @@ FROM hoa_don h WHERE h.mahoadon=?
     return session(id, actor, true);
   }
 
+  /** Lưu phân bổ hóa đơn và khoản thanh toán con ở trạng thái chờ. */
   public void allocate(UUID id, int invoice, String gateway, BigDecimal amount, String child) {
     jdbc.update(
         "INSERT INTO svc_payment_allocation(session_id,invoice_id,amount,child_ref)"
@@ -111,6 +115,7 @@ FROM hoa_don h WHERE h.mahoadon=?
         id.toString());
   }
 
+  /** Đọc phiên thuộc đúng actor; có thể khóa trước khi cập nhật. */
   public Session session(UUID id, int actor, boolean lock) {
     var rows =
         jdbc.query(
@@ -134,6 +139,7 @@ FROM hoa_don h WHERE h.mahoadon=?
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Đọc phiên theo ID, không giới hạn actor; có thể khóa dòng. */
   public Session session(UUID id, boolean lock) {
     var rows =
         jdbc.query(
@@ -156,6 +162,7 @@ FROM hoa_don h WHERE h.mahoadon=?
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Tìm phiên theo cổng và mã tham chiếu do provider trả về. */
   public Session byReference(String gateway, String ref, boolean lock) {
     var rows =
         jdbc.query(
@@ -179,6 +186,7 @@ FROM hoa_don h WHERE h.mahoadon=?
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Liệt kê các hóa đơn và số tiền đã phân bổ cho phiên. */
   public List<Allocation> allocations(UUID id) {
     return jdbc.query(
         "SELECT invoice_id,amount,child_ref FROM svc_payment_allocation WHERE session_id=? ORDER BY"
@@ -187,10 +195,12 @@ FROM hoa_don h WHERE h.mahoadon=?
         id);
   }
 
+  /** Lưu URL provider lần đầu mà không ghi đè URL khi retry. */
   public void payUrl(UUID id, String url) {
     jdbc.update("UPDATE svc_payment_session SET pay_url=? WHERE id=? AND pay_url IS NULL", url, id);
   }
 
+  /** Đọc kết quả callback đã lưu theo cổng và event key. */
   public Callback callback(String gateway, String event) {
     var rows =
         jdbc.query(
@@ -208,6 +218,7 @@ FROM hoa_don h WHERE h.mahoadon=?
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Lưu callback đã xác minh cùng payload hash và response có thể replay. */
   public void saveCallback(
       String gateway, String event, UUID session, String hash, String response, Instant at) {
     jdbc.update(
@@ -222,6 +233,7 @@ FROM hoa_don h WHERE h.mahoadon=?
         java.sql.Timestamp.from(at));
   }
 
+  /** Cộng khoản phân bổ vào hóa đơn và đánh dấu giao dịch con thành công. */
   public void confirmInvoice(Allocation allocation, int actor) {
     var invoice =
         jdbc.queryForObject(
@@ -247,6 +259,7 @@ FROM hoa_don h WHERE h.mahoadon=?
           "Invoice can no longer be paid");
   }
 
+  /** Cập nhật trạng thái và mã giao dịch phía nhà cung cấp của phiên. */
   public void paymentState(UUID id, String state, String transaction) {
     jdbc.update(
         "UPDATE svc_payment_session SET state=?,provider_transaction_id=? WHERE id=?",
@@ -255,6 +268,7 @@ FROM hoa_don h WHERE h.mahoadon=?
         id);
   }
 
+  /** Cập nhật các giao dịch con còn chờ theo trạng thái của phiên. */
   public void childState(UUID id, String state) {
     jdbc.update(
         "UPDATE thanh_toan SET trangthai=? WHERE magiaodich IN (SELECT child_ref FROM"
@@ -263,6 +277,7 @@ FROM hoa_don h WHERE h.mahoadon=?
         id);
   }
 
+  /** Liệt kê các phiên chờ đã hết hạn theo thứ tự và giới hạn batch. */
   public List<UUID> expired(Instant now, int limit) {
     return jdbc.queryForList(
         "SELECT id FROM svc_payment_session WHERE state='PENDING' AND expires_at<=? ORDER BY"
@@ -272,6 +287,7 @@ FROM hoa_don h WHERE h.mahoadon=?
         limit);
   }
 
+  /** Chuyển phiên còn chờ sang hết hạn và đóng các giao dịch con của nó. */
   public boolean expire(UUID id, Instant now) {
     if (jdbc.update(
             "UPDATE svc_payment_session SET state='EXPIRED' WHERE id=? AND state='PENDING' AND"

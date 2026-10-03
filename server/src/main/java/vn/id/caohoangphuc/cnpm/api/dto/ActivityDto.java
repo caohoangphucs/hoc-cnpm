@@ -23,6 +23,7 @@ public record ActivityDto(
     @NotNull @DecimalMin("1") Long points
 ) {
 
+    /** Ensures a complete activity time range ends after it begins. */
     @AssertTrue(message = "Activity end must follow start")
     @JsonIgnore
     public boolean isTimeRangeValid() {

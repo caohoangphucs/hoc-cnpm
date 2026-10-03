@@ -16,10 +16,12 @@ public class ServiceRepository {
 
   private final JdbcTemplate jdbc;
 
+  /** Khởi tạo repository dùng chung bằng JDBC. */
   public ServiceRepository(JdbcTemplate jdbc) {
     this.jdbc = jdbc;
   }
 
+  /** Đọc tài khoản và khóa chia sẻ để ổn định quyền trong transaction hiện tại. */
   public Account account(int id) {
     var rows =
         jdbc.query(
@@ -32,6 +34,7 @@ public class ServiceRepository {
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Khóa idempotency theo actor, route và key để tuần tự hóa các lần retry. */
   public void lockRequest(int actorId, String route, UUID key) {
     jdbc.execute(
         (org.springframework.jdbc.core.PreparedStatementCreator)
@@ -48,6 +51,7 @@ public class ServiceRepository {
         });
   }
 
+  /** Đọc kết quả đã lưu của một request idempotent, nếu có. */
   public SavedRequest request(int actorId, String route, UUID key) {
     var rows =
         jdbc.query(
@@ -61,6 +65,7 @@ public class ServiceRepository {
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Lưu hoặc cập nhật request và response JSON để các lần retry dùng lại. */
   public void saveRequest(
       int actorId, String route, UUID key, String hash, String response, Instant expiresAt) {
     jdbc.update(
@@ -76,6 +81,7 @@ ON CONFLICT(actor_id,route,key) DO UPDATE SET request_hash=excluded.request_hash
         java.sql.Timestamp.from(expiresAt));
   }
 
+  /** Đọc và khóa file nháp trước khi kiểm tra quyền sở hữu hoặc gắn file. */
   public File file(UUID id) {
     var rows =
         jdbc.query(
@@ -91,10 +97,12 @@ ON CONFLICT(actor_id,route,key) DO UPDATE SET request_hash=excluded.request_hash
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Đánh dấu file đã được gắn vào hồ sơ nghiệp vụ. */
   public void attachFile(UUID id) {
     jdbc.update("UPDATE svc_file SET state='ATTACHED' WHERE id=?", id);
   }
 
+  /** Ghi thông tin audit kèm request ID để truy vết thao tác. */
   public void audit(int actorId, UUID requestId, String table, String action, String details) {
     jdbc.update(
         "INSERT INTO audit_log(tenbang,hanhdong,dulieumoi,nguoithuchien) VALUES(?,?,?::jsonb ||"
@@ -106,6 +114,7 @@ ON CONFLICT(actor_id,route,key) DO UPDATE SET request_hash=excluded.request_hash
         Integer.toString(actorId));
   }
 
+  /** Thêm sự kiện vào outbox; dedupe key ngăn ghi trùng khi retry. */
   public void enqueue(String type, String aggregateId, String payload, String dedupeKey) {
     jdbc.update(
         "INSERT INTO svc_outbox(event_type,aggregate_id,payload,dedupe_key) VALUES(?,?,?::jsonb,?)"
