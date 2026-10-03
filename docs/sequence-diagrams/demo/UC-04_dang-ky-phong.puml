@@ -15,15 +15,12 @@ skinparam sequenceGroupBackgroundColor #F8FAFC
 actor "Sinh viên" as A
 boundary "React / TypeScript" as UI
 control "BookingController" as C
-control "BookingService\n<<đề xuất>>" as S
+control "BookingService\n<<chưa triển khai>>" as S
 participant "RoomRepository" as D
-database "PostgreSQL\nSP / dữ liệu" as DB
+database "PostgreSQL\nSQL trực tiếp / dữ liệu" as DB
 
 note over C,DB
-Đã có: /student/rooms, /student/book-bed; usp_DatGiuong.
-SRS giữ chỗ 48 giờ; SP hiện giữ 3 ngày. Upload và audit chưa có.
-Đích mới: Spring Boot @RestController → @Service @Transactional → @Repository/JdbcTemplate.
-Code nền còn Servlet/DAO legacy; các bước ghi là thiết kế cần triển khai.
+UC-04: Java BookingService/BookingRepository đã có. Hình thể hiện luồng đích; API tra cứu/phòng, UI và kiểm tra nội dung hồ sơ còn thiếu. Mọi thao tác DB trong sơ đồ là SQL trực tiếp trong repository, không gọi procedure.
 end note
 ref over UI,C : Tiền điều kiện: đăng nhập, kiểm tra quyền phía server; Admin/Kế toán có 2FA
 == Tra cứu và chọn giường ==
@@ -65,7 +62,7 @@ alt EF-3: Tệp không phải JPG/PNG hoặc > 5MB; dữ liệu không hợp l�
   C --> UI : Yêu cầu sửa / tải lại tệp
 else Hợp lệ
   S -> D : Lưu hồ sơ mã hóa và đặt giường trong một transaction (đề xuất)
-  D -> DB : Ghi hồ sơ; gọi usp_DatGiuong(sv, giuong, OUT id, status, message)
+  D -> DB : Ghi hồ sơ; INSERT đơn và UPDATE trạng thái giường bằng SQL cùng transaction
   DB -> DB : Dọn giữ chỗ hết hạn; kiểm tra đăng ký hiện hữu\nKhóa GIUONG FOR UPDATE
   alt EF-2: Giường vừa bị giữ / đang dùng
     DB --> D : ERROR_50001; rollback phần hồ sơ mới
@@ -78,7 +75,7 @@ else Hợp lệ
     S --> C : Hiển thị đơn hiện tại
     C --> UI : Không đăng ký trùng
   else Giường trống
-    DB -> DB : GIUONG = GIU_CHO; đơn = CHO_DUYET\nNgày hết hạn = 48 giờ theo SRS (cần sửa SP)
+    DB -> DB : GIUONG = GIU_CHO; đơn = CHO_DUYET\nNgày hết hạn = 48 giờ theo SRS
     DB -> DB : Ghi audit và commit hồ sơ + giữ chỗ (đề xuất)
     DB --> D : SUCCESS, registrationId
     D --> S : Mã đơn

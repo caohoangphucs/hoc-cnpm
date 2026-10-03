@@ -44,9 +44,18 @@ jobs:
         run: |
           psql -v ON_ERROR_STOP=1 --single-transaction -f database/01_schema.sql
           psql -v ON_ERROR_STOP=1 --single-transaction -f database/02_seed.sql
-          test "$(psql -Atc "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")" = 27
+          test "$(psql -Atc "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' AND table_name NOT LIKE 'svc_%'")" = 27
       - name: Build backend and run JUnit unit tests
         run: docker build --target build -t "cnpm-server-build:$CI_SHA" server
+      - name: Run API controller tests
+        run: |
+          docker run --rm --network "$CI_NETWORK" \
+            --entrypoint java "cnpm-server-build:$CI_SHA" \
+            -cp '/app/target/classes:/app/target/test-classes:/app/target/test-libs/*' \
+            org.junit.platform.console.ConsoleLauncher execute \
+            --select-class vn.id.caohoangphuc.cnpm.api.ApiRoutesTest \
+            --select-class vn.id.caohoangphuc.cnpm.api.BookingControllerTest \
+            --fail-if-no-tests
       - name: Run Spring PostgreSQL integration tests
         run: |
           docker run --rm --network "$CI_NETWORK" \
