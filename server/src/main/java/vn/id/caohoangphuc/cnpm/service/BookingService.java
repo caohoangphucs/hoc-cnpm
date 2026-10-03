@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import vn.id.caohoangphuc.cnpm.api.dto.BookingDto;
 import vn.id.caohoangphuc.cnpm.api.dto.CommandResultDto;
+import vn.id.caohoangphuc.cnpm.api.dto.BookingResourceDto;
+import vn.id.caohoangphuc.cnpm.api.dto.BookingResourceListDto;
 import vn.id.caohoangphuc.cnpm.persistence.service.BookingRepository;
 
 public class BookingService {
@@ -32,6 +34,52 @@ public class BookingService {
         CommandResultDto.class,
         () -> createBooking(actor, request, input, windowId),
         "SINHVIEN");
+  }
+
+  /** Lists bookings visible to the authenticated student or administrator. */
+  public BookingResourceListDto list(Actor actor, int page, int size) {
+    context.page(page, size);
+    return context.transaction(() -> {
+      var account = context.require(actor, "SINHVIEN", "ADMIN");
+      String studentId = "SINHVIEN".equals(account.role()) ? account.studentId() : null;
+      var result = repository.bookings(studentId, page, size);
+      return new BookingResourceListDto(result.items(), (long) page, (long) size, result.total());
+    });
+  }
+
+  /** Reads one booking while preventing students from seeing another student's data. */
+  public BookingResourceDto get(Actor actor, int id) {
+    context.positive(id, "bookingId");
+    return context.transaction(() -> {
+      var account = context.require(actor, "SINHVIEN", "ADMIN");
+      var booking = repository.bookingResource(id);
+      if (booking == null) throw ServiceException.notFound("Booking");
+      if ("SINHVIEN".equals(account.role()) && !account.studentId().equals(booking.studentId()))
+        throw ServiceException.notFound("Booking");
+      return booking;
+    });
+  }
+
+  /** Deletes a pending booking owned by the student or any pending booking as an administrator. */
+  public CommandResultDto delete(Actor actor, RequestContext request, int id) {
+    context.positive(id, "bookingId");
+    return context.write(actor, request, "DELETE:/api/v1/bookings/" + id, id,
+        CommandResultDto.class, () -> {
+          var account = context.require(actor, "SINHVIEN", "ADMIN");
+          var booking = repository.booking(id, true);
+          if (booking == null) throw ServiceException.notFound("Booking");
+          if ("SINHVIEN".equals(account.role()) && !account.studentId().equals(booking.studentId()))
+            throw ServiceException.notFound("Booking");
+          if (!"CHO_DUYET".equals(booking.status()))
+            throw ServiceException.conflict("Only pending bookings can be deleted");
+          var bed = repository.lockBed(booking.bedId());
+          if (bed != null && "GIU_CHO".equals(bed.status())) repository.bedStatus(bed.id(), "TRONG");
+          if (!repository.deletePending(id)) throw ServiceException.notFound("Booking");
+          context.event(actor, request, "BOOKING_DELETED", Integer.toString(id),
+              Map.of("studentId", booking.studentId(), "bedId", booking.bedId()));
+          return new CommandResultDto(Integer.toString(id), "DELETED", booking.version() + 1,
+              request.requestId());
+        }, "SINHVIEN", "ADMIN");
   }
 
   /** Kiểm tra điều kiện sinh viên và giường rồi tạo yêu cầu giữ chỗ 48 giờ. */

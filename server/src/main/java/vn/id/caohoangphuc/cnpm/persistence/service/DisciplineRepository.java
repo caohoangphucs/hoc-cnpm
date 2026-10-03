@@ -123,6 +123,48 @@ WHERE v.trangthai='CHUA_XU_LY' ORDER BY v.ngayvipham DESC LIMIT ? OFFSET ?
         (page - 1) * size);
   }
 
+  /** Lists all violations that fall within a configured semester. */
+  public List<Violation> all(int page, int size) {
+    var ids = jdbc.queryForList("""
+        SELECT v.mavipham FROM vi_pham v JOIN hoc_ky h
+          ON v.ngayvipham::date BETWEEN h.ngaybatdau AND h.ngayketthuc
+        ORDER BY v.ngayvipham DESC,v.mavipham DESC LIMIT ? OFFSET ?
+        """, Integer.class, size, (page - 1) * size);
+    if (ids.isEmpty()) return List.of();
+    return violations(ids.stream().map(Long::valueOf).toList(), false);
+  }
+
+  /** Creates an unprocessed violation without attaching it to a gate event. */
+  public int create(String student, String content, String level, Instant occurredAt) {
+    return jdbc.queryForObject("""
+        INSERT INTO vi_pham(masinhvien,noidungvipham,mucdo,ngayvipham,trangthai)
+        VALUES(?,?,?,?,'CHUA_XU_LY') RETURNING mavipham
+        """, Integer.class, student, content, level, java.sql.Timestamp.from(occurredAt));
+  }
+
+  /** Updates the editable description and severity of a violation. */
+  public boolean update(int id, String content, String level) {
+    return jdbc.update("UPDATE vi_pham SET noidungvipham=?,mucdo=?,version=version+1 WHERE mavipham=?",
+        content, level, id) == 1;
+  }
+
+  /** Confirms student and incident date are valid for a manually recorded violation. */
+  public boolean canCreate(String student, Instant occurredAt) {
+    return Boolean.TRUE.equals(jdbc.queryForObject("""
+        SELECT EXISTS (SELECT 1 FROM sinh_vien WHERE masinhvien=?)
+          AND EXISTS (SELECT 1 FROM hoc_ky WHERE ?::date BETWEEN ngaybatdau AND ngayketthuc)
+        """, Boolean.class, student, java.sql.Timestamp.from(occurredAt)));
+  }
+
+  /** Deletes only an unprocessed manual violation with no decision history or gate event. */
+  public boolean delete(int id) {
+    return jdbc.update("""
+        DELETE FROM vi_pham v WHERE v.mavipham=? AND v.trangthai='CHUA_XU_LY'
+          AND v.maravao IS NULL
+          AND NOT EXISTS (SELECT 1 FROM svc_discipline_decision d WHERE d.violation_id=v.mavipham)
+        """, id) == 1;
+  }
+
   /** Tính số thứ tự revision tiếp theo cho một vi phạm. */
   public int nextRevision(int id) {
     return jdbc.queryForObject(

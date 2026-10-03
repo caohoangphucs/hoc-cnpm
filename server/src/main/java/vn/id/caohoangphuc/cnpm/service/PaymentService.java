@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.UUID;
 import vn.id.caohoangphuc.cnpm.api.dto.PaymentDto;
 import vn.id.caohoangphuc.cnpm.api.dto.PaymentResourceDto;
+import vn.id.caohoangphuc.cnpm.api.dto.CommandResultDto;
 import vn.id.caohoangphuc.cnpm.persistence.service.PaymentRepository;
 import vn.id.caohoangphuc.cnpm.persistence.service.ServiceRepository;
 
@@ -68,6 +69,33 @@ public class PaymentService {
           if (!canViewSession(account, session)) throw ServiceException.notFound("Payment session");
           return resource(session);
         });
+  }
+
+  /** Lists payment sessions for the student, accountant, or administrator. */
+  public List<PaymentResourceDto> list(Actor actor, int page, int size) {
+    context.page(page, size);
+    return context.transaction(() -> {
+      var account = context.require(actor, "SINHVIEN", "KETOAN", "ADMIN");
+      Integer ownerId = "SINHVIEN".equals(account.role()) ? account.id() : null;
+      return repository.sessions(ownerId, page, size).stream().map(this::resource).toList();
+    });
+  }
+
+  /** Deletes an unpaid session only when no provider URL or callback can still complete it. */
+  public CommandResultDto delete(Actor actor, RequestContext request, UUID id) {
+    if (id == null) throw ServiceException.invalid("Invalid payment session ID");
+    return context.write(actor, request, "DELETE:/api/v1/payment-sessions/" + id, id,
+        CommandResultDto.class, () -> {
+          var account = context.require(actor, "SINHVIEN", "KETOAN", "ADMIN");
+          var session = repository.session(id, true);
+          if (!canViewSession(account, session)) throw ServiceException.notFound("Payment session");
+          if (!"PENDING".equals(session.status()) || session.payUrl() != null || repository.hasCallback(id))
+            throw ServiceException.conflict("Payment session cannot be deleted after provider processing starts");
+          if (!repository.deletePending(id)) throw ServiceException.notFound("Payment session");
+          context.event(actor, request, "PAYMENT_SESSION_DELETED", id.toString(),
+              Map.of("providerRef", session.providerRef()));
+          return new CommandResultDto(id.toString(), "DELETED", 1L, request.requestId());
+        }, "SINHVIEN", "KETOAN", "ADMIN");
   }
 
   /** Xác thực callback bằng adapter của cổng thanh toán tương ứng. */

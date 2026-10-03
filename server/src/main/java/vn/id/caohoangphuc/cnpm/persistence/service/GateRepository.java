@@ -4,6 +4,8 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
+import vn.id.caohoangphuc.cnpm.api.dto.EntryResourceDto;
+import vn.id.caohoangphuc.cnpm.service.ServiceContext;
 
 public class GateRepository {
   public record Card(
@@ -31,6 +33,8 @@ public class GateRepository {
       Instant validFrom,
       Instant validTo,
       long version) {}
+
+  public record EntryPage(java.util.List<EntryResourceDto> items, long total) {}
 
   private final JdbcTemplate jdbc;
 
@@ -88,6 +92,23 @@ LEFT JOIN vi_pham v ON v.maravao=r.maravao WHERE e.event_id=?
                     r.getString(7)),
             id);
     return rows.isEmpty() ? null : rows.get(0);
+  }
+
+  /** Lists gate events, optionally restricted to a student's own events. */
+  public EntryPage entries(String studentId, int page, int size) {
+    var items = jdbc.query("""
+        SELECT e.event_id,r.masinhvien,r.loaisukien,r.thoigian,e.barrier_status,v.mavipham
+        FROM svc_gate_event e JOIN ra_vao r ON r.maravao=e.entry_id
+        LEFT JOIN vi_pham v ON v.maravao=r.maravao
+        WHERE (? IS NULL OR r.masinhvien=?) ORDER BY r.thoigian DESC,e.event_id DESC LIMIT ? OFFSET ?
+        """, (r, n) -> new EntryResourceDto(r.getObject(1, UUID.class), r.getString(2), r.getString(3),
+        r.getObject(4, LocalDateTime.class).atZone(ServiceContext.ZONE).toOffsetDateTime(),
+        r.getString(5), (Integer) r.getObject(6)), studentId, studentId, size, (page - 1) * size);
+    Long total = jdbc.queryForObject("""
+        SELECT count(*) FROM svc_gate_event e JOIN ra_vao r ON r.maravao=e.entry_id
+        WHERE (? IS NULL OR r.masinhvien=?)
+        """, Long.class, studentId, studentId);
+    return new EntryPage(items, total == null ? 0 : total);
   }
 
   /** Ghi một lượt ra vào và trả về mã lượt mới. */
@@ -152,6 +173,21 @@ LEFT JOIN vi_pham v ON v.maravao=r.maravao WHERE e.event_id=?
                     r.getLong(6)),
             id);
     return rows.isEmpty() ? null : rows.get(0);
+  }
+
+  /** Returns visitor requests for a student, or all requests when no owner is supplied. */
+  public java.util.List<Visitor> visitors(String hostStudentId, int page, int size) {
+    return jdbc.query("""
+        SELECT id,host_student_id,state,valid_from,valid_to,version FROM svc_visitor
+        WHERE (? IS NULL OR host_student_id=?) ORDER BY id DESC LIMIT ? OFFSET ?
+        """, (r, n) -> new Visitor(r.getLong(1), r.getString(2), r.getString(3),
+        r.getTimestamp(4).toInstant(), r.getTimestamp(5).toInstant(), r.getLong(6)),
+        hostStudentId, hostStudentId, size, (page - 1) * size);
+  }
+
+  /** Deletes a visitor request that has not yet been approved. */
+  public boolean deletePendingVisitor(long id) {
+    return jdbc.update("DELETE FROM svc_visitor WHERE id=? AND state='PENDING'", id) == 1;
   }
 
   /** Kiểm tra tài khoản hiện tại có sở hữu hồ sơ sinh viên được nêu hay không. */

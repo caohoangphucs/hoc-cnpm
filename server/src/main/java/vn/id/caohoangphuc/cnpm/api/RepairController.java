@@ -34,6 +34,18 @@ public class RepairController {
                 api.integerParameter(request, "size", 20)));
     }
 
+    /** Reads one repair request visible to this student, technician, or administrator. */
+    public ServerResponse get(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> repairs.get(actor,
+                Integer.parseInt(request.pathVariable("id"))));
+    }
+
+    /** Deletes a new repair request before assignment or materials are recorded. */
+    public ServerResponse delete(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> repairs.delete(actor, context,
+                Integer.parseInt(request.pathVariable("id"))));
+    }
+
     /** Assigns an open repair request to a technician. */
     public ServerResponse assign(ServerRequest request) throws Exception {
         return api.handle(request, (actor, context) -> repairs.assign(actor, context,

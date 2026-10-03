@@ -63,6 +63,24 @@ public class RepairRepository {
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Deletes an unassigned repair request and its uploaded file metadata. */
+  public boolean deleteUnassigned(int id) {
+    jdbc.update("DELETE FROM svc_repair_files WHERE repair_id=?", id);
+    jdbc.update("DELETE FROM svc_purchase_request WHERE repair_id=?", id);
+    jdbc.update("DELETE FROM svc_repair_history WHERE repair_id=? AND to_state='MOI'", id);
+    return jdbc.update("DELETE FROM yeu_cau_sua_chua WHERE mayeucau=?", id) == 1;
+  }
+
+  /** Checks whether a repair has technician, inventory, or audit history that must be retained. */
+  public boolean hasHistory(int id) {
+    Integer count = jdbc.queryForObject("""
+        SELECT (EXISTS(SELECT 1 FROM svc_repair_assignment WHERE repair_id=?))::int
+             + (EXISTS(SELECT 1 FROM svc_repair_history WHERE repair_id=? AND to_state<>'MOI'))::int
+             + (EXISTS(SELECT 1 FROM xuat_vat_tu WHERE mayeucau=?))::int
+        """, Integer.class, id, id, id);
+    return count != null && count > 0;
+  }
+
   /** Kiểm tra tài khoản có vai trò kỹ thuật viên và đang hoạt động. */
   public int technicianRole(int id) {
     return jdbc.queryForObject(

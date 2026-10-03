@@ -128,6 +128,27 @@ public class CommunityRepository {
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Updates the editable fields of an activity that has not collected registrations. */
+  public void updateActivity(long id, long semesterId, String title, Instant start, Instant end,
+      int capacity, int points) {
+    jdbc.update("""
+        UPDATE hoat_dong SET mahocky=?,tieude=?,thoigianbatdau=?,thoigianketthuc=?,chitieu=?,diemcongich=?,version=version+1
+        WHERE public_id=?
+        """, semesterCode(semesterId), title, local(start), local(end), capacity, points, id);
+  }
+
+  /** Deletes an activity only after its registration history has been removed. */
+  public boolean deleteActivity(long id) {
+    return jdbc.update("DELETE FROM hoat_dong WHERE public_id=?", id) == 1;
+  }
+
+  /** Checks for any registration history before an activity is edited or deleted. */
+  public boolean hasRegistrationHistory(String activityCode) {
+    Integer count = jdbc.queryForObject(
+        "SELECT count(*) FROM dang_ky_cong_ich WHERE mahoatdong=?", Integer.class, activityCode);
+    return count != null && count > 0;
+  }
+
   /** Đếm các đăng ký đang hiệu lực có thời gian trùng với hoạt động mới. */
   public int overlaps(String student, Instant start, Instant end) {
     return jdbc.queryForObject(

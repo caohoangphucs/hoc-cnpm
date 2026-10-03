@@ -47,30 +47,61 @@ Trong bảng dưới, đường dẫn đã bao gồm `/api/v1`. Các API phòng/
 | UC | Method và path | Role | Body/query và tác vụ |
 |---|---|---|---|
 | UC-04 | `GET /rooms?page=1&pageSize=20` | `SINHVIEN`, `ADMIN` | Danh sách phòng, thông tin tòa/loại phòng/giới tính áp dụng, sức chứa và số giường có thể đặt. |
+| UC-04 | `GET /rooms/{id}` | `SINHVIEN`, `ADMIN` | Chi tiết một phòng theo mã phòng; trả `404` nếu không tồn tại. |
+| UC-04 | `POST /rooms` | `ADMIN` | Tạo phòng từ `RoomWriteDto`. |
+| UC-04 | `PUT /rooms/{id}` | `ADMIN` | Cập nhật thông tin phòng; `id` trong body phải khớp URL. |
+| UC-04 | `DELETE /rooms/{id}` | `ADMIN` | Xóa phòng nếu chưa có sinh viên, hóa đơn, lưu trú, đăng ký, chỉ số hoặc yêu cầu sửa chữa liên kết; nếu còn dữ liệu trả `409`. |
 | UC-04 | `GET /rooms/{id}/beds?page=1&pageSize=20` | `SINHVIEN`, `ADMIN` | Danh sách giường thuộc phòng, gồm mã, số giường, trạng thái và version. Trả `404` nếu phòng không tồn tại. |
+| UC-04 | `POST /beds` | `ADMIN` | Tạo giường trong phòng đã có. |
+| UC-04 | `PUT /beds/{id}` | `ADMIN` | Cập nhật giường; `id` trong body phải khớp URL. |
+| UC-04 | `DELETE /beds/{id}` | `ADMIN` | Xóa giường nếu chưa có đăng ký hoặc lưu trú liên kết; nếu còn dữ liệu trả `409`. |
 | UC-04 | `POST /bookings` | `SINHVIEN` | Tạo đăng ký/giữ chỗ. Body xem [Đăng ký phòng](#uc-04-đăng-ký-phòng). Bắt buộc `Idempotency-Key`. |
+| UC-04 | `GET /bookings?page=1&pageSize=20` | `SINHVIEN`, `ADMIN` | Sinh viên chỉ xem đăng ký của mình; Admin xem tất cả. |
+| UC-04 | `GET /bookings/{id}` | `SINHVIEN`, `ADMIN` | Chi tiết đăng ký; sinh viên khác chủ sở hữu nhận `404`. |
+| UC-04 | `DELETE /bookings/{id}` | `SINHVIEN`, `ADMIN` | Xóa đăng ký đang chờ duyệt và trả giường về trạng thái trống; trạng thái khác trả `409`. |
 | UC-12 | `POST /bookings/{id}/decision` | `ADMIN` | Duyệt hoặc từ chối đăng ký; body gồm `decision`, `reason`, `version`. |
 | UC-17 | `POST /invoice-drafts` | `KETOAN` | Tạo bản xem trước hóa đơn theo tháng/phòng. |
+| UC-17 | `GET /invoices?page=1&pageSize=20` | `SINHVIEN`, `KETOAN`, `ADMIN` | Danh sách hóa đơn; sinh viên chỉ xem hóa đơn phòng đã ở trong kỳ đó. |
 | UC-17 | `POST /invoices/issue` | `KETOAN` | Phát hành từ bản xem trước; body gồm `draftId`, `version`. |
+| UC-17 | `GET /invoices/{id}` | `SINHVIEN`, `KETOAN`, `ADMIN` | Chi tiết hóa đơn và các dòng phí; quyền sinh viên giới hạn theo lưu trú. |
+| UC-17 | `PUT /invoices/{id}` | `KETOAN`, `ADMIN` | Đổi hạn thanh toán khi hóa đơn chưa thanh toán. Body `{"dueDate":"YYYY-MM-DD"}`. |
+| UC-17 | `DELETE /invoices/{id}` | `KETOAN`, `ADMIN` | Xóa hóa đơn chưa thanh toán và chưa có giao dịch thanh toán. |
 | UC-08 | `POST /payment-sessions` | `SINHVIEN` | Tạo phiên thanh toán cho hóa đơn của sinh viên. Hiện trả `503 PAYMENT_GATEWAY_UNAVAILABLE` nếu chưa cấu hình adapter tương ứng. |
+| UC-08 | `GET /payment-sessions?page=1&pageSize=20` | `SINHVIEN`, `KETOAN`, `ADMIN` | Danh sách phiên của sinh viên hiện tại hoặc tất cả phiên với Kế toán/Admin. |
 | UC-08 | `GET /payment-sessions/{id}` | `SINHVIEN` là chủ hóa đơn, `KETOAN`, `ADMIN` | Đọc trạng thái phiên; `id` là UUID. |
+| UC-08 | `DELETE /payment-sessions/{id}` | `SINHVIEN`, `KETOAN`, `ADMIN` | Xóa phiên còn chờ trước khi bắt đầu xử lý ở cổng thanh toán. |
 | UC-08 | `POST /payment-callbacks/{gateway}` | Callback nhà cung cấp, không yêu cầu session/CSRF | Nhận tham số callback và chỉ xử lý sau khi adapter kiểm chữ ký. Chỉ hoạt động khi gateway adapter được cấu hình. |
 | UC-22 | `POST /repairs` | `SINHVIEN` | Gửi yêu cầu sửa chữa. |
 | UC-22 | `GET /repairs?page=1&size=20` | `SINHVIEN`, `KYTHUAT`, `ADMIN` | Danh sách phiếu mà người gọi được phép xem. |
+| UC-22 | `GET /repairs/{id}` | `SINHVIEN`, `KYTHUAT`, `ADMIN` | Chi tiết phiếu theo quyền sở hữu/phân công. |
+| UC-22 | `DELETE /repairs/{id}` | `SINHVIEN`, `ADMIN` | Xóa phiếu mới chưa phân công hoặc xuất vật tư; nếu đã có lịch sử xử lý trả `409`. |
 | UC-22 | `POST /repairs/{id}/assignment` | `KYTHUAT`, `ADMIN` | Gán kỹ thuật viên, lịch dự kiến và `version`. |
 | UC-22 | `PUT /repairs/{id}/schedule` | `KYTHUAT` | Đổi lịch/bảo hành; body gồm `version`, `scheduledAt`, `warrantyUntil`, `note`. |
 | UC-22 | `POST /repairs/{id}/complete` | `KYTHUAT` | Hoàn tất phiếu; body gồm `version`, `note`, `supplies`, `warrantyUntil`. |
 | UC-25 | `POST /entries` | `BAOVE` | Ghi nhận sự kiện thẻ ra/vào. |
+| UC-25 | `GET /entries?page=1&size=20` | `SINHVIEN`, `BAOVE`, `ADMIN` | Danh sách lượt ra/vào; sinh viên chỉ xem sự kiện của mình. |
+| UC-25 | `GET /entries/{eventId}` | `SINHVIEN`, `BAOVE`, `ADMIN` | Chi tiết lượt ra/vào theo UUID sự kiện. |
+| UC-25 | — | — | Lượt ra/vào là audit log; không thể sửa hoặc xóa trực tiếp. Ghi nhận sai cần quy trình nghiệp vụ điều chỉnh riêng. |
 | UC-25 | `POST /visitors` | `SINHVIEN` | Khai báo khách thăm. |
+| UC-25 | `GET /visitors?page=1&size=20` | `SINHVIEN`, `BAOVE`, `ADMIN` | Danh sách khách; sinh viên chỉ xem yêu cầu của mình, bảo vệ chỉ đọc thông tin đã duyệt. |
+| UC-25 | `GET /visitors/{id}` | `SINHVIEN`, `BAOVE`, `ADMIN` | Chi tiết yêu cầu theo quyền truy cập. |
+| UC-25 | `DELETE /visitors/{id}` | `SINHVIEN`, `ADMIN` | Xóa yêu cầu còn chờ duyệt. |
 | UC-25 | `POST /visitors/{id}/approval` | `ADMIN` | Duyệt/từ chối khai báo khách, body cùng dạng `decision`, `reason`, `version`. |
 | UC-25 | `POST /visitors/{id}/check-in` | `BAOVE` | Ghi nhận khách đến; không có body. |
 | UC-25 | `POST /visitors/{id}/check-out` | `BAOVE` | Ghi nhận khách rời đi; không có body. |
-| UC-14 | `GET /violations?page=1&size=20` | `ADMIN` | Danh sách vi phạm chờ xử lý. |
+| UC-14 | `GET /violations?page=1&size=20` | `ADMIN` | Danh sách vi phạm, gồm cả trạng thái đã xử lý. |
+| UC-14 | `GET /violations/pending?page=1&size=20` | `ADMIN` | Hàng chờ xử lý vi phạm. |
+| UC-14 | `GET /violations/{id}` | `ADMIN` | Chi tiết vi phạm và lịch sử quyết định. |
+| UC-14 | `POST /violations` | `ADMIN` | Tạo vi phạm: `studentId`, `content`, `level`, `occurredAt` (tùy chọn, phải thuộc học kỳ đã cấu hình). |
+| UC-14 | `PUT /violations/{id}` | `ADMIN` | Sửa nội dung và mức độ của vi phạm chưa xử lý; body cần `version` để tránh ghi đè cập nhật đồng thời. |
+| UC-14 | `DELETE /violations/{id}` | `ADMIN` | Chỉ xóa vi phạm đang chờ, tạo thủ công và chưa có lượt cổng hoặc quyết định; không xóa lịch sử. |
 | UC-14 | `POST /violations/decisions` | `ADMIN` | Ra quyết định theo lô; body gồm `violationIds`, `decision`, `reason`, `evidenceFileId`, `versions`. |
 | UC-14 | `POST /decisions/{id}/appeals` | `SINHVIEN` | Gửi khiếu nại, body `{"content":"..."}`. |
 | UC-14 | `POST /appeals/{id}/response` | `ADMIN` | Phản hồi khiếu nại, body gồm `accepted`, `reason`, `version`. |
 | UC-30 | `GET /activities?page=1&size=20` | `SINHVIEN`, `ADMIN` | Danh sách hoạt động. |
 | UC-30 | `POST /activities` | `ADMIN` | Tạo hoạt động mới. |
+| UC-30 | `PUT /activities/{id}` | `ADMIN` | Cập nhật hoạt động trước khi có đăng ký. |
+| UC-30 | `DELETE /activities/{id}` | `ADMIN` | Xóa hoạt động trước khi có đăng ký; nếu có lịch sử đăng ký trả `409`. |
 | UC-30 | `POST /activities/{id}/registrations` | `SINHVIEN` | Đăng ký hoạt động; không có body. |
 | UC-30 | `DELETE /activities/{id}/registrations` | `SINHVIEN` | Hủy đăng ký, body `{"version":1}`. |
 | UC-30 | `POST /activities/attendance` | `ADMIN` | Điểm danh bằng QR, body `{"qrToken":"..."}`. |
@@ -83,7 +114,7 @@ Trong bảng dưới, đường dẫn đã bao gồm `/api/v1`. Các API phòng/
 
 ### UC-04 đăng ký phòng
 
-Tra cứu danh sách phòng và giường bằng `GET /api/v1/rooms?page=1&pageSize=20` và `GET /api/v1/rooms/{id}/beds?page=1&pageSize=20`. Hai API chỉ cho sinh viên và Admin; kết quả được phân trang và gồm cả trạng thái/version giường để giao diện biết tình trạng mới nhất. Số giường có thể đặt chỉ đếm giường `TRONG` ở phòng không bị khóa, sửa chữa hoặc đầy. Trạng thái có thể đổi sau khi tải danh sách, nên service vẫn kiểm tra lại khi gửi đăng ký.
+Tra cứu danh sách phòng, chi tiết một phòng và danh sách giường bằng `GET /api/v1/rooms?page=1&pageSize=20`, `GET /api/v1/rooms/{id}` và `GET /api/v1/rooms/{id}/beds?page=1&pageSize=20`. Các API chỉ cho sinh viên và Admin; danh sách được phân trang và giường có trạng thái/version để giao diện biết tình trạng mới nhất. Số giường có thể đặt chỉ đếm giường `TRONG` ở phòng không bị khóa, sửa chữa hoặc đầy. Trạng thái có thể đổi sau khi tải danh sách, nên service vẫn kiểm tra lại khi gửi đăng ký.
 
 Ví dụ response danh sách phòng:
 
