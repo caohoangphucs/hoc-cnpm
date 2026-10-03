@@ -337,8 +337,10 @@ public class CommunityService {
           // Mỗi học kỳ đổi tối đa 5 điểm rèn luyện, theo tỷ lệ 10 điểm công ích / 1 điểm.
           int spend = pointsToConvert(balance, converted, input.drl());
           UUID transfer = UUID.randomUUID();
-          int conversion = repository.createConversion(transfer, student, code, spend, input.drl());
-          repository.debit(student, code, spend, conversion);
+          int conversion =
+              repository.createConversion(
+                  transfer, student, Long.toString(input.semesterId()), spend, input.drl());
+          repository.debit(student, Long.toString(input.semesterId()), spend, conversion);
           context.event(
               actor,
               request,
