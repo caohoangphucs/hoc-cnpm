@@ -4,7 +4,7 @@ Thư mục giao diện chính của KTX Smart Hub, lựa chọn **React + TypeSc
 
 ## Trạng thái hiện tại
 
-Đã khởi tạo React + TypeScript bằng template Vite `react-ts`, cấu hình React Router, ESLint, alias `@/`, biến môi trường, proxy dev và hàm gọi API dùng chung. Đã có khung ứng dụng theo 5 vai trò, điều hướng thích ứng và theme theo Material Design 3. Giao diện xác thực và quản lý tài khoản đã có; các màn hình nghiệp vụ khác hiện là khung nội dung.
+Đã khởi tạo React + TypeScript bằng template Vite `react-ts`, cấu hình React Router, ESLint, alias `@/`, biến môi trường, proxy dev và hàm gọi API dùng chung. Đã có khung ứng dụng theo 5 vai trò, điều hướng thích ứng và theme theo Material Design 3. Giao diện xác thực, quản lý tài khoản và đăng ký phòng UC-04 đã có; các màn hình nghiệp vụ khác hiện là khung nội dung.
 
 ### Khung giao diện và điều hướng
 
@@ -18,7 +18,7 @@ Thư mục giao diện chính của KTX Smart Hub, lựa chọn **React + TypeSc
 
 Đã kiểm tra khung layout trên dev và production preview: route theo 5 vai trò, responsive từ 320 đến 1600px, active state, drawer/Tab/Escape/focus, trang 404, theme sáng/tối và reduced motion. Lint, typecheck, build đều đạt. Sau khi chỉnh theo mẫu, đối chiếu lại font, sidebar, app bar và card ở desktop/mobile. Đây là kiểm tra khung giao diện, chưa kiểm thử API hoặc xác thực.
 
-Backend mới nằm trong server/, dùng Spring Boot/JAR và PostgreSQL. API JSON đích dưới /api/v1; các endpoint nghiệp vụ/auth chưa triển khai. Nginx proxy cùng origin và /api/health kiểm readiness thật.
+Backend mới nằm trong server/, dùng Spring Boot/JAR và PostgreSQL. Đã có controller session/login/logout và POST /api/v1/bookings; các API tra cứu phòng/giường, đợt đăng ký và upload hồ sơ chưa hoàn chỉnh. Nginx proxy cùng origin và /api/health kiểm readiness thật.
 
 ### Giao diện xác thực
 
@@ -30,7 +30,7 @@ Backend mới nằm trong server/, dùng Spring Boot/JAR và PostgreSQL. API JSO
 - Giữ đường dẫn đích trong router state để trở lại sau đăng nhập/2FA, chỉ chấp nhận đường dẫn trong không gian của vai trò server trả về.
 - Style dùng chung Google Sans/Roboto, palette xanh dương, token surface/shape của layout; bổ sung token error cho light/dark. Nginx CSP cho phép đúng hai origin Google Fonts cần cho font của mẫu.
 
-Backend hiện chỉ có nền tảng dữ liệu/Security và chưa expose `/auth/*`. Frontend đã nối theo contract trong `docs/demo/api/`, nhưng chưa thể đăng nhập thật khi chưa có các endpoint. Không có tài khoản giả hay tùy chọn bỏ qua guard trong sản phẩm. Kiểm thử luồng giao diện dùng response mô phỏng trong trình duyệt; không thay cho kiểm thử tích hợp backend.
+Backend đã expose session/login/logout theo contract trong `docs/demo/api/`. Xác minh 2FA thật chưa hoàn chỉnh vì chưa có TOTP secret được đăng ký. Client chưa kiểm thử tích hợp với backend mới trong nhánh giao diện này. Không có tài khoản giả hay tùy chọn bỏ qua guard trong sản phẩm. Kiểm thử luồng giao diện dùng response mô phỏng trong trình duyệt; không thay cho kiểm thử tích hợp backend.
 
 Đã kiểm tra login/2FA/logout cho 5 vai trò, CSRF, guard, lỗi HTTP/kết nối, session sai định dạng, phiên hết hạn, chống submit trùng, responsive light/dark từ 320 đến 1440px. `pnpm test` kiểm tra role/session/đường dẫn đích và health; dùng native TypeScript stripping của Node với cờ `--experimental-strip-types`, không thêm test runner hoặc browser dependency vào client.
 
@@ -42,6 +42,16 @@ Backend hiện chỉ có nền tảng dữ liệu/Security và chưa expose `/au
 - Route xem trước và dữ liệu minh họa chỉ có trong Vite dev, không nằm trong bản build production. Không tạo session giả hoặc bỏ guard của `/admin/accounts`; chưa gửi request thay đổi tài khoản.
 - Dùng chung theme, component và style xanh dương của layout. Dialog hỗ trợ Tab/Escape và phục hồi focus; bảng cuộn ngang trong vùng riêng trên màn hình nhỏ.
 
+### Giao diện đăng ký phòng — UC-04
+
+- Ưu tiên phạm vi demo trong `TODO.md`, theo [thiết kế UC-04](../docs/demo/THIET_KE_XU_LY.md) và BR-03/04. `/student/stay` dùng guard sinh viên hiện có; khi chưa có API tra cứu/đợt đăng ký, trang hiển thị trạng thái chưa thể tải dữ liệu.
+- Một trang, ba bước: tra cứu/chọn giường → ảnh hồ sơ/cam kết → kiểm tra và gửi. Có tìm kiếm phòng/tòa, lọc tòa/loại phòng/phòng còn giường trống; sơ đồ giường thể hiện trống, giữ chỗ, đang ở và khóa. Chặn chọn giường không phù hợp giới tính, đợt đóng, đang có đơn chờ duyệt hoặc lưu trú.
+- Desktop hiển thị danh sách và panel giường cạnh nhau. Dưới 1200px, chọn phòng chuyển sang panel giường với nút quay lại danh sách; các bước form giữ phần tóm tắt chỗ ở đã chọn.
+- Hồ sơ gồm một ảnh CCCD, một ảnh thẻ sinh viên và tối đa ba ảnh minh chứng tùy chọn. Mỗi ảnh JPG/PNG tối đa 5 MB; kiểm loại, dung lượng, chữ ký tệp và khả năng đọc ảnh trên client. Có xem/bỏ/thay ảnh và lỗi tại trường. Kiểm tra client không thay việc kiểm nội dung, ownership, quét và bảo vệ tệp ở backend.
+- Link và Back trong ứng dụng hỏi trước khi bỏ bản nháp; tải lại/đóng tab dùng cảnh báo của trình duyệt. Dùng `createBrowserRouter`/`RouterProvider` để hỗ trợ `useBlocker`; URL, session và guard giữ cùng cấu trúc. Hồ sơ chỉ giữ trong bộ nhớ, không lưu browser storage.
+- Chạy `pnpm dev`, mở `/preview/student/stay` để thử bằng dữ liệu minh họa. Có đợt mở/đóng, giới tính hồ sơ, đơn đang chờ/lưu trú, loading/empty/error và kết quả gửi thành công/xung đột/lỗi dịch vụ/lỗi hồ sơ. Khi xung đột, chọn lại giường và giữ hồ sơ; thành công minh họa hiển thị mã đơn, chờ duyệt và hạn 48 giờ theo giờ Việt Nam.
+- Preview và fixture chỉ có ở dev. Không upload ảnh hoặc gửi đăng ký thật; chưa nối API phòng/giường, upload, đợt đăng ký, hồ sơ sinh viên và đơn đăng ký. Các trường tên phòng/tòa/thông tin sinh viên cần được ánh xạ khi API tra cứu hoàn chỉnh. Chưa triển khai đổi phòng UC-07 trong nhánh này.
+
 ## 1. Công nghệ và môi trường
 
 | Thành phần | Lựa chọn |
@@ -50,7 +60,7 @@ Backend hiện chỉ có nền tảng dữ liệu/Security và chưa expose `/au
 | Ngôn ngữ | TypeScript |
 | Chạy dev và build | Vite, template `react-ts` |
 | Quản lý dependencies | pnpm `11.19.0`, ghi trong `packageManager`; commit `pnpm-lock.yaml` |
-| Điều hướng | React Router, `BrowserRouter` |
+| Điều hướng | React Router, `createBrowserRouter` + `RouterProvider` |
 | Kiểm tra code | ESLint, TypeScript strict |
 | Môi trường | Node.js `^22.12.0` hoặc `>=24.0.0`, theo `engines` |
 
@@ -119,7 +129,7 @@ Proxy dev đã được cấu hình:
 
 Chi tiết session, 2FA, CSRF và quyền truy cập nằm trong [API và phân quyền](../docs/demo/API_VA_PHAN_QUYEN.md); endpoint được liệt kê tại [danh mục API](../docs/demo/api/README.md).
 
-Luồng session, CSRF, login, 2FA, logout và bảo vệ route đã có ở frontend; chờ endpoint backend để kiểm thử tích hợp thật. Khi deploy với `BrowserRouter`, máy chủ phục vụ frontend cần fallback các route giao diện về `index.html`, đồng thời giữ `/api/v1` đi tới backend.
+Luồng session, CSRF, login, 2FA, logout và bảo vệ route đã có ở frontend; chờ endpoint backend để kiểm thử tích hợp thật. Khi deploy SPA, máy chủ phục vụ frontend cần fallback các route giao diện về `index.html`, đồng thời giữ `/api/v1` đi tới backend.
 
 ## 5. Lint, kiểm tra kiểu, build và preview
 
@@ -130,7 +140,7 @@ Các lệnh dưới đây đã có trong `package.json`, chạy trong `client/`:
 | `pnpm run dev` | Chạy Vite dev server |
 | `pnpm run lint` | ESLint; warning cũng làm lệnh thất bại |
 | `pnpm run typecheck` | `tsc -b --noEmit`, kiểm tra TypeScript |
-| `pnpm test` | Kiểm thử session, vai trò, đường dẫn đích và health bằng Node test runner |
+| `pnpm test` | Kiểm thử session, vai trò, đường dẫn đích, health và đầu vào UC-04 bằng Node test runner |
 | `pnpm run build` | `tsc -b && vite build` |
 | `pnpm run preview` | Xem bản build local |
 
@@ -159,11 +169,11 @@ client/
 ├── public/           # Tài nguyên được phục vụ trực tiếp
 ├── src/
 │   ├── app/          # App, routes, navigation; layout/ và pages/
-│   ├── features/     # Chỗ dành cho các nhóm nghiệp vụ
+│   ├── features/     # auth/, accounts/, booking/ và các nhóm nghiệp vụ
 │   ├── shared/       # api/client.ts; components, hooks, utils, types còn trống
 │   ├── theme/        # tokens.css, global.css và layout.css
 │   ├── assets/       # Chỗ dành cho tài nguyên import vào code
-│   ├── main.tsx      # React root và BrowserRouter
+│   ├── main.tsx      # React root và RouterProvider
 │   └── vite-env.d.ts # Kiểu biến môi trường
 ├── .env.example      # Cấu hình mẫu công khai
 ├── .gitignore

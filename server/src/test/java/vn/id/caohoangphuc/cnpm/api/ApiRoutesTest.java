@@ -27,7 +27,7 @@ class ApiRoutesTest {
         when(auth.logout(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
         when(bookings.create(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
 
-        mvc = MockMvcBuilders.routerFunctions(new ApiRoutes().apiRoutes(auth, bookings)).build();
+        mvc = MockMvcBuilders.routerFunctions(new ApiRoutes().apiRouter(auth, bookings)).build();
     }
 
     @Test
