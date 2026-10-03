@@ -42,7 +42,9 @@ public class SecurityConfiguration {
                         .ignoringRequestMatchers(ApiRoutes.PAYMENT_CALLBACK)
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/health/**",
+                                "/swagger-ui.html", "/swagger-ui/**", "/openapi.yaml",
+                                "/v3/api-docs/**").permitAll()
                         .requestMatchers(ApiRoutes.PAYMENT_CALLBACK).permitAll()
                         .requestMatchers(ApiRoutes.AUTH_SESSION, ApiRoutes.AUTH_LOGIN).permitAll()
                         .requestMatchers(ApiRoutes.AUTH_TWO_FACTOR, ApiRoutes.AUTH_TWO_FACTOR_SETUP,
