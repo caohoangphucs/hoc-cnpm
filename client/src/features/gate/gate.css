@@ -1,0 +1,23 @@
+.gate-station { padding: 24px; }
+.gate-station-heading { display: flex; gap: 16px; align-items: center; margin-bottom: 24px; }
+.gate-station-heading > .icon { width: 40px; height: 40px; color: var(--md-sys-color-primary); }
+.gate-muted { color: var(--md-sys-color-on-surface-variant); margin-top: 8px; }
+.gate-fieldset { padding: 0; margin: 0; border: 0; min-width: 0; display: grid; gap: 20px; }
+.gate-form .field-control, .gate-simulation .field-control { display: grid; gap: 8px; border: 0; background: transparent; }
+.gate-form .field-control label, .gate-simulation .field-control label { position: static; padding: 0; background: transparent; color: var(--md-sys-color-on-surface); font: var(--app-type-label); }
+.gate-form .field-control input, .gate-simulation .field-control input { padding: 12px 16px; min-height: 56px; border: 1px solid var(--md-sys-color-outline); border-radius: 8px; background: var(--md-sys-color-surface-container-lowest); }
+.gate-form .field-control:focus-within, .gate-simulation .field-control:focus-within { box-shadow: none; outline: none; }
+.gate-form .field-control input:focus, .gate-simulation .field-control input:focus { border-color: var(--md-sys-color-primary); }
+.gate-form .field-control input:focus-visible, .gate-simulation .field-control input:focus-visible { outline: 2px solid var(--md-sys-color-primary); outline-offset: 3px; }
+.gate-simulation .m3-field--error input { border-color: var(--md-sys-color-error); }
+.gate-profile { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--md-sys-color-outline-variant); }
+.gate-profile > .wl-form { margin-top: 24px; }
+.gate-time { color: var(--md-sys-color-primary); font: var(--app-type-title); }
+.gate-last { display: grid; gap: 16px; border-top: 1px solid var(--md-sys-color-outline-variant); padding-top: 20px; }
+.gate-last p { overflow-wrap: anywhere; }
+.gate-history { margin-top: 24px; }
+.gate-history .wl-table { min-width: 680px; }
+.gate-simulation { margin: 0 0 24px; padding: 16px; border: 1px dashed var(--md-sys-color-outline); border-radius: var(--md-sys-shape-corner-medium); }
+.gate-simulation > :is(.m3-field,.wl-field) { flex: 1 1 240px; }
+.gate-simulation p { width: 100%; color: var(--md-sys-color-on-surface-variant); }
+@media(max-width:599px) { .gate-station { padding: 20px 16px; } .gate-simulation { display: grid; grid-template-columns: minmax(0,1fr); } .gate-guidance .wl-status { white-space: normal; } }
