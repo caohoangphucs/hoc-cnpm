@@ -15,6 +15,8 @@ public class ApiRoutes {
     public static final String AUTH_TWO_FACTOR_SETUP = "/api/v1/auth/2fa/setup";
     public static final String AUTH_TWO_FACTOR_CONFIRM = "/api/v1/auth/2fa/setup/confirm";
     public static final String AUTH_LOGOUT = "/api/v1/auth/logout";
+    public static final String ROOMS = "/api/v1/rooms";
+    public static final String ROOM_BEDS = "/api/v1/rooms/{id}/beds";
     public static final String BOOKINGS = "/api/v1/bookings";
     public static final String BOOKING_DECISION = "/api/v1/bookings/{id}/decision";
     public static final String INVOICE_DRAFTS = "/api/v1/invoice-drafts";
@@ -47,6 +49,7 @@ public class ApiRoutes {
     @Bean
     RouterFunction<ServerResponse> apiRouter(
             AuthController auth,
+            RoomController rooms,
             BookingController bookings,
             RegistrationController registrations,
             InvoiceController invoices,
@@ -62,36 +65,38 @@ public class ApiRoutes {
                 .POST(AUTH_TWO_FACTOR_SETUP, auth::beginTwoFactorSetup)
                 .POST(AUTH_TWO_FACTOR_CONFIRM, auth::confirmTwoFactorSetup)
                 .POST(AUTH_LOGOUT, auth::logout)
+                .GET(ROOMS, rooms::list)
+                .GET(ROOM_BEDS, rooms::beds)
                 .POST(BOOKINGS, bookings::create)
                 .POST(BOOKING_DECISION, registrations::decide)
                 .POST(INVOICE_DRAFTS, invoices::preview)
                 .POST(INVOICES_ISSUE, invoices::issue)
-            .POST(PAYMENT_SESSIONS, payments::create)
-            .GET(PAYMENT_SESSION, payments::status)
-            .POST(PAYMENT_CALLBACK, payments::callback)
-            .POST(REPAIRS, repairs::create)
-            .GET(REPAIRS, repairs::list)
-            .POST(REPAIR_ASSIGNMENT, repairs::assign)
-            .PUT(REPAIR_SCHEDULE, repairs::reschedule)
-            .POST(REPAIR_COMPLETE, repairs::complete)
-            .POST(ENTRIES, gate::record)
-            .POST(VISITORS, gate::declareVisitor)
-            .POST(VISITOR_APPROVAL, gate::approveVisitor)
-            .POST(VISITOR_CHECK_IN, gate::checkVisitorIn)
-            .POST(VISITOR_CHECK_OUT, gate::checkVisitorOut)
-            .GET(VIOLATIONS, discipline::pending)
-            .POST(VIOLATION_DECISIONS, discipline::decide)
-            .POST(DISCIPLINE_APPEALS, discipline::appeal)
-            .POST(APPEAL_RESPONSE, discipline::respond)
-            .GET(ACTIVITIES, community::activities)
-            .POST(ACTIVITIES, community::createActivity)
-            .POST(ACTIVITY_REGISTRATION, community::register)
-            .DELETE(ACTIVITY_REGISTRATION, community::cancel)
-            .POST(ACTIVITY_ATTENDANCE, community::attend)
-            .POST(ACTIVITY_CONFIRMATIONS, community::confirm)
-            .GET(ACTIVITY_POINTS, community::points)
-            .POST(ACTIVITY_CONVERSION, community::convert)
-            .POST(ACTIVITY_CERTIFICATES, community::requestCertificate)
-            .build();
+                .POST(PAYMENT_SESSIONS, payments::create)
+                .GET(PAYMENT_SESSION, payments::status)
+                .POST(PAYMENT_CALLBACK, payments::callback)
+                .POST(REPAIRS, repairs::create)
+                .GET(REPAIRS, repairs::list)
+                .POST(REPAIR_ASSIGNMENT, repairs::assign)
+                .PUT(REPAIR_SCHEDULE, repairs::reschedule)
+                .POST(REPAIR_COMPLETE, repairs::complete)
+                .POST(ENTRIES, gate::record)
+                .POST(VISITORS, gate::declareVisitor)
+                .POST(VISITOR_APPROVAL, gate::approveVisitor)
+                .POST(VISITOR_CHECK_IN, gate::checkVisitorIn)
+                .POST(VISITOR_CHECK_OUT, gate::checkVisitorOut)
+                .GET(VIOLATIONS, discipline::pending)
+                .POST(VIOLATION_DECISIONS, discipline::decide)
+                .POST(DISCIPLINE_APPEALS, discipline::appeal)
+                .POST(APPEAL_RESPONSE, discipline::respond)
+                .GET(ACTIVITIES, community::activities)
+                .POST(ACTIVITIES, community::createActivity)
+                .POST(ACTIVITY_REGISTRATION, community::register)
+                .DELETE(ACTIVITY_REGISTRATION, community::cancel)
+                .POST(ACTIVITY_ATTENDANCE, community::attend)
+                .POST(ACTIVITY_CONFIRMATIONS, community::confirm)
+                .GET(ACTIVITY_POINTS, community::points)
+                .POST(ACTIVITY_CONVERSION, community::convert)
+                .POST(ACTIVITY_CERTIFICATES, community::requestCertificate)
+                .build();
     }
 }
