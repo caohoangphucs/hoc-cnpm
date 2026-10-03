@@ -48,10 +48,11 @@ trap rollback ERR
 for migration in \
   V20261003__add_totp_secret.sql \
   V20261004__service_runtime_schema.sql \
-  V20261005__repair_room_type_utf8.sql; do
+  V20261005__repair_room_type_utf8.sql \
+  V20261006__repair_vietnamese_display_data.sql; do
   echo "Applying database migration $migration"
   docker exec "$database_container" pg_isready -U "$database_user" -d "$database_name"
-  docker exec -i "$database_container" psql -X -v ON_ERROR_STOP=1 --single-transaction \
+  docker exec -i -e PGCLIENTENCODING=UTF8 "$database_container" psql -X -v ON_ERROR_STOP=1 --single-transaction \
     -U "$database_user" -d "$database_name" \
     < "$repo_dir/database/migrations/$migration"
 done
