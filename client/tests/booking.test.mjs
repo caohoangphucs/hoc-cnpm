@@ -1,30 +1,28 @@
+import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import test from 'node:test'
-import { availableBeds, compatible, fileMetadataError, maxFileBytes, validateDocuments } from '../src/features/booking/model.ts'
+import { parseRooms, parseBeds } from '../src/features/rooms/model.ts'
+import { parseBookings, parseBooking, validProfile } from '../src/features/booking/api.ts'
+const booking = { id: 1, bedId: 'G-A101-1', studentId: '21110001', status: 'CHO_DUYET', expiresAt: '2026-10-05T10:00:00+07:00', profileState: 'COMPLETE', version: 3, fileIds: ['owned-file-id'], reason: null }
+test('catalogue preserves public IDs, gender and server availability with page totals', () => {
+  const page = parseRooms({ items: [{ id: 'A-101', buildingId: 'TOA-A', roomType: '4 người', gender: 'NAM', capacity: 4, availableBeds: 2 }], page: 2, pageSize: 8, total: 20 })
+  assert.equal(page.total, 20); assert.equal(page.page, 2); assert.equal(page.items[0].availableBeds, 2)
+  const beds = parseBeds({ items: [{ id: 'G-A101-1', number: 'G-01', status: 'GIU_CHO', version: 4 }], page: 1, pageSize: 8, total: 1 })
+  assert.equal(beds.items[0].status, 'GIU_CHO'); assert.equal(beds.items[0].version, 4)
+})
+test('bookings use server profile state, files and optimistic version without synthesized student details', () => {
+  const record = parseBooking(booking)
+  assert.equal(record.version, 3); assert.deepEqual(record.fileIds, ['owned-file-id']); assert.equal(record.reason, null)
+  const page = parseBookings({ items: [booking], page: 1, pageSize: 8, total: 1 })
+  assert.equal(page.items[0].id, 1)
+  assert.throws(() => parseBooking({ ...booking, version: undefined }))
+})
+test('malformed paginated responses are rejected rather than presented as empty data', () => {
+  assert.throws(() => parseRooms([]))
+  assert.throws(() => parseBookings({ items: [booking], page: 1, pageSize: 8, total: 0 }))
+})
 
-test('UC-04 only matches the student gender or a TAT_CA building', () => {
-  const student = { name: 'Test', code: 'SV', gender: 'NAM' }
-  assert.equal(compatible({ gender: 'NAM' }, student), true)
-  assert.equal(compatible({ gender: 'NU' }, student), false)
-  assert.equal(compatible({ gender: 'TAT_CA' }, student), true)
-})
-test('held, occupied and locked beds are not available for booking', () => {
-  assert.equal(availableBeds({ beds: ['TRONG', 'GIU_CHO', 'DANG_O', 'KHOA', 'TRONG'].map(status => ({ status })) }), 2)
-})
-test('UC-04 accepts JPG/PNG up to 5 MB and rejects empty, oversized or other files', () => {
-  assert.equal(fileMetadataError({ name: 'photo.PNG', type: 'image/png', size: maxFileBytes }), undefined)
-  assert.equal(fileMetadataError({ name: 'photo.jpeg', type: 'image/jpeg', size: 1 }), undefined)
-  for (const file of [
-    { name: 'photo.png', type: 'image/png', size: maxFileBytes + 1 },
-    { name: 'photo.png', type: 'image/png', size: 0 },
-    { name: 'photo.pdf', type: 'application/pdf', size: 1 },
-    { name: 'script.html', type: 'image/png', size: 1 },
-  ]) assert.equal(typeof fileMetadataError(file), 'string')
-})
-test('identity, student card and consent are required; total attachments cannot exceed five', () => {
-  const identity = new File(['test'], 'identity.png', { type: 'image/png' })
-  const studentCard = new File(['test'], 'student.png', { type: 'image/png' })
-  assert.deepEqual(Object.keys(validateDocuments({ identity: null, studentCard: null, evidence: [] }, false)).sort(), ['identity', 'studentCard', 'terms'])
-  assert.deepEqual(validateDocuments({ identity, studentCard, evidence: [identity, identity, identity] }, true), {})
-  assert.equal(typeof validateDocuments({ identity, studentCard, evidence: [identity, identity, identity, identity] }, true).evidence, 'string')
+
+test('approval follows VALID from the actual service; COMPLETE alone is insufficient', () => {
+  assert.equal(validProfile({ profileState: 'VALID' }), true)
+  for (const profileState of ['PENDING','MISSING','INVALID','COMPLETE']) assert.equal(validProfile({ profileState }), false)
 })

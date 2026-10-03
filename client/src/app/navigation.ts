@@ -36,6 +36,7 @@ export const workspaces: readonly Workspace[] = [
       { path: 'visitors', label: 'Khách thăm', shortLabel: 'Khách thăm', icon: 'people', description: 'Khai báo thông tin khách đến thăm phòng.' },
       { path: 'community', label: 'Hoạt động công ích', shortLabel: 'Công ích', icon: 'community', description: 'Đăng ký hoạt động, quy đổi điểm và tải giấy xác nhận.' },
       { path: 'notifications', label: 'Thông báo', shortLabel: 'Thông báo', icon: 'bell', description: 'Xem thông báo quan trọng từ Ban quản lý.' },
+      { path: 'entries', label: 'Lịch sử vào / ra', shortLabel: 'Vào / ra', icon: 'gate', description: 'Tra cứu nhật ký vào và ra ký túc xá của bạn.' },
     ],
   },
   {
@@ -45,6 +46,10 @@ export const workspaces: readonly Workspace[] = [
       overview,
       { path: 'rooms', label: 'Phòng & giường', shortLabel: 'Phòng', icon: 'building', description: 'Quản lý tòa nhà, phòng, cấu hình giường và trạng thái lưu trú.' },
       { path: 'bookings', label: 'Duyệt hồ sơ', shortLabel: 'Hồ sơ', icon: 'document', description: 'Duyệt hoặc từ chối hồ sơ đăng ký phòng và gán hợp đồng.' },
+      { path: 'visitors', label: 'Duyệt khách thăm', shortLabel: 'Khách thăm', icon: 'people', description: 'Xét duyệt phiếu khai báo khách thăm.' },
+      { path: 'repairs', label: 'Phân công sửa chữa', shortLabel: 'Sửa chữa', icon: 'tool', description: 'Giao phiếu sửa chữa cho kỹ thuật viên.' },
+      { path: 'invoices', label: 'Tra cứu hóa đơn', shortLabel: 'Hóa đơn', icon: 'wallet', description: 'Kiểm tra hóa đơn và hạn thanh toán.' },
+      { path: 'entries', label: 'Nhật ký vào / ra', shortLabel: 'Vào / ra', icon: 'gate', description: 'Tra cứu nhật ký kiểm soát cổng.' },
       { path: 'pricing', label: 'Đơn giá & chính sách', shortLabel: 'Đơn giá', icon: 'pricing', description: 'Phê duyệt đơn giá dịch vụ và cấu hình giảm tiền phòng.' },
       { path: 'discipline', label: 'Vi phạm & kỷ luật', shortLabel: 'Kỷ luật', icon: 'shield', description: 'Xử lý vi phạm, cảnh báo tái phạm và báo cáo về trễ.' },
       { path: 'community', label: 'Quản lý công ích', shortLabel: 'Công ích', icon: 'community', description: 'Mở hoạt động, điểm danh và xác nhận hoàn thành công ích.' },
@@ -58,6 +63,7 @@ export const workspaces: readonly Workspace[] = [
     navigation: [
       overview,
       { path: 'invoices', label: 'Phát hành hóa đơn', shortLabel: 'Hóa đơn', icon: 'document', description: 'Tính tiền điện nước theo biểu giá và phát hành hóa đơn tháng.' },
+      { path: 'payments', label: 'Tra cứu thanh toán', shortLabel: 'Thanh toán', icon: 'wallet', description: 'Kiểm tra trạng thái các phiên thanh toán và đối soát.' },
       { path: 'cashier', label: 'Thu tiền mặt', shortLabel: 'Thu tiền', icon: 'wallet', description: 'Ghi nhận thu tiền trực tiếp và in phiếu thu, biên lai.' },
       { path: 'pricing', label: 'Đơn giá dịch vụ', shortLabel: 'Đơn giá', icon: 'pricing', description: 'Đề xuất thay đổi đơn giá điện, nước, wifi và tiền phòng.' },
       { path: 'reports', label: 'Báo cáo tài chính', shortLabel: 'Báo cáo', icon: 'chart', description: 'Thống kê doanh thu và xuất báo cáo tài chính hàng tháng.' },

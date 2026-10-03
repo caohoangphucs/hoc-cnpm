@@ -1,75 +1,31 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useId, useState } from 'react'
 import { Button } from '@/shared/components/Button'
 import { Dialog } from '@/shared/components/Dialog'
-import { Icon } from '@/shared/components/Icon'
 import { TextField } from '@/shared/components/TextField'
 import { Feedback, NotesField, SelectField } from '@/shared/workflow/Workflow'
-import { useClock, usePreviewAction } from '@/shared/workflow/hooks'
-import type { WorkflowOptions } from '@/shared/workflow/model'
-import { applyPreviewRepair, draftErrors, editableIssue, emptyDraft, localInput, shortages, vietnamToday, type RepairData, type RepairDraft, type RepairErrors, type RepairMode } from './model'
-
-const titles: Record<RepairMode, string> = { accept: 'Tiếp nhận phiếu', schedule: 'Hẹn lại lịch sửa chữa', warranty: 'Ghi nhận bảo hành ngoài', complete: 'Hoàn thành sửa chữa', cancel: 'Hủy phiếu sửa chữa' }
-export function RepairActionDialog({ data, id, mode, actor, options, onClose, onSave }: {
-  data: RepairData; id: number; mode: RepairMode; actor: { id: number; name: string }; options: WorkflowOptions
-  onClose: () => void; onSave: (data: RepairData, message: string, close: boolean) => void
-}) {
-  const repair = data.repairs.find(r => r.id === id)!
-  const version = useRef(repair.version), request = useRef<{ payload: string; key: string } | null>(null)
-  const [draft, setDraft] = useState<RepairDraft>(() => ({ ...emptyDraft(), schedule: localInput(repair.schedule), provider: repair.warranty?.provider ?? '', warrantyUntil: repair.warrantyUntil ?? '' }))
-  const [errors, setErrors] = useState<RepairErrors>({}), [requested, setRequested] = useState(false)
-  const action = usePreviewAction(options), formId = useId()
-  const now = useClock()
-  const shortageFeedback = useRef<HTMLDivElement>(null)
-  useEffect(() => { if (requested) shortageFeedback.current?.focus() }, [requested])
-  const missing = mode === 'complete' ? shortages(draft.supplies, data.supplies) : []
-  const issue = editableIssue(repair, actor.id, mode)
-  function change<K extends keyof RepairDraft>(field: K, value: RepairDraft[K]) { setDraft(current => ({ ...current, [field]: value })); setErrors(current => ({ ...current, [field]: undefined })); setRequested(false); action.setError('') }
+import { useApiAction } from '@/shared/api/hooks'
+import { command } from '@/shared/api/protocol'
+import { parseCompletion, priorityLabels, repairPayload, type Repair, type SupplyLine, type Priority } from './model'
+export function RepairActionDialog({ repair, mode, onClose, onSave }: { repair: Repair; mode: 'schedule' | 'complete'; onClose: () => void; onSave: (message: string) => void }) {
+  const action = useApiAction(), form = useId()
+  const [note,setNote]=useState(''), [schedule,setSchedule]=useState(''), [warranty,setWarranty]=useState(''), [supplies,setSupplies]=useState<SupplyLine[]>([]), [errors,setErrors]=useState<Record<string,string>>({}), [shortage,setShortage]=useState<string[]>([])
   async function submit() {
-    if (!options.preview || action.busy) return
-    const errors = draftErrors(repair, mode, draft, data.supplies, Date.now())
-    setErrors(errors)
-    if (Object.keys(errors).length) { action.setError('Kiểm tra các trường được đánh dấu trước khi gửi.'); return }
-    const payload = JSON.stringify({ id, version: version.current, mode, draft })
-    if (!request.current || request.current.payload !== payload) request.current = { payload, key: crypto.randomUUID() }
-    let decision: ReturnType<typeof applyPreviewRepair> | undefined
-    const saved = await action.run(() => {
-      decision = applyPreviewRepair(data, id, version.current, mode, draft, actor, request.current!.key, Date.now())
-    }, 'Đã xử lý yêu cầu')
-    if (!saved || !decision) return
-    if (decision.error) { action.setError(decision.error); return }
-    if (decision.shortage?.length) { setRequested(true); onSave(decision.data, 'Đã tạo đề nghị mua bổ sung; phiếu giữ trạng thái đang xử lý, chưa xuất vật tư.', false); return }
-    onSave(decision.data, mode === 'complete' ? 'Đã hoàn thành phiếu và ghi nhận xuất vật tư.' : mode === 'accept' ? 'Đã tiếp nhận phiếu và lên lịch kiểm tra.' : mode === 'cancel' ? 'Đã hủy phiếu; không xuất vật tư.' : 'Đã cập nhật lịch xử lý và lịch sử phiếu.', true)
+    const {errors,body}=repairPayload(mode,repair.version,note,schedule,warranty,supplies);setErrors(errors)
+    if(Object.keys(errors).length) return
+    if(mode==='schedule') { const result=await action.run(`repairs/${repair.id}/schedule`,body,command,'PUT'); if(result) onSave('Đã lưu lịch xử lý.'); }
+    else { const result=await action.run(`repairs/${repair.id}/complete`,body,parseCompletion,'POST',true); if(result?.status==='HOAN_THANH') onSave('Đã hoàn thành phiếu và ghi nhận xuất vật tư.'); else if(result) setShortage(result.shortages) }
   }
-  const primary = mode === 'complete' && missing.length ? requested ? 'Đã gửi đề nghị mua' : 'Gửi đề nghị mua bổ sung' : mode === 'complete' ? 'Xác nhận hoàn thành' : mode === 'cancel' ? 'Xác nhận hủy' : mode === 'accept' ? 'Xác nhận tiếp nhận' : 'Lưu lịch xử lý'
-  return <Dialog title={titles[mode]} busy={action.busy} onClose={onClose} actions={<><Button variant="text" onClick={onClose} disabled={action.busy}>Quay lại</Button><Button type="submit" form={formId} pending={action.busy} disabled={!!issue || requested || !options.preview} className={mode === 'cancel' ? 'account-danger-button' : ''}>{primary}</Button></>}>
-    <p className="repair-dialog-intro"><strong>{repair.code} · Phòng {repair.room}</strong><br />{repair.title}</p>
-    <Feedback error={action.error || issue} />
-    <form id={formId} className="wl-form repair-form" noValidate aria-busy={action.busy} onSubmit={event => { event.preventDefault(); void submit() }}>
-      <fieldset disabled={action.busy} className="repair-fieldset">
-        {mode === 'accept' && <p className="wl-note">Bạn sẽ phụ trách phiếu này. Chọn lịch đến phòng kiểm tra; thời gian dùng múi giờ Việt Nam (UTC+7).</p>}
-        {['accept', 'schedule', 'warranty'].includes(mode) && <TextField label={mode === 'warranty' ? 'Dự kiến bàn giao thiết bị' : 'Lịch đến phòng'} type="datetime-local" value={draft.schedule} onChange={event => change('schedule', event.target.value)} errorText={errors.schedule} supportingText="Giờ Việt Nam · UTC+7" required />}
-        {mode === 'warranty' && <><TextField label="Đơn vị bảo hành" value={draft.provider} onChange={event => change('provider', event.target.value)} errorText={errors.provider} maxLength={200} required /><p className="wl-note">Ghi nhận đơn vị và ngày dự kiến. Phiếu tiếp tục ở trạng thái đang xử lý.</p></>}
-        {mode !== 'accept' && <NotesField label={mode === 'cancel' ? 'Lý do hủy' : mode === 'complete' ? 'Nội dung công việc đã thực hiện' : 'Lý do / ghi chú'} value={draft.note} onChange={event => change('note', event.target.value)} error={errors.note} required placeholder={mode === 'schedule' ? 'Ví dụ: Phòng khóa, đã thống nhất lịch mới với sinh viên.' : undefined} />}
-        {mode === 'complete' && <>
-          {repair.warranty && <div><label className="wl-check"><input type="checkbox" checked={draft.received} onChange={event => change('received', event.target.checked)} aria-describedby={errors.received ? `${formId}-received` : undefined} aria-invalid={!!errors.received} />Thiết bị đã được đơn vị bảo hành bàn giao và kiểm tra hoạt động</label>{errors.received && <p className="wl-error" id={`${formId}-received`}>{errors.received}</p>}</div>}
-          <TextField label="Bảo hành sau sửa chữa đến (tùy chọn)" type="date" min={vietnamToday(now)} value={draft.warrantyUntil} onChange={event => change('warrantyUntil', event.target.value)} errorText={errors.warrantyUntil} />
-          <section className="repair-materials" aria-labelledby={`${formId}-materials`}>
-            <h3 id={`${formId}-materials`}>Vật tư sử dụng</h3><p className="repair-muted">Chỉ xuất kho khi hoàn thành thành công. Có thể hoàn thành không dùng vật tư.</p>
-            {!draft.supplies.length && <p className="wl-note">Không sử dụng vật tư từ kho.</p>}
-            {draft.supplies.map((line, index) => { const supply = data.supplies.find(s => s.id === line.supplyId); return <div className="repair-material-row" key={index}>
-              <SelectField label={`Vật tư ${index + 1}`} value={line.supplyId} onChange={event => change('supplies', draft.supplies.map((item, i) => i === index ? { ...item, supplyId: event.target.value } : item))} aria-describedby={errors.supplies ? `${formId}-supplies-error` : undefined} aria-invalid={!!errors.supplies}><option value="">Chọn vật tư</option>{data.supplies.map(s => <option key={s.id} value={s.id} disabled={draft.supplies.some((other, i) => i !== index && other.supplyId === s.id)}>{s.name}</option>)}</SelectField>
-              <TextField label={`Số lượng ${index + 1}`} type="number" min={1} max={2147483647} step={1} value={Number.isFinite(line.quantity) ? line.quantity : ''} onChange={event => change('supplies', draft.supplies.map((item, i) => i === index ? { ...item, quantity: event.target.value === '' ? NaN : Number(event.target.value) } : item))} aria-describedby={errors.supplies ? `${formId}-supplies-error` : undefined} errorText={errors.supplies && (!Number.isInteger(line.quantity) || line.quantity < 1 || line.quantity > 2147483647) ? 'Nhập số nguyên dương.' : undefined} />
-              <button className="icon-button state-layer" type="button" aria-label={`Xóa vật tư ${index + 1}`} onClick={() => change('supplies', draft.supplies.filter((_, i) => i !== index))}><Icon name="close" /></button>
-              <small className="repair-stock">{supply ? `Tồn kho: ${supply.stock} ${supply.unit}${line.quantity > supply.stock ? ` · Thiếu ${line.quantity - supply.stock} ${supply.unit}` : ''}` : 'Chọn vật tư để xem tồn kho.'}</small>
-            </div> })}
-            {errors.supplies && <p className="wl-error" role="alert" id={`${formId}-supplies-error`}>{errors.supplies}</p>}
-            <Button variant="outlined" disabled={draft.supplies.length >= data.supplies.length || draft.supplies.length >= 100} onClick={() => change('supplies', [...draft.supplies, { supplyId: '', quantity: 1 }])}><Icon name="box" />Thêm vật tư</Button>
-          </section>
-          {!!missing.length && <div className="repair-shortage" ref={shortageFeedback} tabIndex={-1} role={requested ? 'status' : undefined}><h3>{requested ? 'Đã gửi đề nghị mua bổ sung' : 'Kho chưa đủ vật tư'}</h3><ul>{missing.map(s => <li key={s.id}>{s.name}: cần {s.needed}, còn {s.stock}, thiếu {s.missing} {s.unit}.</li>)}</ul><p>{requested ? 'Đề nghị đã được lưu trong bản xem trước. Phiếu chưa hoàn thành, toàn bộ tồn kho được giữ nguyên.' : 'Gửi đề nghị mua phần thiếu. Phiếu giữ trạng thái đang xử lý; không xuất bất kỳ vật tư nào.'}</p></div>}
-          {!missing.length && <p className="wl-note">Xác nhận sẽ hoàn thành phiếu và xuất các vật tư đã chọn một lần.</p>}
-        </>}
-        {mode === 'cancel' && <p className="wl-note">Hủy phiếu trước khi hoàn thành. Lý do sẽ được giữ trong lịch sử; không xuất kho vật tư.</p>}
-      </fieldset>
-    </form>
-  </Dialog>
+  function changeLine(index:number,patch:Partial<SupplyLine>) { setSupplies(s=>s.map((line,i)=>i===index?{...line,...patch}:line));setShortage([]) }
+  return <Dialog title={mode==='schedule'?'Đổi lịch sửa chữa':'Hoàn thành sửa chữa'} busy={action.busy} onClose={onClose} actions={<><Button variant="text" disabled={action.busy} onClick={onClose}>Quay lại</Button><Button type="submit" form={form} pending={action.busy} disabled={shortage.length>0}>{mode==='schedule'?'Lưu lịch':'Xác nhận hoàn thành'}</Button></>}><p className="repair-dialog-intro">SC-{repair.id} · Phòng {repair.roomId}<br />{repair.title}</p><Feedback error={action.error} /><form id={form} className="wl-form repair-form" noValidate onSubmit={e=>{e.preventDefault();void submit()}}><fieldset className="repair-fieldset" disabled={action.busy}>
+    {mode==='schedule' && <TextField label="Lịch sửa chữa (giờ Việt Nam)" type="datetime-local" value={schedule} onChange={e=>setSchedule(e.target.value)} required errorText={errors.schedule} />}
+    <NotesField label={mode==='complete'?'Nội dung đã sửa chữa':'Lý do đổi lịch'} value={note} onChange={e=>setNote(e.target.value)} required error={errors.note} />
+    {mode==='schedule' && <p className="wl-note">Chưa tra cứu được hạn bảo hành hiện tại. Nhập lại ngày cần giữ; để trống sẽ bỏ hạn bảo hành khi lưu lịch mới.</p>}
+    <TextField label="Hạn bảo hành (nếu có)" type="date" value={warranty} onChange={e=>setWarranty(e.target.value)} errorText={errors.warrantyUntil} />
+    {mode==='complete' && <section className="wl-form"><h3>Vật tư đã dùng</h3><p>Chỉ nhập vật tư thực tế. Nếu không dùng vật tư, để trống danh sách.</p>{supplies.map((s,i)=><div key={i} className="repair-supply-row"><TextField label={`Mã vật tư ${i+1}`} value={s.supplyId} onChange={e=>changeLine(i,{supplyId:e.target.value})} /><TextField label={`Số lượng ${i+1}`} type="number" min={1} max={2147483647} step={1} value={Number.isNaN(s.quantity)?'':s.quantity} onChange={e=>changeLine(i,{quantity:e.target.valueAsNumber})} /><Button variant="text" onClick={()=>{setSupplies(v=>v.filter((_,j)=>j!==i));setShortage([])}}>Xóa dòng {i+1}</Button></div>)}{errors.supplies && <p className="wl-error" role="alert">{errors.supplies}</p>}<Button variant="outlined" disabled={supplies.length>=100} onClick={()=>{setSupplies(v=>[...v,{supplyId:'',quantity:1}]);setShortage([])}}>Thêm vật tư</Button>{shortage.length>0 && <div className="repair-shortage" role="status"><h3>Đã đề nghị mua vật tư thiếu</h3><p>Mã vật tư: {shortage.join(', ')}. Phiếu vẫn đang xử lý; chưa xuất bất kỳ vật tư nào.</p><p>Điều chỉnh vật tư thực tế hoặc chờ kho bổ sung rồi tải lại phiếu.</p></div>}</section>}
+  </fieldset></form></Dialog>
+}
+export function ReportRepairDialog({onClose,onSave}:{onClose:()=>void;onSave:()=>void}) {
+  const action=useApiAction(), form=useId();const [title,setTitle]=useState(''),[description,setDescription]=useState(''),[priority,setPriority]=useState<Priority>('TRUNG_BINH'),[error,setError]=useState('')
+  async function submit(){if(!title.trim()||title.trim().length>1000||!description.trim()||description.trim().length>1000){setError('Nhập tiêu đề và mô tả từ 1 đến 1.000 ký tự.');return}setError('');const result=await action.run('repairs',{title:title.trim(),description:description.trim(),priority,fileIds:[]},command);if(result)onSave()}
+  return <Dialog title="Báo sự cố trong phòng" busy={action.busy} onClose={onClose} actions={<><Button variant="text" disabled={action.busy} onClick={onClose}>Hủy</Button><Button type="submit" form={form} pending={action.busy}>Gửi yêu cầu</Button></>}><Feedback error={action.error||error} /><form id={form} className="wl-form repair-form" noValidate onSubmit={e=>{e.preventDefault();void submit()}}><fieldset className="repair-fieldset" disabled={action.busy}><TextField label="Tiêu đề sự cố" value={title} maxLength={1000} required onChange={e=>setTitle(e.target.value)} /><NotesField label="Mô tả sự cố" value={description} required onChange={e=>setDescription(e.target.value)} /><SelectField label="Mức ưu tiên" value={priority} onChange={e=>setPriority(e.target.value as Priority)}>{Object.entries(priorityLabels).map(([v,l])=><option key={v} value={v}>{l}</option>)}</SelectField><p className="wl-note">Phiếu được gắn với phòng lưu trú của bạn. Chức năng đính kèm ảnh chưa sẵn sàng.</p></fieldset></form></Dialog>
 }
