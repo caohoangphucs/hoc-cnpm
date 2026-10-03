@@ -204,14 +204,24 @@ class RemainingUseCasesApiBlackBoxIT {
 
         var admin = login("admin");
         assertGetSucceeds(admin.client(), ApiRoutes.BOOKINGS + "?page=1&pageSize=20");
-        assertGetSucceeds(admin.client(), ApiRoutes.VISITORS + "?page=1&size=20");
+        var adminVisitors = assertGetSucceeds(admin.client(), ApiRoutes.VISITORS + "?page=1&size=20");
+        assertVisitorIsPresent(adminVisitors, "APPROVED");
         var adminEntries = assertGetSucceeds(admin.client(), ApiRoutes.ENTRIES + "?page=1&size=20");
         assertTrue(adminEntries.body().contains(eventId.toString()));
 
         var guard = login("baove1");
-        assertGetSucceeds(guard.client(), ApiRoutes.VISITORS + "?page=1&size=20");
+        var guardVisitors = assertGetSucceeds(guard.client(), ApiRoutes.VISITORS + "?page=1&size=20");
+        assertVisitorIsPresent(guardVisitors, "APPROVED");
         var guardEntries = assertGetSucceeds(guard.client(), ApiRoutes.ENTRIES + "?page=1&size=20");
         assertTrue(guardEntries.body().contains(eventId.toString()));
+    }
+
+    private void assertVisitorIsPresent(HttpResponse<String> response, String expectedState) throws Exception {
+        var visitors = json.readTree(response.body());
+        assertTrue(visitors.isArray(), response.body());
+        assertTrue(visitors.valueStream().anyMatch(visitor ->
+                "21110001".equals(visitor.path("hostStudentId").asString())
+                        && expectedState.equals(visitor.path("state").asString())), response.body());
     }
 
     private HttpResponse<String> assertGetSucceeds(HttpClient client, String path) throws Exception {
