@@ -22,7 +22,7 @@ const rooms: readonly Room[] = [
 ]
 type Scenario = 'open' | 'closed' | 'pending' | 'resident' | 'loading' | 'empty' | 'error'
 type Outcome = 'success' | 'conflict' | 'unavailable' | 'validation'
-function PreviewRegistration() {
+export function PreviewRegistration() {
   const [scenario, setScenario] = useState<Scenario>('open')
   const [gender, setGender] = useState<Student['gender']>('NAM')
   const [outcome, setOutcome] = useState<Outcome>('success')
