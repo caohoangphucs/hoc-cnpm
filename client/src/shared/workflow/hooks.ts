@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import type { WorkflowOptions } from './model'
 
-export function useClock() {
+export function useClock(intervalMs = 15000) {
   const [now, setNow] = useState(Date.now)
-  useEffect(() => { const timer=window.setInterval(()=>setNow(Date.now()),15000);return()=>window.clearInterval(timer) },[])
+  useEffect(() => { const timer=window.setInterval(()=>setNow(Date.now()),intervalMs);return()=>window.clearInterval(timer) },[intervalMs])
   return now
 }
 // This simulation runs only for explicit development previews.
