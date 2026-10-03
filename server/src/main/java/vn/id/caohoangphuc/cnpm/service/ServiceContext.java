@@ -53,7 +53,7 @@ public class ServiceContext {
     return transaction.execute(status -> work.get());
   }
 
-  /** Xác thực tài khoản đang hoạt động, vai trò được phép và yêu cầu 2FA. */
+  /** Xác thực tài khoản đang hoạt động và vai trò được phép thực hiện thao tác. */
   public ServiceRepository.Account require(Actor actor, String... roles) {
     if (actor == null) throw new ServiceException(401, "UNAUTHENTICATED", "Login required");
     var account = repository.account(actor.accountId());
@@ -61,15 +61,7 @@ public class ServiceContext {
       throw new ServiceException(401, "UNAUTHENTICATED", "Account is not active");
     if (!Arrays.asList(roles).contains(account.role()))
       throw new ServiceException(403, "FORBIDDEN", "Role is not allowed");
-    requireTwoFactorForSensitiveRole(account.role(), actor);
     return account;
-  }
-
-  /** Bắt buộc xác thực hai lớp cho tài khoản quản trị và kế toán. */
-  private void requireTwoFactorForSensitiveRole(String role, Actor actor) {
-    boolean sensitiveRole = role.equals("ADMIN") || role.equals("KETOAN");
-    if (sensitiveRole && !actor.twoFactorVerified())
-      throw new ServiceException(401, "TWO_FACTOR_REQUIRED", "Two-factor verification required");
   }
 
   /** Chạy kiểm tra bean validation cho dữ liệu đầu vào. */

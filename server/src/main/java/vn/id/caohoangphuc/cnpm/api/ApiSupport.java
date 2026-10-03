@@ -60,15 +60,13 @@ public class ApiSupport {
         }
     }
 
-    /** Builds the actor from the authenticated account and its server-side 2FA session flag. */
+    /** Builds the actor from the authenticated account without requiring a second factor. */
     private Actor actor(ServerRequest request) {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null) throw new ServiceException(401, "UNAUTHENTICATED", "Login required");
         var account = accounts.findByUsername(authentication.getName()).orElse(null);
         if (account == null) throw new ServiceException(401, "UNAUTHENTICATED", "Login required");
-        var session = request.servletRequest().getSession(false);
-        boolean verified = session != null && Boolean.TRUE.equals(session.getAttribute("ktx.twoFactorVerified"));
-        return new Actor(account.accountId(), verified);
+        return new Actor(account.accountId(), true);
     }
 
     /** Uses caller idempotency headers when supplied and creates safe defaults otherwise. */

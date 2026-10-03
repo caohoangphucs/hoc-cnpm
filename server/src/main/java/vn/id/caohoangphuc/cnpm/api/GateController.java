@@ -4,6 +4,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.function.ServerRequest;
 import org.springframework.web.servlet.function.ServerResponse;
 import vn.id.caohoangphuc.cnpm.api.dto.EntryDto;
+import vn.id.caohoangphuc.cnpm.api.dto.ApprovalDto;
+import vn.id.caohoangphuc.cnpm.api.dto.VisitorDto;
 import vn.id.caohoangphuc.cnpm.service.GateService;
 
 /** HTTP actions for security staff recording student entry and exit. */
@@ -22,5 +24,33 @@ public class GateController {
     public ServerResponse record(ServerRequest request) throws Exception {
         return api.handle(request, (actor, context) -> gate.record(
                 actor, context, request.body(EntryDto.class)));
+    }
+
+    /** Submits a visit request for the authenticated student. */
+    public ServerResponse declareVisitor(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> gate.declareVisitor(actor, context,
+                request.body(VisitorDto.class)));
+    }
+
+    /** Approves or rejects a visitor request as an administrator. */
+    public ServerResponse approveVisitor(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> gate.approveVisitor(actor, context,
+                Long.parseLong(request.pathVariable("id")), request.body(ApprovalDto.class)));
+    }
+
+    /** Records a visitor's arrival at the gate. */
+    public ServerResponse checkVisitorIn(ServerRequest request) throws Exception {
+        return checkVisitor(request, true);
+    }
+
+    /** Records a visitor's departure from the gate. */
+    public ServerResponse checkVisitorOut(ServerRequest request) throws Exception {
+        return checkVisitor(request, false);
+    }
+
+    /** Shares path parsing and service dispatch for the two gate directions. */
+    private ServerResponse checkVisitor(ServerRequest request, boolean entering) throws Exception {
+        return api.handle(request, (actor, context) -> gate.checkVisitor(actor, context,
+                Long.parseLong(request.pathVariable("id")), entering));
     }
 }

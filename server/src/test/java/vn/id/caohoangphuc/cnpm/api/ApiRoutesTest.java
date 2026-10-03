@@ -5,6 +5,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -40,11 +42,30 @@ class ApiRoutesTest {
         when(invoices.issue(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
         when(payments.create(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
         when(payments.status(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
+        when(payments.callback(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
         when(repairs.create(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
         when(repairs.list(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
+        when(repairs.assign(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
+        when(repairs.reschedule(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
+        when(repairs.complete(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
         when(gate.record(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
+        when(gate.declareVisitor(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
+        when(gate.approveVisitor(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
+        when(gate.checkVisitorIn(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
+        when(gate.checkVisitorOut(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
         when(discipline.pending(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
+        when(discipline.decide(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
+        when(discipline.appeal(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
+        when(discipline.respond(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
         when(community.activities(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
+        when(community.createActivity(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
+        when(community.register(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
+        when(community.cancel(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
+        when(community.attend(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
+        when(community.confirm(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
+        when(community.points(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
+        when(community.convert(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
+        when(community.requestCertificate(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
 
         mvc = MockMvcBuilders.routerFunctions(new ApiRoutes().apiRouter(
                 auth, bookings, registrations, invoices, payments, repairs, gate, discipline, community)).build();
@@ -65,11 +86,30 @@ class ApiRoutesTest {
         mvc.perform(post(ApiRoutes.PAYMENT_SESSIONS)).andExpect(status().isOk());
         mvc.perform(get(ApiRoutes.PAYMENT_SESSION.replace("{id}", "00000000-0000-0000-0000-000000000001")))
                 .andExpect(status().isOk());
+        mvc.perform(post(ApiRoutes.PAYMENT_CALLBACK.replace("{gateway}", "vnpay"))).andExpect(status().isOk());
         mvc.perform(post(ApiRoutes.REPAIRS)).andExpect(status().isOk());
         mvc.perform(get(ApiRoutes.REPAIRS)).andExpect(status().isOk());
+        mvc.perform(post(ApiRoutes.REPAIR_ASSIGNMENT.replace("{id}", "1"))).andExpect(status().isOk());
+        mvc.perform(put(ApiRoutes.REPAIR_SCHEDULE.replace("{id}", "1"))).andExpect(status().isOk());
+        mvc.perform(post(ApiRoutes.REPAIR_COMPLETE.replace("{id}", "1"))).andExpect(status().isOk());
         mvc.perform(post(ApiRoutes.ENTRIES)).andExpect(status().isOk());
+        mvc.perform(post(ApiRoutes.VISITORS)).andExpect(status().isOk());
+        mvc.perform(post(ApiRoutes.VISITOR_APPROVAL.replace("{id}", "1"))).andExpect(status().isOk());
+        mvc.perform(post(ApiRoutes.VISITOR_CHECK_IN.replace("{id}", "1"))).andExpect(status().isOk());
+        mvc.perform(post(ApiRoutes.VISITOR_CHECK_OUT.replace("{id}", "1"))).andExpect(status().isOk());
         mvc.perform(get(ApiRoutes.VIOLATIONS)).andExpect(status().isOk());
+        mvc.perform(post(ApiRoutes.VIOLATION_DECISIONS)).andExpect(status().isOk());
+        mvc.perform(post(ApiRoutes.DISCIPLINE_APPEALS.replace("{id}", "1"))).andExpect(status().isOk());
+        mvc.perform(post(ApiRoutes.APPEAL_RESPONSE.replace("{id}", "1"))).andExpect(status().isOk());
         mvc.perform(get(ApiRoutes.ACTIVITIES)).andExpect(status().isOk());
+        mvc.perform(post(ApiRoutes.ACTIVITIES)).andExpect(status().isOk());
+        mvc.perform(post(ApiRoutes.ACTIVITY_REGISTRATION.replace("{id}", "1"))).andExpect(status().isOk());
+        mvc.perform(delete(ApiRoutes.ACTIVITY_REGISTRATION.replace("{id}", "1"))).andExpect(status().isOk());
+        mvc.perform(post(ApiRoutes.ACTIVITY_ATTENDANCE)).andExpect(status().isOk());
+        mvc.perform(post(ApiRoutes.ACTIVITY_CONFIRMATIONS)).andExpect(status().isOk());
+        mvc.perform(get(ApiRoutes.ACTIVITY_POINTS + "?semesterId=1")).andExpect(status().isOk());
+        mvc.perform(post(ApiRoutes.ACTIVITY_CONVERSION)).andExpect(status().isOk());
+        mvc.perform(post(ApiRoutes.ACTIVITY_CERTIFICATES)).andExpect(status().isOk());
     }
 
     @Test

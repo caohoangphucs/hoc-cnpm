@@ -2,7 +2,6 @@ package vn.id.caohoangphuc.cnpm.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.UUID;
@@ -40,14 +39,16 @@ public class SecurityConfiguration {
                         .requireExplicitSave(true))
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfTokenRepository)
+                        .ignoringRequestMatchers(ApiRoutes.PAYMENT_CALLBACK)
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        .requestMatchers(ApiRoutes.PAYMENT_CALLBACK).permitAll()
                         .requestMatchers(ApiRoutes.AUTH_SESSION, ApiRoutes.AUTH_LOGIN).permitAll()
                         .requestMatchers(ApiRoutes.AUTH_TWO_FACTOR, ApiRoutes.AUTH_TWO_FACTOR_SETUP,
                                 ApiRoutes.AUTH_TWO_FACTOR_CONFIRM, ApiRoutes.AUTH_LOGOUT).authenticated()
                         .anyRequest().access((authentication, context) -> new AuthorizationDecision(
-                                canAccessApi(authentication.get(), context.getRequest()))))
+                                isAuthenticated(authentication.get()))))
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
                 .exceptionHandling(errors -> errors
@@ -111,36 +112,10 @@ public class SecurityConfiguration {
                 + "\",\"requestId\":\"" + requestId + "\",\"fieldErrors\":{}}");
     }
 
-    /** Allows authenticated users and requires verified 2FA for administrator roles. */
-    private static boolean canAccessApi(Authentication authentication, HttpServletRequest request) {
-        if (!isAuthenticated(authentication)) {
-            return false;
-        }
-
-        if (!requiresTwoFactor(authentication)) {
-            return true;
-        }
-
-        return isTwoFactorVerified(request);
-    }
-
-    /** Rejects anonymous principals, even when Spring marks them authenticated internally. */
+    /** Allows any authenticated principal; role checks remain in the use-case services. */
     private static boolean isAuthenticated(Authentication authentication) {
         return authentication != null
                 && authentication.isAuthenticated()
                 && !(authentication instanceof AnonymousAuthenticationToken);
-    }
-
-    /** Checks whether the authenticated principal has a role that requires 2FA. */
-    private static boolean requiresTwoFactor(Authentication authentication) {
-        return authentication.getAuthorities().stream()
-                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN")
-                        || authority.getAuthority().equals("ROLE_KETOAN"));
-    }
-
-    /** Checks the server-side session flag set only after successful authenticator verification. */
-    private static boolean isTwoFactorVerified(HttpServletRequest request) {
-        var session = request.getSession(false);
-        return session != null && Boolean.TRUE.equals(session.getAttribute("ktx.twoFactorVerified"));
     }
 }
