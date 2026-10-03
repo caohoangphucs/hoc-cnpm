@@ -1,11 +1,30 @@
-import test from 'node:test'
+import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { attendPreview, balance, cancelPreview, certificatePreview, completePreview, converted, convertPreview, createActivityPreview, maxConversion, places, registerPreview, registrationIssue, transferResultPreview } from '../src/features/community/model.ts'
-const hour=3600000,now=1000000
-const activity=(id,start=now+24*hour)=>({id,semester:'HK1',title:id,location:'A',start,end:start+2*hour,capacity:1,points:10,open:true,description:''})
-const make=()=>({activities:[activity('a'),activity('overlap',now+25*hour),activity('next',now+26*hour)],registrations:[],transfers:[],ledger:[],certificates:[]})
-test('UC-30 registration enforces capacity, duplicate and overlap; adjacent times are allowed',()=>{let data=make();data=registerPreview(data,'a','s1','Nam','token',now).data;assert.equal(places(data,'a'),1);assert.ok(registrationIssue(data,data.activities[0],'s2',now));assert.ok(registerPreview(data,'a','s1','Nam','again',now).error);assert.ok(registerPreview(data,'overlap','s1','Nam','other',now).error);assert.equal(registerPreview(data,'next','s1','Nam','next',now).error,undefined)})
-test('UC-30 cancellation permits exactly 12 hours, checks owner/version and frees one place once',()=>{let data=registerPreview(make(),'a','s1','Nam','token',now).data;const r=data.registrations[0];assert.ok(cancelPreview(data,r.id,'other',0,now).error);assert.ok(cancelPreview(data,r.id,'s1',1,now).error);assert.ok(cancelPreview(data,r.id,'s1',0,now+12*hour+1).error);data=cancelPreview(data,r.id,'s1',0,now+12*hour).data;assert.equal(places(data,'a'),0);assert.ok(cancelPreview(data,r.id,'s1',1,now).error)})
-test('UC-30 attendance is admin-only and earns no points; completion checks all versions and credits once',()=>{let data=registerPreview(make(),'a','s1','Nam','token',now).data;assert.ok(attendPreview(data,'token','a',false).error);assert.ok(attendPreview(data,'token','next',true).error);assert.ok(completePreview(data,['token'],{token:0},true,now).error);data=attendPreview(data,'token','a',true).data;assert.equal(balance(data,'s1','HK1'),0);assert.ok(completePreview(data,['token'],{token:1},false,now).error);assert.ok(completePreview(data,['token','missing'],{token:1,missing:0},true,now).error);data=completePreview(data,['token'],{token:1},true,now).data;assert.equal(balance(data,'s1','HK1'),10);assert.ok(completePreview(data,['token'],{token:2},true,now).error);assert.equal(balance(data,'s1','HK1'),10)})
-test('UC-30 conversion counts pending against cap, is idempotent, and rejected transfer refunds once',()=>{let data=make();data.ledger=[{id:'seed',studentId:'s1',semester:'HK1',points:65,note:'done',at:now}];assert.equal(maxConversion(data,'s1','HK1'),5);assert.ok(convertPreview(data,'s1','HK1',1.5,'bad',now).error);assert.ok(convertPreview(data,'s1','HK1',6,'bad',now).error);data=convertPreview(data,'s1','HK1',5,'key',now).data;assert.equal(balance(data,'s1','HK1'),15);assert.equal(converted(data,'s1','HK1'),5);assert.equal(maxConversion(data,'s1','HK1'),0);assert.equal(convertPreview(data,'s1','HK1',5,'key',now).data,data);assert.ok(convertPreview(data,'s1','HK1',4,'key',now).error);const rejected=transferResultPreview(data,'key',false,now);assert.equal(balance(rejected,'s1','HK1'),65);assert.equal(transferResultPreview(rejected,'key',false,now),rejected);assert.equal(convertPreview(rejected,'s1','HK1',5,'key',now).data,rejected);assert.equal(maxConversion(rejected,'s1','HK1'),5);const confirmed=transferResultPreview(data,'key',true,now);assert.equal(balance(confirmed,'s1','HK1'),15);assert.equal(transferResultPreview(confirmed,'key',false,now),confirmed)})
-test('UC-30 certificates snapshot own completed activities only and remain pending; admin create validates dates/integers',()=>{let data=registerPreview(make(),'a','s1','Nam','token',now).data;assert.ok(certificatePreview(data,'s1','HK1','cert',now).error);data=attendPreview(data,'token','a',true).data;assert.ok(certificatePreview(data,'s1','HK1','cert',now).error);data=completePreview(data,['token'],{token:1},true,now).data;assert.ok(certificatePreview(data,'other','HK1','cert',now).error);data=certificatePreview(data,'s1','HK1','cert',now).data;assert.deepEqual(data.certificates[0].registrationIds,['token']);assert.equal(data.certificates[0].status,'PENDING');assert.equal(certificatePreview(data,'s1','HK1','cert',now).data,data);assert.ok(createActivityPreview(data,{...activity('new'),points:0},true,now).error);assert.ok(createActivityPreview(data,activity('new'),false,now).error);assert.ok(createActivityPreview(data,activity('new',now-1),true,now).error);assert.equal(createActivityPreview(data,activity('new'),true,now).data.activities.length,4)})
+import { parseActivities, parseRegistration, cancellationRequest, parsePoints, parseConversion, activityPayload, conversionPayload } from '../src/features/community/model.ts'
+const activity = { id: 71, semesterId: 8, title: 'Trồng cây', startAt: '2026-12-01T08:00:00+07:00', endAt: '2026-12-01T10:00:00+07:00', capacity: 20, remaining: 19, points: 10, status: 'MO_DANG_KY', version: 1 }
+test('activities use public numeric IDs and server capacity; inconsistent records are rejected', () => {
+  assert.deepEqual(parseActivities([activity]), [activity])
+  assert.throws(() => parseActivities([{ ...activity, remaining: 21 }]))
+  assert.throws(() => parseActivities([{ ...activity, id: 'ACT01' }]))
+})
+test('cancel endpoint uses registration ID, not public or internal activity ID', () => {
+  const receipt = parseRegistration({ id: 203, activityId: 'ACT_INTERNAL', status: 'REGISTERED', qrToken: 'signed-token', version: 2 })
+  assert.deepEqual(cancellationRequest(receipt), { path: 'activities/203/registrations', method: 'DELETE', body: { version: 2 } })
+  assert.throws(() => parseRegistration({ ...receipt, qrToken: null }))
+})
+test('points ledger supports debits; conversion respects authoritative pending-inclusive allowance', () => {
+  const points = parsePoints({ semesterId: 8, earned: 80, available: 40, convertedDrl: 4, ledger: [{ id: 3, delta: -40, kind: 'CONVERSION', time: '2026-10-03T10:00:00+07:00' }] })
+  assert.equal(points.ledger[0].delta, -40)
+  assert.deepEqual(conversionPayload(8, '1', points), { semesterId: 8, drl: 1 })
+  assert.throws(() => conversionPayload(8, '2', points))
+  assert.throws(() => conversionPayload(8, '1', { available: 9, convertedDrl: 0 }))
+})
+test('accepted conversion is pending, never assumed externally confirmed', () => {
+  const receipt = parseConversion({ id: 'request', status: 'PENDING', pointsSpent: 10, drl: 1, externalState: 'PENDING' })
+  assert.equal(receipt.externalState, 'PENDING')
+  assert.throws(() => parseConversion({ ...receipt, externalState: 'CONFIRMED' }))
+})
+test('create payload contains implemented fields only and validates integers/date order', () => {
+  assert.deepEqual(activityPayload('8', ' Trồng cây ', '2026-12-01T08:00', '2026-12-01T10:00', '20', '10'), { semesterId: 8, title: 'Trồng cây', startAt: activity.startAt, endAt: activity.endAt, capacity: 20, points: 10 })
+  assert.throws(() => activityPayload('8', 'A', '2026-12-01T08:00', '2026-12-01T10:00', '2.5', '10'))
+})

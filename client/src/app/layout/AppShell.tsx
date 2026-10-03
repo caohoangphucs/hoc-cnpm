@@ -8,12 +8,14 @@ import { useAuth } from '@/features/auth/context'
 import { asAuthError, type AuthError } from '@/features/auth/api'
 import { AuthFeedback } from '@/features/auth/AuthFeedback'
 import { Button } from '@/shared/components/Button'
+import { TwoFactorSetupDialog } from '@/features/auth/TwoFactorSetupDialog'
 
 export function AppShell({ workspace, preview = false }: { workspace: Workspace; preview?: boolean }) {
   const prefix = preview ? '/preview' : ''
   const { logout } = useAuth()
   const [signingOut, setSigningOut] = useState(false)
   const [logoutError, setLogoutError] = useState<AuthError | null>(null)
+  const [settingUp, setSettingUp] = useState(false)
   const { pathname } = useLocation()
   const mainRef = useRef<HTMLElement>(null)
   const drawerRef = useRef<HTMLDialogElement>(null)
@@ -109,6 +111,7 @@ export function AppShell({ workspace, preview = false }: { workspace: Workspace;
           </div>
           <div className="top-bar-end">
             <ThemeToggle />
+            {!preview && (workspace.id === 'admin' || workspace.id === 'accountant') && <Button variant="text" onClick={() => setSettingUp(true)} disabled={signingOut}>Thiết lập 2FA</Button>}
             {!preview && <Button variant="text" pending={signingOut} onClick={signOut} aria-label="Đăng xuất" className="shell-logout"><Icon name="logout" /><span>{signingOut ? 'Đang đăng xuất…' : 'Đăng xuất'}</span></Button>}
           </div>
         </header>
@@ -144,6 +147,7 @@ export function AppShell({ workspace, preview = false }: { workspace: Workspace;
         </div>
         <Navigation workspace={workspace} prefix={prefix} label="Tất cả mục điều hướng" onNavigate={closeDrawer} />
       </dialog>
+      {settingUp && <TwoFactorSetupDialog onClose={() => setSettingUp(false)} />}
     </div>
   )
 }

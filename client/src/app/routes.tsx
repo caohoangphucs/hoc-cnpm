@@ -14,11 +14,17 @@ import { BookingPage } from '@/features/booking/BookingPage'
 import { RegistrationReviewPage } from '@/features/registration-review/RegistrationReviewPage'
 import { InvoiceIssuancePage } from '@/features/invoice-issuance/InvoiceIssuancePage'
 import { PaymentsPage } from '@/features/payments/PaymentsPage'
-import { MaintenancePage } from '@/features/maintenance/MaintenancePage'
+import { MaintenancePage, StudentRepairsPage } from '@/features/maintenance/MaintenancePage'
+import { StudentVisitorDeclarationPage } from '@/features/gate/GatePage'
+import { AdminVisitorsPage } from '@/features/gate/VisitorList'
+import { EntryHistory } from '@/features/gate/EntryHistory'
+import { InvoiceList } from '@/features/invoice-issuance/InvoiceList'
+import { PaymentSessions } from '@/features/payments/PaymentsPage'
 import { featurePages, type FeaturePageModule } from './featurePages'
 
 const WorkspacePreview = import.meta.env.DEV ? lazy(() => import('./WorkspacePreview')) : null
-const pages = { 'admin/accounts': AccountsPage, 'admin/bookings': RegistrationReviewPage, 'student/stay': BookingPage, 'accountant/invoices': InvoiceIssuancePage, 'student/invoices': PaymentsPage, 'technician/repairs': MaintenancePage, ...featurePages(import.meta.glob<FeaturePageModule>('../features/*/route.tsx', { eager: true })) }
+function AdminInvoices() { return <InvoiceList manage /> }
+const pages = { 'admin/invoices': AdminInvoices, 'admin/visitors': AdminVisitorsPage, 'admin/repairs': MaintenancePage, 'admin/entries': EntryHistory, 'student/entries': EntryHistory, 'accountant/payments': PaymentSessions, 'admin/accounts': AccountsPage, 'admin/bookings': RegistrationReviewPage, 'student/stay': BookingPage, 'accountant/invoices': InvoiceIssuancePage, 'student/invoices': PaymentsPage, 'technician/repairs': MaintenancePage, 'student/repairs': StudentRepairsPage, 'student/visitors': StudentVisitorDeclarationPage, ...featurePages(import.meta.glob<FeaturePageModule>('../features/*/route.tsx', { eager: true })) }
 
 export default function AppRoutes() {
   return (

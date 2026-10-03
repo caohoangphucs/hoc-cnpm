@@ -1,8 +1,11 @@
-import test from 'node:test'
+import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import {approvalIssue} from '../src/features/registration-review/model.ts'
-test('UC-12 requires a pending unexpired hold, available profile and reviewer verification',()=>{
- const now=Date.parse('2026-10-03T08:00:00Z'), valid={status:'CHO_DUYET',expiresAt:new Date(now+1).toISOString(),bedStatus:'GIU_CHO',profile:'VALID',verified:true}
- assert.equal(approvalIssue(valid,now),'')
- for(const patch of [{status:'DA_DUYET'},{expiresAt:new Date(now).toISOString()},{bedStatus:'KHOA'},{bedStatus:'DANG_O'},{profile:'MISSING'},{verified:false}])assert.notEqual(approvalIssue({...valid,...patch},now),'')
+import { readJson } from '../src/shared/api/protocol.ts'
+import { parseBooking } from '../src/features/booking/api.ts'
+test('stale booking decision returns a conflict with a trace code, never a fabricated approval', async () => {
+  await assert.rejects(readJson(new Response(JSON.stringify({ code: 'VERSION_CONFLICT', requestId: 'trace-review' }), { status: 409 }), parseBooking), e => e.status === 409 && e.requestId === 'trace-review')
+})
+test('rejected booking retains the reason and missing-file state returned by the server', () => {
+  const record = parseBooking({ id: 4, bedId: 'G1', studentId: 'S1', status: 'TU_CHOI', expiresAt: '2026-10-04T10:00:00Z', profileState: 'MISSING', version: 2, fileIds: null, reason: 'Thiếu giấy tờ' })
+  assert.equal(record.status, 'TU_CHOI'); assert.equal(record.reason, 'Thiếu giấy tờ'); assert.deepEqual(record.fileIds, [])
 })

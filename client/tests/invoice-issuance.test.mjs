@@ -1,32 +1,17 @@
-import test from 'node:test'
+import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { calculateInvoice, dueDate, extraIssue, MAX_MONEY } from '../src/features/invoice-issuance/model.ts'
-const room = { id: 'A101', period: '2026-10', roomPrice: 500000, residents: [{ code: '02', name: 'B', discount: 0 }, { code: '01', name: 'A', discount: 50 }], electricity: { previous: 100, current: 120, rate: 3500 }, water: { previous: 10, current: 12, rate: 15000 } }
-test('UC-17 discounts only each resident room share and preserves utility charges', () => {
-  const bill = calculateInvoice(room, '2026-10', { amount: '10000', note: 'Thay khóa phòng' })
-  assert.equal(bill.issue, '')
-  assert.equal(bill.discount, 125000)
-  assert.equal(bill.electricity, 70000)
-  assert.equal(bill.water, 30000)
-  assert.equal(bill.total, 485000)
-  assert.equal(bill.shares[0].resident.code, '01')
-  const remainder = calculateInvoice({ ...room, roomPrice: 500003 }, '2026-10')
-  assert.deepEqual(remainder.shares.map(s => [s.roomFee, s.discount]), [[250002, 125001], [250001, 0]])
-  const fractional = calculateInvoice({ ...room, residents: [{ ...room.residents[0], discount: 0 }, { ...room.residents[1], discount: 12.5 }] }, '2026-10')
-  assert.equal(fractional.discount, 31250)
-  assert.equal(fractional.total, 568750)
+import { parseInvoice, parseDraft, parseIssue } from '../src/features/invoice-issuance/api.ts'
+const invoice = { id: 3, roomId: 'A101', month: '2026-10', lines: [{ name: 'Điện', quantity: 1.5, unitPrice: 3000, total: 4500 }], discount: 0, total: 4500, paid: 1000, balance: 3500, dueDate: '2026-10-15', status: 'TT_MOT_PHAN' }
+test('invoice preserves authoritative decimal quantities and balances', () => {
+  const r = parseInvoice(invoice)
+  assert.equal(r.lines[0].quantity, 1.5); assert.equal(r.balance, 3500)
+  assert.throws(() => parseInvoice({ ...invoice, balance: -1 }))
+  assert.throws(() => parseInvoice({ ...invoice, dueDate: '2026-02-30' }))
 })
-test('UC-17 rejects missing, negative, duplicate, stale-period and overflowing input', () => {
-  for (const patch of [{ issued: true }, { residents: [] }, { residents: [room.residents[0], room.residents[0]] }, { electricity: { ...room.electricity, current: null } }, { water: { ...room.water, current: 9 } }, { electricity: { previous: 0, current: MAX_MONEY, rate: MAX_MONEY } }, { roomPrice: 0.5 }, { residents: [{ ...room.residents[0], discount: 101 }] }]) {
-    assert.notEqual(calculateInvoice({ ...room, ...patch }, '2026-10').issue, '')
-  }
-  assert.notEqual(calculateInvoice(room, '2026-11').issue, '')
-  assert.notEqual(extraIssue({ amount: '1', note: '  ' }), '')
-  for (const amount of ['-1', '1.5', '1e3', '', '1000000000000000']) assert.notEqual(extraIssue({ amount, note: 'Fee' }), '')
-  assert.equal(extraIssue({ amount: '0', note: '' }), '')
+test('draft warnings, input hash and version remain linked to the server snapshot', () => {
+  const r = parseDraft({ id: 'draft-uuid', version: 2, month: '2026-10', inputHash: 'hash', rooms: [{ roomId: 'A101', oldElectricity: 1, newElectricity: 2, oldWater: 1, newWater: 2, electricityPrice: 3000, waterPrice: 1000, roomPrice: 100000, discount: 0, extras: 0, total: 104000, warnings: ['READING_MISSING'] }] })
+  assert.equal(r.version, 2); assert.deepEqual(r.rooms[0].warnings, ['READING_MISSING']); assert.equal(r.inputHash, 'hash')
 })
-test('UC-17 due dates add 15 Vietnam calendar days across month and year boundaries', () => {
-  assert.equal(dueDate(Date.parse('2026-10-03T16:59:59Z')), '2026-10-18')
-  assert.equal(dueDate(Date.parse('2026-10-03T17:00:00Z')), '2026-10-19')
-  assert.equal(dueDate(Date.parse('2026-12-31T18:00:00Z')), '2027-01-16')
+test('issuance displays the actual per-room results, including unsuccessful rooms', () => {
+  assert.deepEqual(parseIssue([{ roomId: 'A101', status: 'SUCCESS', invoiceId: '3', message: 'Invoice issued' }, { roomId: 'B101', status: 'FAILED', invoiceId: null, message: 'failed' }]).map(r => r.invoiceId), ['3', null])
 })
