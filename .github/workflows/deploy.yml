@@ -45,6 +45,29 @@ jobs:
           psql -v ON_ERROR_STOP=1 --single-transaction -f database/01_schema.sql
           psql -v ON_ERROR_STOP=1 --single-transaction -f database/02_seed.sql
           test "$(psql -Atc "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' AND table_name NOT LIKE 'svc_%'")" = 27
+      - name: Verify additive migration upgrades the existing database schema
+        run: |
+          psql -v ON_ERROR_STOP=1 --single-transaction <<'SQL'
+          DROP TABLE IF EXISTS svc_certificate, svc_conversion, svc_appeal, svc_discipline_decision,
+            svc_visitor, svc_gate_event, svc_card, svc_purchase_request, svc_repair_history,
+            svc_repair_assignment, svc_payment_callback, svc_payment_allocation, svc_payment_session,
+            svc_room_extra, svc_invoice_snapshot, svc_invoice_draft, svc_outbox, svc_idempotency,
+            svc_contract, svc_profile, svc_file, svc_repair_files, svc_room_price CASCADE;
+          ALTER TABLE hoc_ky DROP COLUMN IF EXISTS public_id;
+          ALTER TABLE hoat_dong DROP COLUMN IF EXISTS public_id, DROP COLUMN IF EXISTS version;
+          ALTER TABLE giuong DROP COLUMN IF EXISTS version;
+          ALTER TABLE dang_ky_phong DROP COLUMN IF EXISTS version;
+          ALTER TABLE yeu_cau_sua_chua DROP COLUMN IF EXISTS version;
+          ALTER TABLE vi_pham DROP COLUMN IF EXISTS version;
+          ALTER TABLE dang_ky_cong_ich DROP COLUMN IF EXISTS version;
+          ALTER TABLE dang_ky_cong_ich ADD CONSTRAINT uq_sv_hoatdong UNIQUE (mahoatdong,masinhvien);
+          DROP INDEX IF EXISTS svc_active_student, svc_active_bed, svc_pending_booking,
+            svc_active_community, svc_earned_once;
+          SQL
+          psql -v ON_ERROR_STOP=1 --single-transaction -f database/migrations/V20261004__service_runtime_schema.sql
+          psql -v ON_ERROR_STOP=1 --single-transaction -f database/migrations/V20261004__service_runtime_schema.sql
+          test "$(psql -Atc "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name LIKE 'svc_%'")" = 23
+          test "$(psql -Atc "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='public' AND ((table_name IN ('giuong','dang_ky_phong','yeu_cau_sua_chua','vi_pham','hoat_dong','dang_ky_cong_ich') AND column_name='version') OR (table_name IN ('hoc_ky','hoat_dong') AND column_name='public_id'))")" = 8
       - name: Build backend and run Java unit tests
         run: docker build --target build -t "cnpm-server-build:$CI_SHA" server
       - name: Run controller tests with MockMvc (no real HTTP or database)

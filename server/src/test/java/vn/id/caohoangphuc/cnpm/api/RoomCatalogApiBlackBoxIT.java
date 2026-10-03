@@ -120,6 +120,21 @@ class RoomCatalogApiBlackBoxIT {
     }
 
     @Test
+    void studentCanReadBedsForRoomA101OverHttp() throws Exception {
+        var student = login("sv001");
+        var response = send(student.client(), HttpRequest.newBuilder(uri(
+                        ApiRoutes.ROOM_BEDS.replace("{id}", "A-101") + "?page=1&pageSize=20"))
+                .GET().build());
+
+        assertEquals(200, response.statusCode(), response.body());
+        var beds = json.readTree(response.body());
+        assertEquals(1, beds.path("page").asInt());
+        assertEquals(20, beds.path("pageSize").asInt());
+        assertTrue(beds.path("items").isArray());
+        assertTrue(beds.path("total").asLong() >= beds.path("items").size());
+    }
+
+    @Test
     void accountingRoleCannotReadRoomCatalogue() throws Exception {
         var accountant = login("ketoan1");
         var response = send(accountant.client(), HttpRequest.newBuilder(uri(ApiRoutes.ROOMS))

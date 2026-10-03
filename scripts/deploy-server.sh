@@ -44,12 +44,16 @@ rollback() {
   exit "$code"
 }
 trap rollback ERR
-# Keep the additive auth schema change in step with the backend image.
-echo "Applying database migration V20261003__add_totp_secret.sql"
-docker exec "$database_container" pg_isready -U "$database_user" -d "$database_name"
-docker exec -i "$database_container" psql -X -v ON_ERROR_STOP=1 --single-transaction \
-  -U "$database_user" -d "$database_name" \
-  < "$repo_dir/database/migrations/V20261003__add_totp_secret.sql"
+# Apply non-destructive database migrations before starting code that uses them.
+for migration in \
+  V20261003__add_totp_secret.sql \
+  V20261004__service_runtime_schema.sql; do
+  echo "Applying database migration $migration"
+  docker exec "$database_container" pg_isready -U "$database_user" -d "$database_name"
+  docker exec -i "$database_container" psql -X -v ON_ERROR_STOP=1 --single-transaction \
+    -U "$database_user" -d "$database_name" \
+    < "$repo_dir/database/migrations/$migration"
+done
 printf 'SERVER_IMAGE=%s\nCLIENT_IMAGE=%s\n' "$server_image" "$client_image" > "$release.tmp"
 mv "$release.tmp" "$release"
 compose "$release"
