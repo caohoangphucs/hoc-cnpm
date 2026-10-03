@@ -1,5 +1,6 @@
 @import './tokens.css';
 @import './layout.css';
+@import './auth.css';
 
 :root {
   font-family: var(--app-font);
@@ -13,7 +14,7 @@
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; }
 body:has(dialog[open]) { overflow: hidden; }
-button, select { font: inherit; }
+button, select, input { font: inherit; }
 button, a, select { -webkit-tap-highlight-color: transparent; }
 button { cursor: pointer; }
 a { color: inherit; text-decoration: none; }
@@ -22,7 +23,7 @@ h1 { font: var(--app-type-headline); letter-spacing: -0.012em; }
 h2 { font: var(--app-type-title); }
 h3 { font: var(--app-type-title-small); }
 p { font: var(--app-type-body); }
-:where(a, button, select, [tabindex]):focus-visible {
+:where(a, button, select, input, [tabindex]):focus-visible {
   outline: 3px solid var(--md-sys-color-primary);
   outline-offset: 4px;
 }

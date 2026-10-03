@@ -8,17 +8,31 @@ Thư mục giao diện chính của KTX Smart Hub, lựa chọn **React + TypeSc
 
 ### Khung giao diện và điều hướng
 
-- `/` chuyển đến `/student`. Các không gian: `/student`, `/admin`, `/accountant`, `/technician`, `/security`.
+- `/` đọc phiên và chuyển đến đăng nhập, 2FA hoặc không gian đúng vai trò. Các không gian: `/student`, `/admin`, `/accountant`, `/technician`, `/security`.
 - Cấu hình menu tập trung tại `src/app/navigation.ts`, theo chức năng trong Phần II của `TODO.md`. Route và thẻ truy cập nhanh dùng cùng cấu hình này.
 - `AppShell` giữ bố cục; các route con render qua `Outlet`. `FeatureFrame` là vùng chờ để thay bằng trang nghiệp vụ ở những nhánh tiếp theo.
 - Trên 960px: drawer cố định rộng 280px. Từ 960px trở xuống: mở drawer modal bằng nút menu trên app bar. Mô hình này bám theo mẫu Admin/Sinh viên người dùng cung cấp.
 - Có active state/`aria-current`, skip link, focus vào nội dung khi chuyển trang, đóng drawer bằng Escape và phục hồi focus. Theme khởi đầu theo hệ điều hành; nút sáng/tối trên thanh trên lưu lựa chọn vào trình duyệt; tôn trọng reduced motion.
-- Kiểm tra từng vai trò qua các đường dẫn `/student`, `/admin`, `/accountant`, `/technician`, `/security`. Các route hiện chưa bảo vệ bằng session; bước auth sẽ lấy vai trò từ backend và thêm route guard.
+- Các route theo vai trò được bảo vệ bằng session do backend trả về. ADMIN/KETOAN phải hoàn tất 2FA; truy cập không gian khác chuyển về không gian được cấp quyền. Guard phía client phục vụ điều hướng; backend vẫn phải kiểm quyền cho từng API.
 - Theme nằm tại `src/theme/tokens.css`, `global.css`, `layout.css`, `theme.ts`; component dùng chung gồm `Icon`, `PageHeader`, `ThemeToggle`. Palette xanh dương `#00658f`, nền xám lạnh, menu pill và viền/bóng card dựa trên hai mẫu HTML/CSS Admin/Sinh viên do người dùng cung cấp. Google Sans/Roboto tải từ Google Fonts theo link trong mẫu Admin; có fallback hệ thống khi không tải được font. Các SVG filled dùng lại path từ mẫu cho những biểu tượng tương ứng. Chưa thêm thư viện UI hoặc dependencies mới.
 
 Đã kiểm tra khung layout trên dev và production preview: route theo 5 vai trò, responsive từ 320 đến 1600px, active state, drawer/Tab/Escape/focus, trang 404, theme sáng/tối và reduced motion. Lint, typecheck, build đều đạt. Sau khi chỉnh theo mẫu, đối chiếu lại font, sidebar, app bar và card ở desktop/mobile. Đây là kiểm tra khung giao diện, chưa kiểm thử API hoặc xác thực.
 
 Backend mới nằm trong server/, dùng Spring Boot/JAR và PostgreSQL. API JSON đích dưới /api/v1; các endpoint nghiệp vụ/auth chưa triển khai. Nginx proxy cùng origin và /api/health kiểm readiness thật.
+
+### Giao diện xác thực
+
+- `/login`: tên đăng nhập/mật khẩu, hiện/ẩn mật khẩu, lỗi tại trường, trạng thái đang gửi và lỗi dịch vụ.
+- `/login/2fa`: một trường mã 6 chữ số hỗ trợ dán mã/autofill, xác minh và dùng tài khoản khác qua logout. Không tạo nút gửi lại mã vì contract chưa có endpoint đó.
+- `/login/help`: hướng dẫn liên hệ Ban quản lý khi quên mật khẩu hoặc mất mã. Chưa triển khai OTP email/reset token của UC-16 vì chưa có contract API khôi phục.
+- `AuthProvider` khôi phục session khi mở trang, đọc lại khi quay lại tab, đến hạn phiên hoặc API nghiệp vụ trả 401. Khi chưa xác định được phiên, nội dung được bảo vệ không render; người dùng có thể thử kết nối lại.
+- Gọi `GET /api/v1/auth/session` để lấy CSRF mới trước `POST /auth/login`, `/auth/2fa`, `/auth/logout`. Gửi cookie qua `credentials: include`; token CSRF/role chỉ giữ trong bộ nhớ, mật khẩu/mã không lưu vào browser storage. Theme sáng/tối là lựa chọn duy nhất lưu ở localStorage.
+- Giữ đường dẫn đích trong router state để trở lại sau đăng nhập/2FA, chỉ chấp nhận đường dẫn trong không gian của vai trò server trả về.
+- Style dùng chung Google Sans/Roboto, palette xanh dương, token surface/shape của layout; bổ sung token error cho light/dark. Nginx CSP cho phép đúng hai origin Google Fonts cần cho font của mẫu.
+
+Backend hiện chỉ có nền tảng dữ liệu/Security và chưa expose `/auth/*`. Frontend đã nối theo contract trong `docs/demo/api/`, nhưng chưa thể đăng nhập thật khi chưa có các endpoint. Không có tài khoản giả hay tùy chọn bỏ qua guard trong sản phẩm. Kiểm thử luồng giao diện dùng response mô phỏng trong trình duyệt; không thay cho kiểm thử tích hợp backend.
+
+Đã kiểm tra login/2FA/logout cho 5 vai trò, CSRF, guard, lỗi HTTP/kết nối, session sai định dạng, phiên hết hạn, chống submit trùng, responsive light/dark từ 320 đến 1440px. `pnpm test` kiểm tra role/session/đường dẫn đích và health; dùng native TypeScript stripping của Node với cờ `--experimental-strip-types`, không thêm test runner hoặc browser dependency vào client.
 
 ## 1. Công nghệ và môi trường
 
@@ -97,7 +111,7 @@ Proxy dev đã được cấu hình:
 
 Chi tiết session, 2FA, CSRF và quyền truy cập nằm trong [API và phân quyền](../docs/demo/API_VA_PHAN_QUYEN.md); endpoint được liệt kê tại [danh mục API](../docs/demo/api/README.md).
 
-Luồng lấy/lưu token CSRF, login, 2FA và bảo vệ route chưa triển khai. Trang khởi đầu chưa gọi backend. Khi deploy với `BrowserRouter`, máy chủ phục vụ frontend cần fallback các route giao diện về `index.html`, đồng thời giữ `/api/v1` đi tới backend.
+Luồng session, CSRF, login, 2FA, logout và bảo vệ route đã có ở frontend; chờ endpoint backend để kiểm thử tích hợp thật. Khi deploy với `BrowserRouter`, máy chủ phục vụ frontend cần fallback các route giao diện về `index.html`, đồng thời giữ `/api/v1` đi tới backend.
 
 ## 5. Lint, kiểm tra kiểu, build và preview
 
@@ -108,6 +122,7 @@ Các lệnh dưới đây đã có trong `package.json`, chạy trong `client/`:
 | `pnpm run dev` | Chạy Vite dev server |
 | `pnpm run lint` | ESLint; warning cũng làm lệnh thất bại |
 | `pnpm run typecheck` | `tsc -b --noEmit`, kiểm tra TypeScript |
+| `pnpm test` | Kiểm thử session, vai trò, đường dẫn đích và health bằng Node test runner |
 | `pnpm run build` | `tsc -b && vite build` |
 | `pnpm run preview` | Xem bản build local |
 
