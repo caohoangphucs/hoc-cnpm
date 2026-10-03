@@ -52,33 +52,11 @@ FROM hoa_don h WHERE h.mahoadon=?
     return rows.isEmpty() ? null : rows.get(0);
   }
 
-  /** Checks the resident list captured when the bill was issued; legacy bills use residency dates. */
+  /** Áp dụng cùng quyền hóa đơn với API đọc để không cấp quyền thanh toán phòng khác. */
   public boolean belongsToStudent(int invoiceId, String studentId) {
-    return Boolean.TRUE.equals(
-        jdbc.queryForObject(
-            """
-            SELECT EXISTS (
-              SELECT 1
-              FROM svc_invoice_snapshot snap,
-                   jsonb_array_elements(snap.inputs->'occupants') occupant
-              WHERE snap.invoice_id=? AND occupant->>'studentId'=?
-              UNION ALL
-              SELECT 1
-              FROM hoa_don h
-              JOIN giuong g ON g.maphong=h.maphong
-              JOIN luu_tru l ON l.magiuong=g.magiuong
-              WHERE h.mahoadon=? AND l.masinhvien=?
-                AND l.ngaybatdau <=
-                    (to_date(h.kythang || '-01','YYYY-MM-DD') + INTERVAL '1 month - 1 day')::date
-                AND (l.ngayketthuc IS NULL OR
-                     l.ngayketthuc >= to_date(h.kythang || '-01','YYYY-MM-DD'))
-            )
-            """,
-            Boolean.class,
-            invoiceId,
-            studentId,
-            invoiceId,
-            studentId));
+    return Boolean.TRUE.equals(jdbc.queryForObject(
+        "SELECT EXISTS (SELECT 1 FROM hoa_don i WHERE i.mahoadon=? AND "
+            + InvoiceRepository.STUDENT_VISIBILITY + ")", Boolean.class, invoiceId, studentId));
   }
 
   /** Tạo phiên thanh toán mới và trả lại phiên đã khóa. */

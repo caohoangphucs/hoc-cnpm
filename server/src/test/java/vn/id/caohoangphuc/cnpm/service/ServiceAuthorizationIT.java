@@ -52,6 +52,15 @@ class ServiceAuthorizationIT {
         assertForbidden(() -> payments.payableInvoices(GUARD, List.of(1L)));
     }
 
+    /** Reading and payment use the same legacy room permission; another room remains forbidden. */
+    @Test
+    void legacyResidentPaymentLookupMatchesInvoiceVisibility() {
+        assertEquals(2, payments.payableInvoices(STUDENT, List.of(2L)).get(0).id());
+        var error = assertThrows(ServiceException.class,
+                () -> payments.payableInvoices(STUDENT, List.of(1L)));
+        assertEquals(404, error.getStatus());
+    }
+
     @Test
     void uc22RepairCreationRejectsAUserOutsideStudentRole() {
         assertForbidden(() -> repairs.create(GUARD, request(),

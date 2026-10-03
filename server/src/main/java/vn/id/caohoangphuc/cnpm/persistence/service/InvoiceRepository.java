@@ -251,26 +251,53 @@ VALUES(?,?,?,?,?,?,?,?,?,'CHUA_TT') RETURNING mahoadon
     jdbc.queryForList("SELECT maphong FROM phong WHERE maphong=? FOR UPDATE", roomId);
   }
 
-  /** Returns an invoice page, restricted to rooms the student occupied during that month. */
+  /** Dùng cùng một điều kiện quyền cho danh sách, chi tiết và thanh toán hóa đơn. */
+  static final String STUDENT_VISIBILITY = """
+      EXISTS (
+        SELECT 1 FROM sinh_vien s WHERE s.masinhvien=? AND (
+          EXISTS (
+            SELECT 1 FROM svc_invoice_snapshot snap,
+                 jsonb_array_elements(snap.inputs->'occupants') occupant
+            WHERE snap.invoice_id=i.mahoadon AND occupant->>'studentId'=s.masinhvien
+          )
+          OR (
+            NOT EXISTS (SELECT 1 FROM svc_invoice_snapshot snap WHERE snap.invoice_id=i.mahoadon)
+            AND (
+              EXISTS (
+                SELECT 1 FROM luu_tru l JOIN giuong g USING(magiuong)
+                WHERE l.masinhvien=s.masinhvien AND g.maphong=i.maphong
+                  AND l.ngaybatdau <=
+                      (to_date(i.kythang || '-01','YYYY-MM-DD') + interval '1 month - 1 day')::date
+                  AND (l.ngayketthuc IS NULL OR
+                       l.ngayketthuc>=to_date(i.kythang || '-01','YYYY-MM-DD'))
+              )
+              OR (
+                NOT EXISTS (SELECT 1 FROM luu_tru history WHERE history.masinhvien=s.masinhvien)
+                AND s.trangthai='DANG_O' AND s.maphonghientai=i.maphong
+              )
+            )
+          )
+        )
+      )
+      """;
+
+  /** Liệt kê hóa đơn được phép xem; dữ liệu cũ chưa có lịch sử dùng phòng hiện tại. */
   public InvoicePage invoices(String studentId, int page, int size) {
-    String visibility = studentId == null ? "" : "AND EXISTS (SELECT 1 FROM luu_tru l JOIN giuong g USING(magiuong) "
-        + "WHERE l.masinhvien=? AND g.maphong=i.maphong AND l.ngaybatdau<= "
-        + "(to_date(i.kythang || '-01','YYYY-MM-DD') + interval '1 month - 1 day')::date "
-        + "AND (l.ngayketthuc IS NULL OR l.ngayketthuc>=to_date(i.kythang || '-01','YYYY-MM-DD')))";
+    String visibility = studentId == null ? "" : " AND " + STUDENT_VISIBILITY;
     var args = new java.util.ArrayList<Object>();
-    if (studentId != null) args.add(studentId);
+    if (studentId != null) {
+      args.add(studentId);
+    }
+
     args.add(size);
     args.add((page - 1) * size);
     var ids = jdbc.query("SELECT i.mahoadon FROM hoa_don i WHERE true " + visibility
             + " ORDER BY i.ngayphathanh DESC,i.mahoadon DESC LIMIT ? OFFSET ?",
         (r, n) -> r.getInt(1), args.toArray());
-    long total;
-    if (studentId == null) {
-      total = jdbc.queryForObject("SELECT count(*) FROM hoa_don", Long.class);
-    } else {
-      total = jdbc.queryForObject("SELECT count(*) FROM hoa_don i WHERE true " + visibility,
-          Long.class, studentId);
-    }
+    long total = studentId == null
+        ? jdbc.queryForObject("SELECT count(*) FROM hoa_don", Long.class)
+        : jdbc.queryForObject("SELECT count(*) FROM hoa_don i WHERE " + STUDENT_VISIBILITY,
+            Long.class, studentId);
     return new InvoicePage(ids.stream().map(this::invoiceResource).toList(), total);
   }
 
@@ -286,16 +313,11 @@ VALUES(?,?,?,?,?,?,?,?,?,'CHUA_TT') RETURNING mahoadon
     return rows.isEmpty() ? null : rows.get(0);
   }
 
-  /** Verifies that a student occupied the invoiced room during the invoice month. */
+  /** Kiểm tra snapshot trước, sau đó lịch sử; chỉ dùng phòng hiện tại khi chưa có cả hai. */
   public boolean visibleToStudent(int id, String studentId) {
-    Integer count = jdbc.queryForObject("""
-        SELECT count(*) FROM hoa_don i JOIN giuong g ON g.maphong=i.maphong
-        JOIN luu_tru l ON l.magiuong=g.magiuong
-        WHERE i.mahoadon=? AND l.masinhvien=?
-          AND l.ngaybatdau<=(to_date(i.kythang || '-01','YYYY-MM-DD') + interval '1 month - 1 day')::date
-          AND (l.ngayketthuc IS NULL OR l.ngayketthuc>=to_date(i.kythang || '-01','YYYY-MM-DD'))
-        """, Integer.class, id, studentId);
-    return count != null && count > 0;
+    return Boolean.TRUE.equals(jdbc.queryForObject(
+        "SELECT EXISTS (SELECT 1 FROM hoa_don i WHERE i.mahoadon=? AND "
+            + STUDENT_VISIBILITY + ")", Boolean.class, id, studentId));
   }
 
   /** Reads itemized charges for a single invoice. */
