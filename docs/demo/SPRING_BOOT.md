@@ -36,7 +36,7 @@ Giữ package gốc vn.id.caohoangphuc.cnpm; KtxApplication đặt tại gốc �
 | CommunityServlet đề xuất — UC30 | CommunityController → CommunityService → CommunityRepository |
 | AuthServlet/AccountDAO | AuthController + SecurityFilterChain → AuthenticationManager/UserDetailsService → AccountRepository |
 
-Legacy được ghi trong bảng để đối chiếu; các Service/Controller ở sequence/class vẫn là thiết kế đích, chưa triển khai trong server/src. React gọi JSON/API cùng origin qua Nginx; không dùng JSP/Thymeleaf.
+Legacy được ghi trong bảng để đối chiếu. Tầng service/repository Java theo 8 UC hiện nằm trong `server/src/main/java/.../service` và `persistence/service`; các sequence/class vẫn là nguồn quy tắc nghiệp vụ. Controller, auth HTTP và React API integration chưa có. Khi bổ sung, React sẽ gọi JSON/API cùng origin qua Nginx; không dùng JSP/Thymeleaf.
 
 ## Transaction và gọi PostgreSQL
 

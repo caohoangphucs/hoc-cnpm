@@ -2,7 +2,7 @@
 
 ## Cấu hình hiện hành
 
-Ứng dụng chỉ dùng PostgreSQL **16**. Nguồn schema/seed: `database/01_schema.sql` và `database/02_seed.sql`. Schema có 27 bảng, 5 view, 1 function đăng nhập và 9 procedure.
+Ứng dụng chỉ dùng PostgreSQL **16**. Nguồn schema/seed: `database/01_schema.sql` và `database/02_seed.sql`. Schema giữ 27 bảng nghiệp vụ lõi, thêm các bảng `svc_*` làm storage cho service Java, cùng 5 view, 1 function đăng nhập và 9 procedure legacy. Service cho 8 UC không gọi các procedure nghiệp vụ legacy.
 
 | Môi trường | Host | Port | Database/user mặc định |
 |---|---|---|---|
