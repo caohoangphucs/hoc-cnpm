@@ -30,7 +30,7 @@ và thông báo là nghiệp vụ hỗ trợ. Các nhánh chính sách, khách t
 
 ## Khoảng cách triển khai
 
-Bảng dưới lưu đối chiếu nền Servlet/JSP tại **0c08ae7**, không phải inventory code hiện hành; tên procedure trong bảng chỉ thuộc snapshot lịch sử đó. Nền mới nằm trong server/ và client/. Tầng service/repository Java cho 8 UC đã có; Controller/API và UI nghiệp vụ chưa triển khai. Mapping đích trong SPRING_BOOT.md.
+Bảng dưới lưu đối chiếu nền Servlet/JSP tại **0c08ae7**, không phải inventory code hiện hành; tên procedure trong bảng chỉ thuộc snapshot lịch sử đó. Nền mới nằm trong server/ và client/. Tầng service/repository Java cho 8 UC đã có; API đang được nối từng phần: auth handlers và `POST /bookings` đã bắt đầu, UC khác và UI nghiệp vụ còn thiếu. Mapping đích trong SPRING_BOOT.md.
 Có nền mã/SQL không đồng nghĩa đã kiểm thử hay nghiệm thu.
 
 | UC | Nền hiện có | Cần hoàn thiện theo SRS |
@@ -46,7 +46,7 @@ Có nền mã/SQL không đồng nghĩa đã kiểm thử hay nghiệm thu.
 
 Các điểm phải xử lý trước demo ứng dụng:
 
-- Auth chưa có 2FA; bổ sung kiểm tra quyền server. AccountDAO chỉ dùng BCrypt hợp lệ và từ chối hash hỏng.
+- 2FA chưa có nơi lưu secret TOTP; middleware chặn ADMIN/KETOAN khỏi API nghiệp vụ cho tới khi cấu hình xong. Account auth dùng BCrypt và từ chối hash hỏng.
 - rooms.jsp sinh cố định 4 lựa chọn giường, chưa lọc theo trạng thái giường.
 - StudentServlet ghi báo hỏng bằng SQL trực tiếp và ID mặc định khi session
   thiếu: đưa xuống DAO, kiểm tra lưu trú thực tế.

@@ -37,6 +37,6 @@ không được mô tả là chức năng đã chạy.
   lũy tiến vào phạm vi demo vì TODO hiện có yêu cầu rộng hơn đặc tả cũ.
 - SRS cũ gọi cấp giấy xác nhận và quy đổi điểm là nhánh UC-30.
   Hai nhánh này được giữ trong UC-30, không tính thành UC demo thứ 9 và 10.
-- Tên function/procedure legacy có sẵn được lấy từ `database/01_schema.sql`; chúng không được service 8 UC gọi. Schema hiện không có trigger gán giường hay trigger tạo vi phạm; quy tắc và cập nhật 8 UC nằm trong Java service/repository SQL.
+- Schema hiện hành `database/01_schema.sql` không còn định nghĩa function/procedure nghiệp vụ; các nhãn procedure trong tài liệu cũ chỉ là tham chiếu lịch sử. Schema hiện không có trigger gán giường hay trigger tạo vi phạm; quy tắc và cập nhật 8 UC nằm trong Java service/repository SQL.
 
 Quyết định thiết kế cuối: [quy tắc nghiệp vụ](QUY_TAC_NGHIEP_VU.md).

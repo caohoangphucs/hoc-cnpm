@@ -2,7 +2,7 @@
 
 ## Cấu hình hiện hành
 
-Ứng dụng chỉ dùng PostgreSQL **16**. Nguồn schema/seed: `database/01_schema.sql` và `database/02_seed.sql`. Schema giữ 27 bảng nghiệp vụ lõi, thêm các bảng `svc_*` làm storage cho service Java, cùng 5 view, 1 function đăng nhập và 9 procedure legacy. Service cho 8 UC không gọi các procedure nghiệp vụ legacy.
+Ứng dụng chỉ dùng PostgreSQL **16**. Nguồn schema/seed: `database/01_schema.sql` và `database/02_seed.sql`. Schema có 27 bảng nghiệp vụ lõi, các bảng `svc_*` làm storage cho service Java và 5 view. Không định nghĩa function/procedure nghiệp vụ; đăng nhập truy vấn tài khoản trực tiếp bằng repository Java.
 
 | Môi trường | Host | Port | Database/user mặc định |
 |---|---|---|---|
@@ -15,7 +15,7 @@ Compose đọc `.env` với PORT_WEB, PORT_DB, DB_NAME, DB_USER, DB_PASS; truy�
 
 Java chạy host không tự đọc `.env`; cần export DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS. DBContext mặc định host localhost:54321, trong container cnpm-db:5432; CI/CD truyền giá trị tường minh. JDBC URL: `jdbc:postgresql://HOST:PORT/DB`. HikariCP dùng timezone Asia/Ho_Chi_Minh.
 
-Function đăng nhập và 9 procedure còn trong schema là thành phần legacy; service của 8 UC không gọi chúng. CI có thể giữ kiểm tra tương thích riêng cho schema cũ, không coi đó là cách triển khai nghiệp vụ mới. Tài khoản demo dùng BCrypt tương thích thư viện Java cho 123456; hash hỏng/mật khẩu sai bị từ chối. SERIAL được đồng bộ sau toàn bộ seed.
+Service Java xử lý nghiệp vụ; repository chạy SQL trực tiếp bằng JdbcTemplate. Integration test xác nhận schema không còn routine `usp_*`. Tài khoản demo dùng BCrypt tương thích thư viện Java cho 123456; hash hỏng/mật khẩu sai bị từ chối. SERIAL được đồng bộ sau toàn bộ seed.
 
 ## Khởi tạo và cập nhật SQL
 

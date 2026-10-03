@@ -3,7 +3,7 @@
   "info": {
     "title": "KTX demo 8 UC — Spring Boot / PostgreSQL",
     "version": "1.1.0",
-    "description": "Thiết kế đích Spring Boot4.1.1, Spring Security session+CSRF, Spring JDBC. Chưa triển khai."
+    "description": "API Spring Boot 4.1.1 / PostgreSQL. Auth routes and POST /bookings have initial handlers; the remaining 8 UC operations are API contracts awaiting controllers. TOTP verification is unavailable until account secrets can be enrolled safely."
   },
   "servers": [
     {
