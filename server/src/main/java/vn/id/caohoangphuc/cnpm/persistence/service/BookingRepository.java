@@ -120,9 +120,11 @@ FROM dot_dang_ky d JOIN hoc_ky h USING(mahocky) WHERE d.madot=?
         SELECT d.madangky,d.magiuong,d.masinhvien,d.trangthai,d.ngayhethan,
                COALESCE(p.state,'PENDING'),COALESCE(p.file_ids::text,'[]'),d.version,d.ghichulydo
         FROM dang_ky_phong d LEFT JOIN svc_profile p ON p.booking_id=d.madangky
-        WHERE (? IS NULL OR d.masinhvien=?) ORDER BY d.ngaydangky DESC,d.madangky DESC LIMIT ? OFFSET ?
+        WHERE (CAST(? AS varchar) IS NULL OR d.masinhvien=?)
+        ORDER BY d.ngaydangky DESC,d.madangky DESC LIMIT ? OFFSET ?
         """, (rs, n) -> bookingResource(rs), studentId, studentId, size, (page - 1) * size);
-    Long total = jdbc.queryForObject("SELECT count(*) FROM dang_ky_phong WHERE (? IS NULL OR masinhvien=?)",
+    Long total = jdbc.queryForObject(
+        "SELECT count(*) FROM dang_ky_phong WHERE (CAST(? AS varchar) IS NULL OR masinhvien=?)",
         Long.class, studentId, studentId);
     return new BookingPage(items, total == null ? 0 : total);
   }
