@@ -5,13 +5,14 @@ import { workspaces } from './navigation'
 import { OverviewPage } from './pages/OverviewPage'
 import { FeatureFrame } from './pages/FeatureFrame'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { featurePages, type FeaturePageModule } from './featurePages'
 const Accounts = lazy(()=>import('@/features/accounts/AccountsPreview').then(module=>({default:module.PreviewAccounts})))
 const Booking = lazy(()=>import('@/features/booking/BookingPreview').then(module=>({default:module.PreviewRegistration})))
 const Registration = lazy(()=>import('@/features/registration-review/RegistrationReviewPreview'))
 const InvoiceIssuance = lazy(()=>import('@/features/invoice-issuance/InvoiceIssuancePreview'))
 const Payments = lazy(()=>import('@/features/payments/PaymentsPreview'))
 const Maintenance = lazy(()=>import('@/features/maintenance/MaintenancePreview'))
-const pages = { 'admin/accounts': Accounts, 'student/stay': Booking, 'admin/bookings': Registration, 'accountant/invoices': InvoiceIssuance, 'student/invoices': Payments, 'technician/repairs': Maintenance }
+const pages = { 'admin/accounts': Accounts, 'student/stay': Booking, 'admin/bookings': Registration, 'accountant/invoices': InvoiceIssuance, 'student/invoices': Payments, 'technician/repairs': Maintenance, ...featurePages(import.meta.glob<FeaturePageModule>('../features/*/preview-route.tsx', { eager: true })) }
 export default function WorkspacePreview() {
   const {workspaceId}=useParams(), workspace=workspaces.find(w=>w.id===workspaceId)
   if(!workspace)return <NotFoundPage standalone />
