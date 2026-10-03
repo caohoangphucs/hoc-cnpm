@@ -3,80 +3,59 @@ import { Button } from '@/shared/components/Button'
 import { TextField } from '@/shared/components/TextField'
 import { Icon } from '@/shared/components/Icon'
 import { DataTable, Facts, Feedback, NotesField, SelectField, Status, Summary, WorkflowPage } from '@/shared/workflow/Workflow'
-import { useClock, usePreviewAction } from '@/shared/workflow/hooks'
-import { dateTime, searchText, type WorkflowOptions } from '@/shared/workflow/model'
-import { barrierLabels, recordPreviewEntry, recordPreviewVisitor, studentIssue, updatePreviewBarrier, visitorIssue, type BarrierStatus, type EntryType, type GateData } from './model'
+import { useApiAction } from '@/shared/api/hooks'
+import { command, requestIdentity, type CommandResult, type RequestIdentity } from '@/shared/api/protocol'
+import { dateTime } from '@/shared/workflow/model'
+import { barrierLabels, entryPayload, parseEntry, visitorPayload, type Entry, type EntryType } from './model'
 import './gate.css'
+const visitorStateLabels: Record<string, string> = { PENDING: 'Chờ xét duyệt', CHECKED_IN: 'Đã vào KTX', CHECKED_OUT: 'Đã ra khỏi KTX' }
 
-const emptyData = (): GateData => ({ students: [], visitors: [], entries: [], visitorEntries: [] })
-export function GatePage({ initialData, serverNow, deviceResult = 'OPENED', initialSection = 'student', ...options }: WorkflowOptions & { initialData?: GateData; serverNow?: number; deviceResult?: BarrierStatus; initialSection?: 'student' | 'visitor' }) {
-  const [data, setData] = useState(initialData ?? emptyData), [section, setSection] = useState<'student' | 'visitor'>(initialSection)
-  const [method, setMethod] = useState('card'), [query, setQuery] = useState(''), [lookup, setLookup] = useState(''), [looked, setLooked] = useState(false)
+export function GatePage({ initialSection = 'student' }: { initialSection?: 'student' | 'visitor' }) {
+  const [section, setSection] = useState(initialSection), [card, setCard] = useState(''), [device, setDevice] = useState(''), [visitor, setVisitor] = useState('')
   const [type, setType] = useState<EntryType>('VAO'), [note, setNote] = useState(''), [verified, setVerified] = useState(false)
-  const [lastId, setLastId] = useState(''), [historyQuery, setHistoryQuery] = useState(''), [historyType, setHistoryType] = useState('')
-  const request = useRef<{ signature: string; key: string } | null>(null), inputRef = useRef<HTMLInputElement>(null)
-  const action = usePreviewAction(options), clock = useClock(), now = serverNow ?? clock
-  const student = data.students.find(s => s.id === lookup), visitor = data.visitors.find(v => v.id === lookup), last = data.entries.find(e => e.eventId === lastId)
-  const lastGuest = data.visitorEntries.find(e => e.eventId === lastId)
-  const issue = section === 'student' ? studentIssue(student, now) : visitorIssue(visitor, type, now, verified)
-  const history = section === 'student' ? data.entries : data.visitorEntries
-  const shown = history.filter(e => (!historyType || e.type === historyType) && searchText(`${e.name} ${'studentId' in e ? e.studentId : e.visitorId}`).includes(searchText(historyQuery)))
-  function resetLookup() { setLookup(''); setLooked(false); setVerified(false); setNote(''); action.setError('') }
-  async function find() {
-    if (!query.trim()) { action.setError('Nhập mã thẻ, MSSV hoặc mã khai báo khách để tra cứu.'); inputRef.current?.focus(); return }
-    const value = query.trim().toUpperCase()
-    await action.run(() => {
-      const found = section === 'student' ? data.students.find(s => (method === 'card' ? s.card : s.id).toUpperCase() === value) : data.visitors.find(v => v.id.toUpperCase() === value || v.identity.toUpperCase() === value)
-      setLookup(found?.id ?? ''); setLooked(true); setVerified(false)
-    }, 'Đã tra cứu thông tin')
-  }
+  const [entries, setEntries] = useState<Entry[]>([]), [guests, setGuests] = useState<CommandResult[]>([]), [receipt, setReceipt] = useState<CommandResult | null>(null)
+  const event = useRef<RequestIdentity | null>(null), action = useApiAction()
   async function record() {
-    if (issue || !lookup) { action.setError(issue); return }
-    const signature = JSON.stringify([section, lookup, type, note.trim()])
-    if (!request.current || request.current.signature !== signature) request.current = { signature, key: crypto.randomUUID() }
-    let error: string | undefined
-    const saved = await action.run(() => {
-      if (section === 'student') {
-        const result = recordPreviewEntry(data, { eventId: request.current!.key, studentId: lookup, type, note }, now)
-        error = result.error; if (!error) { setData(result.data); setLastId(result.entry!.eventId); request.current = null }
-      } else {
-        const result = recordPreviewVisitor(data, lookup, type, verified, request.current!.key, now)
-        error = result.error; if (!error) { setData(result.data); setLastId(request.current!.key); request.current = null; setVerified(false) }
-      }
-    }, section === 'student' ? 'Đã ghi lượt; cổng đang chờ thiết bị xử lý' : 'Đã ghi nhận lượt khách')
-    if (saved && error) action.setError(error)
+    let body: ReturnType<typeof entryPayload>
+    try {
+      event.current = requestIdentity(event.current, JSON.stringify([card.trim(), type, device.trim(), note.trim()]), () => crypto.randomUUID())
+      body = entryPayload(event.current.key, card, type, device, note)
+    } catch (error) { action.setError((error as Error).message); return }
+    const saved = await action.run('entries', body, parseEntry)
+    if (saved) { setEntries(rows => [saved, ...rows.filter(e => e.eventId !== saved.eventId)]); event.current = null; setCard(''); setNote('') }
   }
-  async function replay() {
-    if (!last) return
-    await action.run(() => { const result = recordPreviewEntry(data, { eventId: last.eventId, studentId: last.studentId, type: last.type, note: last.note }, now); setData(result.data) }, 'Đã kiểm tra lượt vừa ghi, không tạo thêm lượt hoặc vi phạm')
+  async function recordVisitor() {
+    if (!/^[1-9]\d*$/.test(visitor) || !Number.isSafeInteger(Number(visitor))) { action.setError('Nhập mã khai báo khách hợp lệ.'); return }
+    if (!verified) { action.setError('Đối chiếu giấy tờ gốc trước khi ghi nhận.'); return }
+    const saved = await action.run(`visitors/${visitor}/${type === 'VAO' ? 'check-in' : 'check-out'}`, undefined, command)
+    if (saved) { setReceipt(saved); setGuests(rows => [saved, ...rows.filter(r => r.requestId !== saved.requestId)]); setVerified(false) }
   }
-  return <WorkflowPage title="Kiểm soát cổng" description="Tra cứu người vào/ra, ghi nhận lượt và theo dõi thiết bị tại cổng." view={options.view}>
-    <Feedback notice={action.notice} error={action.error} />
-    <Summary items={[{ label: 'Lượt sinh viên vào', tone: 'success', value: data.entries.filter(e => e.type === 'VAO').length }, { label: 'Lượt sinh viên ra', tone: 'primary', value: data.entries.filter(e => e.type === 'RA').length }, { label: 'Lượt về trễ', tone: 'warning', value: data.entries.filter(e => e.late).length }]} />
-    <div className="wl-segments" aria-label="Đối tượng kiểm soát"><Button variant="outlined" aria-pressed={section === 'student'} disabled={action.busy} onClick={() => { setSection('student'); setQuery(''); resetLookup() }}>Sinh viên</Button><Button variant="outlined" aria-pressed={section === 'visitor'} disabled={action.busy} onClick={() => { setSection('visitor'); setQuery(''); resetLookup() }}>Khách thăm</Button></div>
-    <div className="wl-layout gate-layout"><section className="wl-card gate-station" aria-labelledby="gate-station-title">
-      <div className="gate-station-heading"><Icon name="gate" /><div><h2 id="gate-station-title">{section === 'student' ? 'Tra cứu sinh viên' : 'Kiểm tra khai báo khách'}</h2><p className="gate-muted">Cổng chính · Giờ Việt Nam</p></div></div>
-      <form className="wl-form gate-form" noValidate onSubmit={event => { event.preventDefault(); void find() }}><fieldset className="gate-fieldset" disabled={action.busy}>
-        {section === 'student' && <SelectField label="Cách tra cứu" value={method} onChange={event => { setMethod(event.target.value); setQuery(''); resetLookup() }}><option value="card">Mã thẻ / mã từ máy quét</option><option value="student">Nhập MSSV thủ công</option></SelectField>}
-        <TextField ref={inputRef} label={section === 'visitor' ? 'Mã khai báo / giấy tờ khách' : method === 'card' ? 'Mã thẻ' : 'MSSV'} value={query} onChange={event => { setQuery(event.target.value); resetLookup() }} maxLength={1000} autoComplete="off" spellCheck={false} supportingText={section === 'student' && method === 'card' ? 'Máy quét dạng bàn phím: quét mã rồi nhấn Enter để tra cứu.' : undefined} />
-        <Button type="submit" pending={action.busy} disabled={!options.preview}><Icon name="search" />Tra cứu</Button>
-      </fieldset></form>
-      {looked && <div className="gate-profile" aria-live="polite">
-        {(section === 'student' ? student : visitor) ? <><h3>{section === 'student' ? student!.name : visitor!.name}</h3><Facts items={section === 'student' ? [['MSSV', student!.id], ['Phòng', student!.room], ['Lưu trú', student!.resident ? 'Đang ở' : 'Không còn lưu trú'], ['Thẻ', student!.active ? 'Đang hoạt động' : 'Không còn hiệu lực'], ['Hạn thẻ', dateTime(new Date(student!.validTo).toISOString())]] : [['Mã khai báo', visitor!.id], ['Giấy tờ', `••••${visitor!.identity.slice(-4)}`], ['Sinh viên tiếp đón', visitor!.host], ['Phòng', visitor!.room], ['Thời gian thăm', `${dateTime(new Date(visitor!.from).toISOString())} – ${dateTime(new Date(visitor!.to).toISOString())}`], ['Duyệt', visitor!.approved ? 'Đã duyệt' : 'Chờ duyệt']]} /></> : <p className="wl-note">{issue}</p>}
-        {(student && section === 'student' || visitor && section === 'visitor') && <div className="wl-form gate-form"><fieldset className="gate-fieldset" disabled={action.busy}>
-          <SelectField label="Hướng di chuyển" value={type} onChange={event => { setType(event.target.value as EntryType); setVerified(false); action.setError('') }}><option value="VAO">Vào KTX</option><option value="RA">Ra khỏi KTX</option></SelectField>
-          {section === 'student' ? <NotesField label="Ghi chú (tùy chọn)" value={note} onChange={event => setNote(event.target.value)} /> : <label className="wl-check"><input type="checkbox" checked={verified} onChange={event => { setVerified(event.target.checked); action.setError('') }} />Đã đối chiếu giấy tờ gốc với thông tin khai báo</label>}
-          {issue ? <p className="wl-note">{issue}</p> : <Status tone="success">Đủ điều kiện ghi nhận</Status>}
-          <Button pending={action.busy} disabled={!!issue || !options.preview} onClick={() => void record()}>Ghi nhận {type === 'VAO' ? 'vào' : 'ra'} cổng</Button>
-        </fieldset></div>}
-      </div>}
-    </section><aside className="wl-card wl-side gate-guidance">
-      <h2>Thông tin ca trực</h2><p className="gate-time">{dateTime(new Date(now).toISOString())}</p><p className="wl-note">Sinh viên về sau 23:00 hoặc trước 05:00 được ghi nhận về trễ. Đúng 23:00 và 05:00 không tính vi phạm.</p>
-      {last && section === 'student' && <section className="gate-last"><h3>Lượt sinh viên vừa ghi</h3><p><strong>{last.name}</strong><br />{last.studentId} · {last.type === 'VAO' ? 'Vào' : 'Ra'} · {dateTime(new Date(last.at).toISOString())}</p><Status tone={last.late ? 'warning' : 'success'}>{last.late ? 'Về trễ · Đã ghi vi phạm' : 'Đã lưu lượt'}</Status><Status tone={last.barrier === 'FAILED' ? 'danger' : 'neutral'}>{barrierLabels[last.barrier]}</Status>{last.barrier === 'FAILED' && <p className="wl-note">Nhật ký vẫn được giữ. Kiểm tra thiết bị và xử lý tại cổng; không ghi thêm lượt để thử mở lại.</p>}<Button variant="outlined" pending={action.busy} disabled={last.barrier === 'OPENED'} onClick={() => void action.run(() => setData(updatePreviewBarrier(data, last.eventId, deviceResult)), 'Đã cập nhật phản hồi thiết bị')}>Kiểm tra thiết bị</Button><Button variant="text" pending={action.busy} onClick={() => void replay()}>Kiểm tra lượt vừa ghi</Button></section>}
-      {lastGuest && section === 'visitor' && <section className="gate-last"><h3>Lượt khách vừa ghi</h3><p><strong>{lastGuest.name}</strong><br />{lastGuest.visitorId} · {lastGuest.type === 'VAO' ? 'Vào' : 'Ra'} · {dateTime(new Date(lastGuest.at).toISOString())}</p><Status tone="success">Đã lưu lượt khách</Status></section>}{!last && !lastGuest && <p className="gate-muted">Sau khi ghi lượt, trạng thái cổng sẽ hiển thị tại đây. Chỉ mở cổng sau khi lượt được lưu thành công.</p>}
-    </aside></div>
-    <section className="wl-card gate-history" aria-labelledby="gate-history-title"><div className="wl-card-heading"><h2 id="gate-history-title">Nhật ký {section === 'student' ? 'sinh viên' : 'khách thăm'}</h2><p>{history.length} lượt</p></div><div className="wl-toolbar"><TextField label="Tìm trong nhật ký" type="search" value={historyQuery} onChange={event => setHistoryQuery(event.target.value)} placeholder="Tên hoặc mã người qua cổng" /><SelectField label="Lọc hướng" value={historyType} onChange={event => setHistoryType(event.target.value)}><option value="">Tất cả hướng</option><option value="VAO">Vào KTX</option><option value="RA">Ra khỏi KTX</option></SelectField></div><DataTable key={`${section}-${historyQuery}-${historyType}`} label="Nhật ký cổng" head={<tr><th scope="col">Người qua cổng</th><th scope="col">Thời điểm</th><th scope="col">Hướng</th><th scope="col">Kết quả</th></tr>} rows={shown.map(e => <tr key={e.eventId}><td><strong>{e.name}</strong><small>{'studentId' in e ? e.studentId : e.visitorId}</small></td><td>{dateTime(new Date(e.at).toISOString())}</td><td>{e.type === 'VAO' ? 'Vào KTX' : 'Ra khỏi KTX'}</td><td>{'late' in e ? <><Status tone={e.late ? 'warning' : 'success'}>{e.late ? 'Về trễ' : 'Đúng giờ'}</Status><small>{barrierLabels[e.barrier]}</small></> : <Status>Đã ghi lượt khách</Status>}</td></tr>)} /></section>
+  const last = entries[0]
+  return <WorkflowPage title="Kiểm soát cổng" description="Ghi nhận vào/ra theo kết quả xác thực của hệ thống." view="data">
+    <Feedback error={action.error} />
+    <Summary items={[{ label: 'Lượt sinh viên vào trong phiên', tone: 'success', value: entries.filter(e => e.type === 'VAO').length }, { label: 'Lượt sinh viên ra trong phiên', value: entries.filter(e => e.type === 'RA').length }, { label: 'Lượt có vi phạm trong phiên', tone: 'warning', value: entries.filter(e => e.violationId).length }]} />
+    <div className="wl-segments"><Button variant="outlined" aria-pressed={section === 'student'} disabled={action.busy} onClick={() => { setSection('student'); action.setError('') }}>Sinh viên</Button><Button variant="outlined" aria-pressed={section === 'visitor'} disabled={action.busy} onClick={() => { setSection('visitor'); action.setError('') }}>Khách thăm</Button></div>
+    <div className="wl-layout gate-layout"><section className="wl-card gate-station"><div className="gate-station-heading"><Icon name="gate" /><h2>{section === 'student' ? 'Ghi lượt sinh viên' : 'Ghi lượt khách thăm'}</h2></div>
+      <form className="wl-form gate-form" noValidate onSubmit={e => { e.preventDefault(); void (section === 'student' ? record() : recordVisitor()) }}><fieldset className="gate-fieldset" disabled={action.busy}>
+        {section === 'student' ? <><TextField label="Mã thiết bị tại cổng" value={device} onChange={e => setDevice(e.target.value)} maxLength={1000} required /><TextField label="Mã thẻ / mã từ máy quét" value={card} onChange={e => setCard(e.target.value)} maxLength={1000} autoComplete="off" required supportingText="Quét thẻ dạng bàn phím, nhấn Enter để ghi nhận. Hệ thống kiểm tra hiệu lực thẻ và lưu trú." /></> : <><TextField label="Mã khai báo khách" value={visitor} onChange={e => { setVisitor(e.target.value); setVerified(false) }} inputMode="numeric" required /><p className="wl-note">Dùng mã trên phiếu khai báo đã được duyệt. Tra cứu thông tin khách chưa được hỗ trợ.</p><label className="wl-check"><input type="checkbox" checked={verified} onChange={e => setVerified(e.target.checked)} />Đã đối chiếu giấy tờ gốc và phiếu khai báo</label></>}
+        <SelectField label="Hướng di chuyển" value={type} onChange={e => setType(e.target.value as EntryType)}><option value="VAO">Vào KTX</option><option value="RA">Ra khỏi KTX</option></SelectField>
+        {section === 'student' && <NotesField label="Ghi chú (tùy chọn)" value={note} onChange={e => setNote(e.target.value)} />}
+        <Button type="submit" pending={action.busy} disabled={section === 'visitor' && !verified}>Ghi nhận {type === 'VAO' ? 'vào' : 'ra'} cổng</Button>
+      </fieldset></form></section>
+      <aside className="wl-card wl-side gate-guidance"><h2>Kết quả vừa ghi</h2>{section === 'student' && last ? <section className="gate-last"><Facts items={[[ 'MSSV', last.studentId ], ['Thời điểm', dateTime(last.time)], ['Hướng', last.type === 'VAO' ? 'Vào' : 'Ra']]} /><Status tone={last.violationId ? 'warning' : 'success'}>{last.violationId ? `Đã ghi vi phạm ${last.violationId}` : 'Đã lưu lượt'}</Status><Status tone={last.barrierStatus === 'FAILED' ? 'danger' : 'neutral'}>{barrierLabels[last.barrierStatus]}</Status><p className="wl-note">Chờ thiết bị không đồng nghĩa cổng đã mở. Kiểm tra thiết bị tại chỗ; không ghi lại lượt để thử mở cổng.</p></section> : section === 'visitor' && receipt ? <><Status tone="success">Đã lưu lượt khách</Status><Facts items={[[ 'Mã khai báo', receipt.id ], ['Trạng thái', visitorStateLabels[receipt.status] || receipt.status]]} /></> : <p className="wl-note">Kết quả chỉ hiển thị sau khi hệ thống xác nhận lưu thành công.</p>}</aside></div>
+    <section className="wl-card gate-history"><div className="wl-card-heading"><h2>Lượt ghi trong phiên này</h2><p>Đóng hoặc tải lại trang sẽ xóa danh sách tạm; lịch sử trên máy chủ vẫn được giữ.</p></div>{section === 'student' ? <DataTable label="Lượt sinh viên trong phiên" head={<tr><th>MSSV</th><th>Thời điểm</th><th>Hướng</th><th>Kết quả</th></tr>} rows={entries.map(e => <tr key={e.eventId}><td>{e.studentId}</td><td>{dateTime(e.time)}</td><td>{e.type === 'VAO' ? 'Vào' : 'Ra'}</td><td><Status tone={e.violationId ? 'warning' : 'success'}>{e.violationId ? `Vi phạm ${e.violationId}` : 'Đã lưu'}</Status><small>{barrierLabels[e.barrierStatus]}</small></td></tr>)} /> : <DataTable label="Lượt khách trong phiên" head={<tr><th>Mã khai báo</th><th>Trạng thái</th></tr>} rows={guests.map(r => <tr key={r.requestId}><td>{r.id}</td><td>{visitorStateLabels[r.status] || r.status}</td></tr>)} />}</section>
   </WorkflowPage>
 }
-
 export function VisitorGatePage() { return <GatePage initialSection="visitor" /> }
+
+export function StudentVisitorDeclarationPage() {
+  const [host, setHost] = useState(''), [name, setName] = useState(''), [identity, setIdentity] = useState(''), [from, setFrom] = useState(''), [to, setTo] = useState('')
+  const [receipt, setReceipt] = useState<CommandResult | null>(null), action = useApiAction()
+  async function submit() {
+    let body: ReturnType<typeof visitorPayload>
+    try { body = visitorPayload(host, name, identity, from, to) } catch (error) { action.setError((error as Error).message); return }
+    const saved = await action.run('visitors', body, command)
+    if (saved) { setReceipt(saved); setName(''); setIdentity(''); setFrom(''); setTo('') }
+  }
+  return <WorkflowPage title="Khai báo khách thăm" description="Gửi thông tin khách và khoảng thời gian thăm để Ban quản lý xét duyệt." view="data"><Feedback error={action.error} /><div className="wl-layout gate-layout"><section className="wl-card gate-station"><form className="wl-form gate-form" noValidate onSubmit={e => { e.preventDefault(); void submit() }}><fieldset className="gate-fieldset" disabled={action.busy}><TextField label="MSSV của bạn" value={host} onChange={e => setHost(e.target.value)} maxLength={1000} required supportingText="MSSV phải thuộc tài khoản đang đăng nhập." /><TextField label="Họ tên khách" value={name} onChange={e => setName(e.target.value)} maxLength={1000} required /><TextField label="Số giấy tờ khách" value={identity} onChange={e => setIdentity(e.target.value)} maxLength={1000} required autoComplete="off" /><TextField label="Bắt đầu thăm (giờ Việt Nam)" type="datetime-local" value={from} onChange={e => setFrom(e.target.value)} required /><TextField label="Kết thúc thăm (giờ Việt Nam)" type="datetime-local" value={to} onChange={e => setTo(e.target.value)} required /><Button type="submit" pending={action.busy}>Gửi khai báo</Button></fieldset></form></section><aside className="wl-card wl-side gate-guidance"><h2>Phiếu vừa gửi</h2>{receipt ? <><Status tone="warning">Chờ xét duyệt</Status><Facts items={[[ 'Mã khai báo', receipt.id ], ['Trạng thái', visitorStateLabels[receipt.status] || receipt.status]]} /><p className="wl-note">Lưu lại mã khai báo. Danh sách và tra cứu tiến độ chưa được hỗ trợ.</p></> : <p>Thông tin phiếu sẽ xuất hiện sau khi gửi thành công.</p>}</aside></div></WorkflowPage>
+}

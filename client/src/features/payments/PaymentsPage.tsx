@@ -66,7 +66,7 @@ export function PaymentsPage({ invoices = [], reply = 'pending', ...options }: P
     action.setError('')
   }
 
-  return <WorkflowPage title="Hóa đơn & thanh toán" description="Xem khoản thu của phòng lưu trú, chọn hóa đơn và theo dõi kết quả thanh toán." view={options.view}>
+  return <WorkflowPage title="Hóa đơn & thanh toán" description="Xem khoản thu của phòng lưu trú, chọn hóa đơn và theo dõi kết quả thanh toán." view={options.view} error={options.preview ? undefined : 'Tra cứu hóa đơn chưa sẵn sàng. Thanh toán sẽ được mở khi có danh sách hóa đơn và cổng thanh toán được cấu hình.'}>
     <div className="payment-workflow"><Feedback notice={action.notice} error={!confirm ? action.error : undefined} />
       <Summary items={[{ label: 'Hóa đơn còn nợ', tone: 'warning', value: outstanding.length }, { label: 'Hóa đơn quá hạn', tone: 'danger', value: outstanding.filter(invoice => isOverdue(invoice, now)).length }, { label: 'Tổng còn phải trả', tone: 'primary', value: money(outstanding.reduce((sum, invoice) => sum + BigInt(balance(invoice)), 0n)) }]} />
       <div className="payment-layout">

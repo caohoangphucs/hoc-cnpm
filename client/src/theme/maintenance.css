@@ -44,3 +44,6 @@
   .repair-material-row .icon-button { margin-top: 28px; }
   .repair-detail .wl-status { white-space: normal; }
 }
+
+.repair-supply-row { display: grid; grid-template-columns: minmax(0,1fr) minmax(100px,.5fr) auto; gap: 16px; align-items: end; padding-block: 16px; border-block-start: 1px solid var(--md-sys-color-outline-variant); }
+@media(max-width:599px) { .repair-supply-row { grid-template-columns: minmax(0,1fr); } .repair-supply-row > .m3-button { justify-self: start; } }
