@@ -33,7 +33,7 @@ class BookingControllerTest {
 
     @BeforeEach
     void setUp() {
-        var controller = new BookingController(bookings, accounts);
+        var controller = new BookingController(bookings, accounts, new ApiSupport(accounts));
         var routes = RouterFunctions.route().POST(ApiRoutes.BOOKINGS, controller::create).build();
         mvc = MockMvcBuilders.routerFunctions(routes).build();
 

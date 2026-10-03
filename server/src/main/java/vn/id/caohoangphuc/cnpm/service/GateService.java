@@ -7,6 +7,7 @@ import vn.id.caohoangphuc.cnpm.api.dto.ApprovalDto;
 import vn.id.caohoangphuc.cnpm.api.dto.CommandResultDto;
 import vn.id.caohoangphuc.cnpm.api.dto.EntryDto;
 import vn.id.caohoangphuc.cnpm.api.dto.EntryResourceDto;
+import vn.id.caohoangphuc.cnpm.api.dto.EntryResourceListDto;
 import vn.id.caohoangphuc.cnpm.api.dto.VisitorDto;
 import vn.id.caohoangphuc.cnpm.persistence.service.GateRepository;
 
@@ -52,6 +53,32 @@ public class GateService {
             () -> recordEntry(actor, request, input, hash),
             "BAOVE");
     return entry;
+  }
+
+  /** Lists gate entries for a student or for authorized gate/admin staff. */
+  public EntryResourceListDto entries(Actor actor, int page, int size) {
+    context.page(page, size);
+    return context.transaction(() -> {
+      var account = context.require(actor, "SINHVIEN", "ADMIN", "BAOVE");
+      String studentId = "SINHVIEN".equals(account.role()) ? account.studentId() : null;
+      var result = repository.entries(studentId, page, size);
+      return new EntryResourceListDto(result.items(), (long) page, (long) size, result.total());
+    });
+  }
+
+  /** Reads one gate entry and hides it from students other than its owner. */
+  public EntryResourceDto entry(Actor actor, java.util.UUID id) {
+    if (id == null) throw ServiceException.invalid("Invalid eventId");
+    return context.transaction(() -> {
+      var account = context.require(actor, "SINHVIEN", "ADMIN", "BAOVE");
+      var event = repository.event(id, false);
+      if (event == null) throw ServiceException.notFound("Entry");
+      if ("SINHVIEN".equals(account.role()) && !account.studentId().equals(event.studentId()))
+        throw ServiceException.notFound("Entry");
+      return new EntryResourceDto(event.eventId(), event.studentId(), event.type(),
+          java.time.OffsetDateTime.ofInstant(event.time(), ServiceContext.ZONE),
+          event.barrierStatus(), event.violationId());
+    });
   }
 
   /** Xử lý lượt ra/vào sau khi chống lặp event và xác nhận thẻ còn hiệu lực. */
@@ -162,6 +189,53 @@ public class GateService {
           return new CommandResultDto(Long.toString(id), "PENDING", 1L, request.requestId());
         },
         "SINHVIEN");
+  }
+
+  /** Lists visitor requests for the authenticated student or all requests for an administrator. */
+  public java.util.List<GateRepository.Visitor> visitors(Actor actor, int page, int size) {
+    context.page(page, size);
+    return context.transaction(() -> {
+      var account = context.require(actor, "SINHVIEN", "ADMIN", "BAOVE");
+      String host = "SINHVIEN".equals(account.role()) ? account.studentId() : null;
+      return repository.visitors(host, page, size);
+    });
+  }
+
+  /** Reads one visitor request while hiding requests from other students. */
+  public GateRepository.Visitor visitor(Actor actor, long id) {
+    context.positive(id, "visitorId");
+    return context.transaction(() -> {
+      var account = context.require(actor, "SINHVIEN", "ADMIN", "BAOVE");
+      var visitor = repository.visitor(id, false);
+      if (visitor == null) throw ServiceException.notFound("Visitor");
+      if ("SINHVIEN".equals(account.role())
+          && !repository.ownsStudent(account.id(), visitor.hostStudentId()))
+        throw ServiceException.notFound("Visitor");
+      if ("BAOVE".equals(account.role()) && !"APPROVED".equals(visitor.state()))
+        throw ServiceException.notFound("Visitor");
+      return visitor;
+    });
+  }
+
+  /** Deletes a pending visitor request owned by the student or an administrator. */
+  public CommandResultDto deleteVisitor(Actor actor, RequestContext request, long id) {
+    context.positive(id, "visitorId");
+    return context.write(actor, request, "DELETE:/api/v1/visitors/" + id, id,
+        CommandResultDto.class, () -> {
+          var account = context.require(actor, "SINHVIEN", "ADMIN");
+          var visitor = repository.visitor(id, true);
+          if (visitor == null) throw ServiceException.notFound("Visitor");
+          if ("SINHVIEN".equals(account.role())
+              && !repository.ownsStudent(account.id(), visitor.hostStudentId()))
+            throw ServiceException.notFound("Visitor");
+          if (!"PENDING".equals(visitor.state()))
+            throw ServiceException.conflict("Only pending visitor requests can be deleted");
+          if (!repository.deletePendingVisitor(id)) throw ServiceException.notFound("Visitor");
+          context.event(actor, request, "VISITOR_DELETED", Long.toString(id),
+              Map.of("hostStudentId", visitor.hostStudentId()));
+          return new CommandResultDto(Long.toString(id), "DELETED", visitor.version() + 1,
+              request.requestId());
+        }, "SINHVIEN", "ADMIN");
   }
 
   /** Nhân viên có quyền duyệt hoặc từ chối đăng ký khách. */

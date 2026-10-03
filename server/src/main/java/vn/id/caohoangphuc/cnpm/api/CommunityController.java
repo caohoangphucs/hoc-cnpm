@@ -36,6 +36,18 @@ public class CommunityController {
                 request.body(ActivityDto.class)));
     }
 
+    /** Replaces an activity before any registration history is created. */
+    public ServerResponse updateActivity(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> community.updateActivity(actor, context,
+                Long.parseLong(request.pathVariable("id")), request.body(ActivityDto.class)));
+    }
+
+    /** Deletes an activity before any registration history is created. */
+    public ServerResponse deleteActivity(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> community.deleteActivity(actor, context,
+                Long.parseLong(request.pathVariable("id"))));
+    }
+
     /** Registers the authenticated student for a selected activity. */
     public ServerResponse register(ServerRequest request) throws Exception {
         return api.handle(request, (actor, context) -> community.register(actor, context,

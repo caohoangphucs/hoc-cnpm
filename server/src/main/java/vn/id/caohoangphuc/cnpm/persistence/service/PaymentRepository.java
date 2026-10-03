@@ -162,6 +162,33 @@ FROM hoa_don h WHERE h.mahoadon=?
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Lists payment sessions for one account, or all accounts for an administrator/accounting. */
+  public List<Session> sessions(Integer actorId, int page, int size) {
+    String ownerFilter = actorId == null ? "" : "WHERE actor_id=?";
+    Object[] args = actorId == null ? new Object[] {size, (page - 1) * size}
+        : new Object[] {actorId, size, (page - 1) * size};
+    return jdbc.query("SELECT id,actor_id,gateway,provider_ref,amount,state,expires_at,pay_url,provider_transaction_id "
+            + "FROM svc_payment_session " + ownerFilter + " ORDER BY created_at DESC LIMIT ? OFFSET ?",
+        (r, n) -> new Session(r.getObject(1, UUID.class), r.getInt(2), r.getString(3), r.getString(4),
+            r.getBigDecimal(5), r.getString(6), r.getTimestamp(7).toInstant(), r.getString(8), r.getString(9)),
+        args);
+  }
+
+  /** Checks whether a provider callback links to a session. */
+  public boolean hasCallback(UUID id) {
+    Integer count = jdbc.queryForObject("SELECT count(*) FROM svc_payment_callback WHERE session_id=?",
+        Integer.class, id);
+    return count != null && count > 0;
+  }
+
+  /** Deletes pending child transactions, allocations, and a session without callback history. */
+  public boolean deletePending(UUID id) {
+    jdbc.update("DELETE FROM thanh_toan WHERE magiaodich IN "
+        + "(SELECT child_ref FROM svc_payment_allocation WHERE session_id=?) AND trangthai='PENDING'", id);
+    jdbc.update("DELETE FROM svc_payment_allocation WHERE session_id=?", id);
+    return jdbc.update("DELETE FROM svc_payment_session WHERE id=? AND state='PENDING'", id) == 1;
+  }
+
   /** Tìm phiên theo cổng và mã tham chiếu do provider trả về. */
   public Session byReference(String gateway, String ref, boolean lock) {
     var rows =

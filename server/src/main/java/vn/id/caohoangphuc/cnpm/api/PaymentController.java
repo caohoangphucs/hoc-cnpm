@@ -36,6 +36,18 @@ public class PaymentController {
                 actor, UUID.fromString(request.pathVariable("id"))));
     }
 
+    /** Lists the payment sessions visible to the authenticated user. */
+    public ServerResponse list(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> payments.list(actor,
+                api.integerParameter(request, "page", 1), api.integerParameter(request, "pageSize", 20)));
+    }
+
+    /** Deletes a pending session only before payment processing starts. */
+    public ServerResponse delete(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> payments.delete(actor, context,
+                UUID.fromString(request.pathVariable("id"))));
+    }
+
     /** Verifies and applies a signed provider callback; callbacks do not require a browser session. */
     public ServerResponse callback(ServerRequest request) {
         var requestId = UUID.randomUUID();
