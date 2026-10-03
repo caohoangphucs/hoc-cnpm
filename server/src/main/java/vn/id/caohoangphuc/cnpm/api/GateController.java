@@ -38,7 +38,6 @@ public class GateController {
                 java.util.UUID.fromString(request.pathVariable("id"))));
     }
 
-    /** Deletes a gate event record as an administrator. */
     /** Submits a visit request for the authenticated student. */
     public ServerResponse declareVisitor(ServerRequest request) throws Exception {
         return api.handle(request, (actor, context) -> gate.declareVisitor(actor, context,
