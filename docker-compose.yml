@@ -20,11 +20,10 @@ services:
       - cnpm_pg_data:/var/lib/postgresql/data
       - ./database:/docker-entrypoint-initdb.d:ro
 
-  cnpm-app:
+  cnpm-server:
     build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: cnpm-web
+      context: ./server
+    container_name: cnpm-server
     restart: unless-stopped
     environment:
       DB_HOST: cnpm-db
@@ -36,10 +35,18 @@ services:
     depends_on:
       cnpm-db:
         condition: service_healthy
+    expose:
+      - "8080"
+
+  cnpm-client:
+    build:
+      context: ./client
+    container_name: cnpm-web
+    restart: unless-stopped
+    depends_on:
+      - cnpm-server
     ports:
-      - "${PORT_WEB:-8091}:8080"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - "${PORT_WEB:-8091}:80"
 
 volumes:
   cnpm_pg_data:

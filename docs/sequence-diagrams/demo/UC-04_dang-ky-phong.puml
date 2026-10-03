@@ -13,7 +13,7 @@ skinparam maxMessageSize 85
 skinparam sequenceParticipantBackgroundColor #EAF2F8
 skinparam sequenceGroupBackgroundColor #F8FAFC
 actor "Sinh viên" as A
-boundary "Thymeleaf / Bootstrap" as UI
+boundary "React / TypeScript" as UI
 control "BookingController" as C
 control "BookingService\n<<đề xuất>>" as S
 participant "RoomRepository" as D

@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: ktx-smart-hub
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:54321}/${DB_NAME:cnpm_db}}
+    username: ${SPRING_DATASOURCE_USERNAME:${DB_USER:cnpm_user}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASS:cnpm_pass_2026}}
+    hikari:
+      maximum-pool-size: 15
+      minimum-idle: 3
+      connection-timeout: 10000
+      connection-init-sql: SET TIME ZONE 'Asia/Ho_Chi_Minh'
+      data-source-properties:
+        escapeSyntaxCallMode: callIfNoReturn
+  sql:
+    init:
+      mode: never
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: Asia/Ho_Chi_Minh
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    session:
+      timeout: 15m
+      cookie:
+        http-only: true
+        same-site: lax
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,db

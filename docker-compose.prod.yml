@@ -1,0 +1,23 @@
+# Production apps only; PostgreSQL and its existing volume are managed separately.
+services:
+  server:
+    image: ${SERVER_IMAGE:?Verified backend image required}
+    container_name: cnpm-server
+    restart: unless-stopped
+    env_file: ${DEPLOY_DIR}/runtime.env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+    expose: ["8080"]
+    networks:
+      production:
+        aliases: [cnpm-server]
+  client:
+    image: ${CLIENT_IMAGE:?Verified frontend image required}
+    container_name: cnpm-web
+    restart: unless-stopped
+    ports: ["${WEB_PORT:-8091}:80"]
+    networks: [production]
+networks:
+  production:
+    external: true
+    name: ${DEPLOY_NETWORK:-cnpm-production}
