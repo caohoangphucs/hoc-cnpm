@@ -96,6 +96,9 @@ jobs:
           test -n "$asset"
           curl --fail --silent "$base$asset" > /dev/null
           curl --fail --silent "$base/activities" | grep -q 'KTX Smart Hub'
+          curl --fail --silent --show-error --location "$base/swagger-ui.html" | grep -q 'Swagger UI'
+          curl --fail --silent "$base/openapi.yaml" | grep -q 'openapi: 3.1.0'
+          curl --fail --silent "$base/v3/api-docs/swagger-config" | grep -q '/openapi.yaml'
           docker exec "$CI_CLIENT" nginx -t
           if docker logs "$CI_SERVER" 2>&1 | grep -E 'ERROR|APPLICATION FAILED TO START'; then exit 1; fi
       - name: Deploy verified develop images with Docker Compose
