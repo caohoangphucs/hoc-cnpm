@@ -10,6 +10,13 @@
   --md-sys-color-on-secondary-container: #0b1d28;
   --md-sys-color-tertiary-container: #e9ddff;
   --md-sys-color-on-tertiary-container: #1f1635;
+  --md-sys-color-tertiary: #63597c;
+  --app-color-success: #006e33;
+  --app-color-success-container: #c4f3d0;
+  --app-color-on-success-container: #00210b;
+  --app-color-warning: #7c5800;
+  --app-color-warning-container: #ffdea0;
+  --app-color-on-warning-container: #271900;
   --md-sys-color-surface: #fbfcfe;
   --md-sys-color-surface-container-lowest: #ffffff;
   --md-sys-color-surface-container-low: #f5f6f8;
@@ -37,6 +44,8 @@
   --app-type-body: 400 0.875rem/1.6 var(--app-font);
   --app-type-label: 500 0.875rem/1.4 var(--app-font);
   --app-duration: 150ms;
+  --app-duration-medium: 250ms;
+  --app-easing: cubic-bezier(0.2, 0, 0, 1);
   --app-sidebar-width: 280px;
   --app-elevation-1: 0 1px 3px 1px rgb(0 0 0 / 10%), 0 1px 2px rgb(0 0 0 / 15%);
   --app-elevation-2: 0 2px 6px 2px rgb(0 0 0 / 10%), 0 1px 2px rgb(0 0 0 / 18%);
@@ -52,6 +61,13 @@
   --md-sys-color-on-secondary-container: #d2e5f5;
   --md-sys-color-tertiary-container: #4b4163;
   --md-sys-color-on-tertiary-container: #e9ddff;
+  --md-sys-color-tertiary: #cec0e8;
+  --app-color-success: #75db8e;
+  --app-color-success-container: #005324;
+  --app-color-on-success-container: #c4f3d0;
+  --app-color-warning: #ffba28;
+  --app-color-warning-container: #5e4100;
+  --app-color-on-warning-container: #ffdea0;
   --md-sys-color-surface: #111416;
   --md-sys-color-surface-container-lowest: #0c0f11;
   --md-sys-color-surface-container-low: #191c1e;

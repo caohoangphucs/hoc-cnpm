@@ -12,7 +12,7 @@
 .auth-orbit { position: absolute; display: grid; place-items: center; width: 56px; height: 56px; border: 1px solid var(--md-sys-color-outline-variant); border-radius: var(--md-sys-shape-corner-large); box-shadow: var(--app-elevation-1); background: var(--md-sys-color-surface-container-lowest); color: var(--md-sys-color-primary); }
 .auth-orbit--one { left: 0; top: 16px; }
 .auth-orbit--two { right: 0; top: 80px; background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
-.auth-orbit--three { bottom: 0; left: 48px; }
+.auth-orbit--three { bottom: 0; left: 48px; background: var(--app-color-success-container); color: var(--app-color-on-success-container); }
 .auth-card { min-width: 0; padding: 32px; border: 1px solid var(--md-sys-color-outline-variant); border-radius: var(--md-sys-shape-corner-extra-large); background: var(--md-sys-color-surface-container-lowest); box-shadow: var(--app-elevation-1); }
 .auth-card-heading { margin-bottom: 28px; }
 .auth-symbol { display: grid; place-items: center; width: 48px; height: 48px; border-radius: var(--md-sys-shape-corner-medium); background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); margin-bottom: 20px; }
@@ -21,7 +21,9 @@
 .auth-form { display: flex; flex-direction: column; gap: 20px; }
 .auth-form-links { display: flex; justify-content: flex-end; margin-top: -12px; }
 .auth-support { padding-top: 24px; margin-top: 24px; border-top: 1px solid var(--md-sys-color-outline-variant); color: var(--md-sys-color-on-surface-variant); text-align: center; }
-.m3-button { display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 48px; padding: 12px 24px; border: 1px solid transparent; border-radius: var(--md-sys-shape-corner-full); font: var(--app-type-label); }
+.m3-button { display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 48px; padding: 12px 24px; border: 1px solid transparent; border-radius: var(--md-sys-shape-corner-full); font: var(--app-type-label); transition: background-color var(--app-duration) var(--app-easing), box-shadow var(--app-duration) var(--app-easing), transform var(--app-duration) var(--app-easing); }
+@media (hover: hover) { .m3-button--filled:hover:not(:disabled) { box-shadow: var(--app-elevation-2); } }
+.m3-button:active:not(:disabled) { transform: scale(.98); }
 .m3-button--filled { color: var(--md-sys-color-on-primary); background: var(--md-sys-color-primary); }
 .m3-button--outlined { color: var(--md-sys-color-primary); border-color: var(--md-sys-color-outline); background: transparent; }
 .m3-button--text { color: var(--md-sys-color-primary); background: transparent; }

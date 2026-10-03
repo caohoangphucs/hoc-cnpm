@@ -43,7 +43,7 @@ p { font: var(--app-type-body); }
   background: currentColor;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--app-duration) ease;
+  transition: opacity var(--app-duration) var(--app-easing);
 }
 @media (hover: hover) { .state-layer:hover::before { opacity: 0.08; } }
 .state-layer:focus-visible::before, .state-layer:active::before { opacity: 0.12; }
@@ -77,4 +77,6 @@ p { font: var(--app-type-body); }
 .skip-link:focus { transform: translateY(0); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
+  .destination-card:hover, .destination-card:active,
+  .m3-button:active:not(:disabled), .booking-bed:not(:has(input:disabled)):hover { transform: none; }
 }

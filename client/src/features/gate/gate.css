@@ -1,6 +1,6 @@
 .gate-station { padding: 24px; }
 .gate-station-heading { display: flex; gap: 16px; align-items: center; margin-bottom: 24px; }
-.gate-station-heading > .icon { width: 40px; height: 40px; color: var(--md-sys-color-primary); }
+.gate-station-heading > .icon { width: 48px; height: 48px; padding: 10px; border-radius: var(--md-sys-shape-corner-medium); background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
 .gate-muted { color: var(--md-sys-color-on-surface-variant); margin-top: 8px; }
 .gate-fieldset { padding: 0; margin: 0; border: 0; min-width: 0; display: grid; gap: 20px; }
 .gate-form .field-control, .gate-simulation .field-control { display: grid; gap: 8px; border: 0; background: transparent; }

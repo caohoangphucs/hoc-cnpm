@@ -7,3 +7,8 @@
 .community-filters .field-control input:focus,.community-attendance .field-control input:focus,.community-create .field-control input:focus{border-color:var(--md-sys-color-primary);box-shadow:inset 0 0 0 1px var(--md-sys-color-primary)}
 .community-create .m3-field--error input{border-color:var(--md-sys-color-error)}
 .community-layout .wl-table input[type=checkbox]{width:24px;height:24px}
+.community-activity-icon { background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
+.community-activity { background: color-mix(in srgb, var(--md-sys-color-tertiary-container) 14%, var(--md-sys-color-surface-container-lowest)); }
+.community-card-facts { padding: 12px; border-radius: var(--md-sys-shape-corner-medium); background: var(--app-color-success-container); color: var(--app-color-on-success-container); }
+.community-card-facts strong { color: inherit; }
+.community-guidance > .icon { padding: 10px; width: 48px; height: 48px; border-radius: var(--md-sys-shape-corner-medium); background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
