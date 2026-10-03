@@ -53,7 +53,7 @@ public class InvoiceService {
     });
   }
 
-  /** Reads an invoice while restricting student access to their occupied room and month. */
+  /** Đọc hóa đơn theo snapshot, lịch sử lưu trú hoặc phòng hiện tại của dữ liệu cũ. */
   public InvoiceResourceDto get(Actor actor, int id) {
     context.positive(id, "invoiceId");
     return context.transaction(() -> {

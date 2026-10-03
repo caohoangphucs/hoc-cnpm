@@ -80,6 +80,8 @@ jobs:
           test "$(psql -Atc "SELECT COUNT(*) FROM loai_phong WHERE (maloaiphong='LP-2' AND tenloaiphong='Phòng VIP 2 Giường') OR (maloaiphong='LP-4' AND tenloaiphong='Phòng Tiêu Chuẩn 4 Giường') OR (maloaiphong='LP-6' AND tenloaiphong='Phòng Tiêu Chuẩn 6 Giường')")" = 3
       - name: Verify Vietnamese display data repair and encoding boundaries
         run: psql -v ON_ERROR_STOP=1 -f database/tests/vietnamese_encoding.sql
+      - name: Verify missing community seed migration preserves existing activities
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/community_backfill.sql
       - name: Build backend and run Java unit tests
         run: docker build --target build -t "cnpm-server-build:$CI_SHA" server
       - name: Run controller tests with MockMvc (no real HTTP or database)
