@@ -100,13 +100,14 @@ LEFT JOIN vi_pham v ON v.maravao=r.maravao WHERE e.event_id=?
         SELECT e.event_id,r.masinhvien,r.loaisukien,r.thoigian,e.barrier_status,v.mavipham
         FROM svc_gate_event e JOIN ra_vao r ON r.maravao=e.entry_id
         LEFT JOIN vi_pham v ON v.maravao=r.maravao
-        WHERE (? IS NULL OR r.masinhvien=?) ORDER BY r.thoigian DESC,e.event_id DESC LIMIT ? OFFSET ?
+        WHERE (CAST(? AS varchar) IS NULL OR r.masinhvien=?)
+        ORDER BY r.thoigian DESC,e.event_id DESC LIMIT ? OFFSET ?
         """, (r, n) -> new EntryResourceDto(r.getObject(1, UUID.class), r.getString(2), r.getString(3),
         r.getObject(4, LocalDateTime.class).atZone(ServiceContext.ZONE).toOffsetDateTime(),
         r.getString(5), (Integer) r.getObject(6)), studentId, studentId, size, (page - 1) * size);
     Long total = jdbc.queryForObject("""
         SELECT count(*) FROM svc_gate_event e JOIN ra_vao r ON r.maravao=e.entry_id
-        WHERE (? IS NULL OR r.masinhvien=?)
+        WHERE (CAST(? AS varchar) IS NULL OR r.masinhvien=?)
         """, Long.class, studentId, studentId);
     return new EntryPage(items, total == null ? 0 : total);
   }
@@ -179,7 +180,7 @@ LEFT JOIN vi_pham v ON v.maravao=r.maravao WHERE e.event_id=?
   public java.util.List<Visitor> visitors(String hostStudentId, int page, int size) {
     return jdbc.query("""
         SELECT id,host_student_id,state,valid_from,valid_to,version FROM svc_visitor
-        WHERE (? IS NULL OR host_student_id=?) ORDER BY id DESC LIMIT ? OFFSET ?
+        WHERE (CAST(? AS varchar) IS NULL OR host_student_id=?) ORDER BY id DESC LIMIT ? OFFSET ?
         """, (r, n) -> new Visitor(r.getLong(1), r.getString(2), r.getString(3),
         r.getTimestamp(4).toInstant(), r.getTimestamp(5).toInstant(), r.getLong(6)),
         hostStudentId, hostStudentId, size, (page - 1) * size);
