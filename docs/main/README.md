@@ -1,5 +1,7 @@
 # Biểu đồ hiện hành và tài liệu nguồn
 
+- [Tài liệu API backend](API.md): route, quyền, session/CSRF, request body và lỗi HTTP hiện hành.
+
 | Bản xem | Nguồn chuẩn | Phạm vi |
 |---|---|---|
 | [ERD27bảng](ERD_Full_27Tables.png) / [SVG](ERD_Full_27Tables.svg) | [PlantUML](ERD_Full_27Tables.puml) và [schemaSQL](../../database/01_schema.sql) | Schema hiện hành; tên trường/kiểu/PK/FK/UQ đối chiếu SQL |
