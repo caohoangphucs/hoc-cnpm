@@ -47,6 +47,7 @@ export const workspaces: readonly Workspace[] = [
       { path: 'bookings', label: 'Duyệt hồ sơ', shortLabel: 'Hồ sơ', icon: 'document', description: 'Duyệt hoặc từ chối hồ sơ đăng ký phòng và gán hợp đồng.' },
       { path: 'pricing', label: 'Đơn giá & chính sách', shortLabel: 'Đơn giá', icon: 'pricing', description: 'Phê duyệt đơn giá dịch vụ và cấu hình giảm tiền phòng.' },
       { path: 'discipline', label: 'Vi phạm & kỷ luật', shortLabel: 'Kỷ luật', icon: 'shield', description: 'Xử lý vi phạm, cảnh báo tái phạm và báo cáo về trễ.' },
+      { path: 'community', label: 'Quản lý công ích', shortLabel: 'Công ích', icon: 'community', description: 'Mở hoạt động, điểm danh và xác nhận hoàn thành công ích.' },
       { path: 'accounts', label: 'Tài khoản & vai trò', shortLabel: 'Tài khoản', icon: 'people', description: 'Phân quyền truy cập và khóa hoặc mở tài khoản.' },
       { path: 'logs', label: 'Nhật ký hệ thống', shortLabel: 'Nhật ký', icon: 'logs', description: 'Tra cứu nhật ký lỗi và nhật ký thao tác hệ thống.' },
     ],
