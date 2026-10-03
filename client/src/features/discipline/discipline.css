@@ -3,3 +3,4 @@
 .discipline-selection .m3-button{white-space:normal}
 .discipline-layout .wl-table{min-width:700px}
 @media(max-width:1399px){.discipline-layout{grid-template-columns:minmax(0,1fr)}.discipline-layout .wl-side{position:static}}
+.discipline-guidance > .icon { width: 48px; height: 48px; padding: 10px; border-radius: var(--md-sys-shape-corner-medium); background: var(--app-color-warning-container); color: var(--app-color-on-warning-container); }

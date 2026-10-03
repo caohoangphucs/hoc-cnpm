@@ -72,7 +72,7 @@ export function InvoiceIssuancePage({ rooms = [], initialPeriod, failedRoom, ...
   return <WorkflowPage title="Phát hành hóa đơn" description="Kiểm tra chi phí theo kỳ, xem bản nháp và phát hành hóa đơn cho từng phòng." view={options.view}>
     <div className="invoice-workflow">
       <Feedback notice={action.notice} error={!confirm ? action.error : undefined} />
-      <Summary items={[{ label: 'Phòng đã chọn', value: selected.length }, { label: 'Đủ dữ liệu để lập nháp', value: eligible.length }, { label: 'Tổng dự kiến', value: money(totalOf(eligible)) }]} />
+      <Summary items={[{ label: 'Phòng đã chọn', tone: 'primary', value: selected.length }, { label: 'Đủ dữ liệu để lập nháp', tone: 'success', value: eligible.length }, { label: 'Tổng dự kiến', tone: 'tertiary', value: money(totalOf(eligible)) }]} />
 
       <section className="wl-card" aria-labelledby="invoice-rooms-heading">
         <div className="wl-card-heading"><div><h2 id="invoice-rooms-heading">1. Chọn kỳ và phòng</h2><p>Chỉ số và đơn giá có hiệu lực tại ngày đầu kỳ</p></div><Status>{period ? `Kỳ ${period.split('-').reverse().join('/')}` : 'Chưa chọn kỳ'}</Status></div>
@@ -87,7 +87,7 @@ export function InvoiceIssuancePage({ rooms = [], initialPeriod, failedRoom, ...
           <td>{row.room.period === period ? meterText(row.room.electricity, 'kWh') : 'Chưa có dữ liệu'}<small>{row.room.period === period && `${money(row.room.electricity.rate)}/kWh`}</small></td>
           <td>{row.room.period === period ? meterText(row.room.water, 'm³') : 'Chưa có dữ liệu'}<small>{row.room.period === period && `${money(row.room.water.rate)}/m³`}</small></td>
           <td>{row.issue ? '—' : money(row.total)}<small>{Number(extras[row.room.id]?.amount) > 0 && `Đã thêm ${money(Number(extras[row.room.id].amount))}`}</small></td>
-          <td><Status tone={!row.issue ? 'primary' : row.room.issued && row.room.period === period ? 'neutral' : 'danger'}>{!row.issue ? 'Sẵn sàng' : row.room.issued && row.room.period === period ? 'Đã phát hành' : 'Cần kiểm tra'}</Status>{row.issue && <small>{row.issue}</small>}</td>
+          <td><Status tone={!row.issue ? 'success' : row.room.issued && row.room.period === period ? 'neutral' : 'danger'}>{!row.issue ? 'Sẵn sàng' : row.room.issued && row.room.period === period ? 'Đã phát hành' : 'Cần kiểm tra'}</Status>{row.issue && <small>{row.issue}</small>}</td>
           <td><Button variant="text" disabled={action.busy} onClick={() => openDetail(row)}>Xem chi phí</Button></td>
         </tr>)} />
         <div className="invoice-selection-footer">
@@ -106,7 +106,7 @@ export function InvoiceIssuancePage({ rooms = [], initialPeriod, failedRoom, ...
         </> : <div className="invoice-draft-empty"><Icon name="document" /><h3>Chưa có bản nháp</h3><p>Bản nháp sẽ hiển thị chi tiết từng khoản thu trước khi phát hành.</p></div>}
       </section>
 
-      {results.length > 0 && <section className="wl-card" aria-labelledby="invoice-results-heading"><div className="wl-card-heading"><div><h2 id="invoice-results-heading">Kết quả phát hành</h2><p>Mỗi phòng được xử lý riêng; phòng lỗi có thể tạo nháp để thử lại</p></div><Status>Minh họa</Status></div><DataTable label="Kết quả phát hành hóa đơn" head={<tr><th>Phòng</th><th>Kết quả</th><th>Hóa đơn / lý do</th><th>Số tiền</th><th>Hạn thanh toán</th></tr>} rows={results.map(result => <tr key={result.room}><td><strong>{result.room}</strong></td><td><Status tone={result.status === 'issued' ? 'primary' : result.status === 'error' ? 'danger' : 'neutral'}>{result.status === 'issued' ? 'Đã phát hành' : result.status === 'error' ? 'Lỗi phát hành' : 'Bỏ qua'}</Status></td><td>{result.message}</td><td>{result.status === 'skipped' ? '—' : money(result.total)}</td><td>{result.due ? formatDate(result.due) : '—'}</td></tr>)} /><p className="invoice-result-note">Chỉ mô phỏng kết quả trên giao diện. Chưa lưu hóa đơn, tạo QR thanh toán hoặc gửi thông báo thật.</p></section>}
+      {results.length > 0 && <section className="wl-card" aria-labelledby="invoice-results-heading"><div className="wl-card-heading"><div><h2 id="invoice-results-heading">Kết quả phát hành</h2><p>Mỗi phòng được xử lý riêng; phòng lỗi có thể tạo nháp để thử lại</p></div><Status>Minh họa</Status></div><DataTable label="Kết quả phát hành hóa đơn" head={<tr><th>Phòng</th><th>Kết quả</th><th>Hóa đơn / lý do</th><th>Số tiền</th><th>Hạn thanh toán</th></tr>} rows={results.map(result => <tr key={result.room}><td><strong>{result.room}</strong></td><td><Status tone={result.status === 'issued' ? 'success' : result.status === 'error' ? 'danger' : 'neutral'}>{result.status === 'issued' ? 'Đã phát hành' : result.status === 'error' ? 'Lỗi phát hành' : 'Bỏ qua'}</Status></td><td>{result.message}</td><td>{result.status === 'skipped' ? '—' : money(result.total)}</td><td>{result.due ? formatDate(result.due) : '—'}</td></tr>)} /><p className="invoice-result-note">Chỉ mô phỏng kết quả trên giao diện. Chưa lưu hóa đơn, tạo QR thanh toán hoặc gửi thông báo thật.</p></section>}
     </div>
 
     {detail && <Dialog title={`Chi phí phòng ${detail.room.id}`} panel onClose={closeDetail} actions={<><Button variant="text" onClick={closeDetail}>Đóng</Button><Button disabled={!options.preview || Boolean(detail.room.issued) || detail.room.period !== period} onClick={saveCharge}>Lưu chi phí thêm</Button></>}><div className="wl-form">
