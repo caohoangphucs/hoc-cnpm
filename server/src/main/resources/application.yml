@@ -44,3 +44,10 @@ management:
       group:
         readiness:
           include: readinessState,db
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    url: /openapi.yaml
+    disable-swagger-default-url: true
+    persist-authorization: true
+    try-it-out-enabled: true
