@@ -5,8 +5,8 @@ Workflow `.github/workflows/deploy.yml` chạy bằng runner `hoc-cnpm-deploy` v
 ## Build và test
 
 1. Tạo PostgreSQL16 test riêng, nạp schema/seed bằng ON_ERROR_STOP; kiểm 27 bảng.
-2. Build stage `server/Dockerfile`: Maven/JDK17 chạy clean verify, JUnit unit test DTO/validation và xử lý status procedure.
-3. JUnit integration test Spring Boot trên DB test: validate/read đủ27 entity, timezone, function đăng nhập/BCrypt5roles, cả9procedure, ID/QR OUT, yêu cầu transaction, lỗi status và rollback nguyên tử.
+2. Build stage `server/Dockerfile`: Maven/JDK17 chạy clean verify, JUnit unit test DTO/validation và các luồng service.
+3. JUnit integration test Spring Boot trên DB test: validate/read đủ 27 entity, timezone, truy vấn đăng nhập trực tiếp/BCrypt/5 roles và xác nhận schema không có routine `usp_*`.
 4. Build image backend executable JAR và frontend; frontend dùng pnpm lockfile, chạy ESLint, Node test, typecheck TypeScript và Vite production build. Nginx phục vụ SPA/proxy.
 5. Khởi động cả hai trên network test với alias cnpm-server; kiểm readiness qua `/api/health`, trang chủ, JS asset, SPA fallback, nginx -t và log backend.
 6. Develop deploy trực tiếp cặp image vừa test. Không xuất/upload/download image artifact qua GitHub; Maven/pnpm/Docker cache nằm trên server. GitHub vẫn checkout mã nguồn và lưu trạng thái/log.

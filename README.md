@@ -8,9 +8,9 @@ Hệ thống quản lý ký túc xá, phạm vi demo **8 UC**: UC-04, UC-12, UC-
 
 ## Trạng thái triển khai
 
-Đã thay nền Servlet/JSP bằng Spring Boot executable JAR, cấu hình DataSource, 27 entity theo schema hiện hành, repository đọc, DTO theo OpenAPI và các test nền. Tầng service/repository cho 8 UC dùng Java và SQL trực tiếp; các function/procedure trong schema chỉ còn là thành phần legacy, không được service mới gọi. Frontend hiện là khung tổng quan chức năng với trạng thái kết nối thật.
+Đã thay nền Servlet/JSP bằng Spring Boot executable JAR, cấu hình DataSource, 27 entity theo schema hiện hành, repository đọc, DTO theo OpenAPI và các test nền. Tầng service/repository cho 8 UC dùng Java và SQL trực tiếp; schema hiện hành không định nghĩa function hoặc procedure nghiệp vụ. Frontend hiện là khung tổng quan chức năng với trạng thái kết nối thật.
 
-Tầng Java service/repository cho 8 UC đã được bổ sung; quy tắc nghiệp vụ nằm trong service Java, còn repository chỉ đọc/ghi SQL đơn giản. Tầng controller/API, đăng nhập HTTP/2FA và giao diện nghiệp vụ **chưa triển khai**, vì vậy ngoài health các thao tác vẫn chưa được mở qua HTTP. Adapter thanh toán và ký chứng nhận cũng cần tích hợp cấu hình provider trước khi dùng. Mật khẩu seed `123456` chỉ phục vụ dữ liệu demo và test DB. Không coi frontend scaffold hay CI xanh là nghiệm thu end-to-end 8 UC.
+Tầng Java service/repository cho 8 UC đã được bổ sung; quy tắc nghiệp vụ nằm trong service Java, còn repository chỉ đọc/ghi SQL đơn giản. API đang bắt đầu được nối: auth routes tập trung trong `ApiRoutes`, login/session/logout và đăng ký phòng có handler; 2FA chưa cấu hình secret TOTP nên tài khoản ADMIN/KETOAN chưa thể vào API nghiệp vụ. Controller các UC còn lại và giao diện nghiệp vụ chưa hoàn tất. Adapter thanh toán và ký chứng nhận cũng cần tích hợp cấu hình provider trước khi dùng. Mật khẩu seed `123456` chỉ phục vụ dữ liệu demo và test DB. Không coi frontend scaffold hay CI xanh là nghiệm thu end-to-end 8 UC.
 
 ## Cấu trúc
 
@@ -62,9 +62,9 @@ Tham số sai phát sinh `IllegalArgumentException`; DTO sai vẫn phát sinh
 `ConstraintViolationException` từ Validator được gọi trực tiếp.
 
 Các service điều phối quy tắc và transaction qua `ServiceContext`; repository dùng
-`JdbcTemplate` cho SQL trực tiếp. Controller/API, đăng nhập HTTP/2FA và giao diện
-nghiệp vụ chưa triển khai. Annotation JPA trên entity và validation trên DTO được
-giữ vì phục vụ ánh xạ database và hợp đồng API.
+`JdbcTemplate` cho SQL trực tiếp. HTTP routes được khai báo trong `ApiRoutes`,
+còn hàm xử lý nằm riêng trong controller. Annotation JPA trên entity và
+validation trên DTO được giữ vì phục vụ ánh xạ database và hợp đồng API.
 
 ## Kiểm thử
 

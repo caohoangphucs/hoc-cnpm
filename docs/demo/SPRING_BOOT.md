@@ -1,12 +1,12 @@
 # Kiến trúc Spring Boot cho demo 8 UC
 
-Quyết định công nghệ ngày 02/10/2026: chuyển thiết kế đích sang **Spring Boot 4.1.1, Java 17, PostgreSQL 16**. Java 17 đáp ứng yêu cầu của phiên bản này; runtime chọn executable JAR với Tomcat 11 nhúng theo [system requirements](https://docs.spring.io/spring-boot/system-requirements.html). Nền mới trong server/ có JAR, entity/read repository và DTO. Service/repository Java cho 8 UC đã có; client/ dùng React/TypeScript/Vite và Nginx. Controller/API, auth HTTP và UI nghiệp vụ vẫn cần triển khai.
+Quyết định công nghệ ngày 02/10/2026: chuyển thiết kế đích sang **Spring Boot 4.1.1, Java 17, PostgreSQL 16**. Java 17 đáp ứng yêu cầu của phiên bản này; runtime chọn executable JAR với Tomcat 11 nhúng theo [system requirements](https://docs.spring.io/spring-boot/system-requirements.html). Nền mới trong server/ có JAR, entity/read repository và DTO. Service/repository Java cho 8 UC đã có; client/ dùng React/TypeScript/Vite và Nginx. API được triển khai từng phần: auth routes tập trung tại `api/ApiRoutes.java`, cùng handler đăng nhập/session/logout và tạo yêu cầu đăng ký phòng. Các controller UC còn lại, tích hợp 2FA, và UI nghiệp vụ vẫn cần triển khai.
 
 ## Stack và cách đóng gói
 
 | Thành phần | Thiết kế đích |
 |---|---|
-| Backend | Spring MVC: @RestController cho /api/v1; @Controller cho trang |
+| Backend | Spring MVC functional routes: khai báo URL/method tập trung trong `ApiRoutes`; handler riêng trong controller |
 | Giao diện | React/TypeScript/Vite trong client/, Nginx phục vụ SPA và proxy /api; backend trong server/ |
 | Phân quyền | Spring Security, session JSESSIONID, RBAC và ownership; 2FA cho ADMIN/KETOAN |
 | Validation/lỗi | Jakarta Bean Validation trên DTO, @RestControllerAdvice giữ Error schema hiện hành |
@@ -36,13 +36,13 @@ Giữ package gốc vn.id.caohoangphuc.cnpm; KtxApplication đặt tại gốc �
 | CommunityServlet đề xuất — UC30 | CommunityController → CommunityService → CommunityRepository |
 | AuthServlet/AccountDAO | AuthController + SecurityFilterChain → AuthenticationManager/UserDetailsService → AccountRepository |
 
-Legacy được ghi trong bảng để đối chiếu. Tầng service/repository Java theo 8 UC hiện nằm trong `server/src/main/java/.../service` và `persistence/service`; các sequence/class vẫn là nguồn quy tắc nghiệp vụ. Controller, auth HTTP và React API integration chưa có. Khi bổ sung, React sẽ gọi JSON/API cùng origin qua Nginx; không dùng JSP/Thymeleaf.
+Legacy được ghi trong bảng để đối chiếu. Tầng service/repository Java theo 8 UC hiện nằm trong `server/src/main/java/.../service` và `persistence/service`; route definitions nằm cùng trong `api/ApiRoutes.java`, còn handler đặt trong controller tương ứng. Các sequence/class vẫn là nguồn quy tắc nghiệp vụ. Các UC ngoài đăng ký phòng chưa có controller; React gọi JSON/API cùng origin qua Nginx; không dùng JSP/Thymeleaf.
 
 ## Transaction và truy cập PostgreSQL
 
 Service dùng `ServiceContext`/`TransactionTemplate` để đặt ranh giới transaction tường minh, không cần đặt `@Transactional` trên từng service. Service gọi repository Java; repository dùng `JdbcTemplate` và tham số hóa SQL. `JdbcTemplate` tham gia connection/transaction Spring hiện hành; không tự commit/rollback trong repository. Lỗi nghiệp vụ được ném từ service để transaction rollback. JPA chỉ phục vụ read model/entity hiện có, không dùng để ghi nghiệp vụ 8 UC.
 
-Schema còn function/procedure legacy, nhưng 8 UC không gọi chúng. Không thêm procedure mới để triển khai nghiệp vụ. Chi tiết bảng service và trách nhiệm từng repository tại [DU_LIEU_VA_SQL.md](DU_LIEU_VA_SQL.md).
+Schema hiện hành không định nghĩa function/procedure nghiệp vụ; service Java điều phối quy tắc và repository chạy SQL trực tiếp. Chi tiết bảng service và trách nhiệm từng repository tại [DU_LIEU_VA_SQL.md](DU_LIEU_VA_SQL.md).
 
 Gateway tạo URL/request sau khi transaction tạo phiên PENDING commit. Callback chỉ xác minh/parsing ở adapter, rồi gọi một Service transactional để ghi nhận; trả ACK sau commit. Outbox ghi cùng transaction với nghiệp vụ, worker gọi mạng ngoài transaction và xác nhận kết quả ở transaction ngắn khác. Không chỉ dùng @Async/event trong bộ nhớ thay outbox bền vững.
 
@@ -68,7 +68,7 @@ Không tự lấy image Tomcat10.1 legacy để chạy Boot4.1. Runtime containe
 
 ## Quản lý schema bằng SQL
 
-Không dùng Flyway/Liquibase hoặc migration tự động. Nguồn schema là database/01_schema.sql (27 bảng, 5 view, function đăng nhập và procedure legacy); seed demo là database/02_seed.sql. DB demo mới/được phép reset: nạp01 rồi02 bằng psql -v ON_ERROR_STOP=1, hoặc để Docker entrypoint nạp trên volume mới. Restart với volume hiện hữu không tự cập nhật schema.
+Không dùng Flyway/Liquibase hoặc migration tự động. Nguồn schema là database/01_schema.sql (27 bảng lõi, bảng `svc_*` và 5 view; không có function/procedure nghiệp vụ); seed demo là database/02_seed.sql. DB demo mới/được phép reset: nạp01 rồi02 bằng psql -v ON_ERROR_STOP=1, hoặc để Docker entrypoint nạp trên volume mới. Restart với volume hiện hữu không tự cập nhật schema.
 
 DB cần giữ dữ liệu: backup/preflight, chuẩn bị SQL ALTER/CREATE OR REPLACE đã review theo chênh lệch schema, chạy thủ công trong transaction phù hợp và đối chiếu dữ liệu. Không chạy01 có DROP hoặc replay seed. Giữ biên bản script/checksum/người thực hiện; không tạo schema history hay V1/V2. Ứng dụng chỉ kết nối DB đã chuẩn bị; quy trình triển khai kiểm cấu trúc và dừng khi không tương thích. Nếu dùng JPA ở đợt sau, chỉ validate schema; không dùng ddl-auto=create/update để thay SQL.
 
@@ -84,8 +84,8 @@ Không đánh dấu hoàn thành 8UC bằng entity/DTO hoặc scaffold. Nền Sp
 
 ## Nền dữ liệu đã viết
 
-27 entity immutable ánh xạ đúng bảng/cột/kiểu ID hiện hành; FK hiện giữ bằng scalar ID để tránh tự tải graph. 27 repository đọc legacy không có save/delete. JPA dùng jpaReadTransactionManager trên cùng pool, không trộn boundary JPA đọc với JDBC ghi. Service nghiệp vụ dùng ServiceContext/TransactionTemplate; repository cho 8 UC chạy SQL trực tiếp bằng JdbcTemplate, không gọi procedure. Gate VIOLATION_RECORDED là kết quả ghi nhận thành công có vi phạm.
+27 entity immutable ánh xạ đúng bảng/cột/kiểu ID hiện hành; FK hiện giữ bằng scalar ID để tránh tự tải graph. Repository đọc entity hiện hành không có save/delete. JPA dùng jpaReadTransactionManager trên cùng pool, không trộn boundary JPA đọc với JDBC ghi. Service nghiệp vụ dùng ServiceContext/TransactionTemplate; repository cho 8 UC chạy SQL trực tiếp bằng JdbcTemplate, không gọi procedure. Gate VIOLATION_RECORDED là kết quả ghi nhận thành công có vi phạm.
 
 DTO record được tạo thành56DTO theo OpenAPI, gồm request/response/list; không có endpoint tự động chỉ vì đã có DTO. ID API đích (bigint/UUID), version, file/profile/payment session vẫn cần adapter/schema mở rộng. Entity chỉ dùng ID varchar/int4 hiện có; không bịa version hoặc UUID cho dữ liệu chưa có. Meter hiện đổi int64 sang int4 có kiểm overflow. Money DB dùng BigDecimal, timestamp without time zone dùng LocalDateTime; API RFC3339 dùng OffsetDateTime và cần mapping timezone tại Service.
 
-Health readiness có kiểm DB; chỉ health được public trong bước nền, các HTTP khác denyAll. Client scaffold chỉ tổng quan8UC và trạng thái kết nối, chưa có login/2FA. Không tự mở các endpoint nghiệp vụ khi chưa có Service/Security.
+Health readiness và GET auth/session cùng POST auth/login/logout được mở theo route registry. `POST /bookings` là controller nghiệp vụ đầu tiên. ADMIN/KETOAN bị middleware chặn khỏi API nghiệp vụ tới khi 2FA được cấu hình; `/auth/2fa` hiện trả 503 vì schema chưa lưu secret TOTP. Các UC khác vẫn cần controller và không tự mở endpoint khi chưa có service/security phù hợp.

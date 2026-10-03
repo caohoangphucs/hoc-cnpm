@@ -16,7 +16,6 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import tools.jackson.databind.json.JsonMapper;
 import vn.id.caohoangphuc.cnpm.persistence.auth.AccountCredentialsRepository;
-import vn.id.caohoangphuc.cnpm.persistence.procedure.DormitoryProcedureRepository;
 import vn.id.caohoangphuc.cnpm.persistence.service.*;
 import vn.id.caohoangphuc.cnpm.service.*;
 
@@ -35,12 +34,6 @@ public class DatabaseConfiguration {
   @Bean
   AccountCredentialsRepository accountCredentialsRepository(JdbcTemplate jdbc) {
     return new AccountCredentialsRepository(jdbc);
-  }
-
-  @Bean
-  DormitoryProcedureRepository dormitoryProcedureRepository(
-      JdbcTemplate jdbc, Validator validator, JdbcTransactionManager transactionManager) {
-    return new DormitoryProcedureRepository(jdbc, validator, transactionManager);
   }
 
   @Bean
@@ -140,7 +133,7 @@ public class DatabaseConfiguration {
   }
 
   // Read repositories use a dedicated JPA transaction manager on the same pool.
-  // Procedure writes always use the primary JDBC manager; do not mix both boundaries.
+  // Service writes use the primary JDBC manager; do not mix it with the JPA read boundary.
   @Bean
   JpaTransactionManager jpaReadTransactionManager(EntityManagerFactory factory) {
     return new JpaTransactionManager(factory);

@@ -21,4 +21,4 @@ Chưa thể kết luận 8 UC sẵn sàng sử dụng: Controller/API, xác th�
 
 ## Ranh giới dữ liệu
 
-Service Java là nơi đặt quy tắc, điều phối khóa và transaction. Repository chạy câu SQL tường minh bằng Spring JDBC. Schema hiện tại còn function đăng nhập và procedure cũ phục vụ tương thích/kiểm tra legacy; service 8 UC không gọi chúng và không thêm procedure mới. Xem [DU_LIEU_VA_SQL.md](DU_LIEU_VA_SQL.md).
+Service Java là nơi đặt quy tắc, điều phối khóa và transaction. Repository chạy câu SQL tường minh bằng Spring JDBC. Schema hiện hành không định nghĩa function/procedure nghiệp vụ; đăng nhập và các luồng nghiệp vụ chạy bằng Java service/repository SQL trực tiếp. Xem [DU_LIEU_VA_SQL.md](DU_LIEU_VA_SQL.md).

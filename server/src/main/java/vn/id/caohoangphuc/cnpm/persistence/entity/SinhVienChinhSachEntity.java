@@ -3,7 +3,7 @@ package vn.id.caohoangphuc.cnpm.persistence.entity;
 import jakarta.persistence.*;
 import org.hibernate.annotations.Immutable;
 
-/** Read model of public.sinh_vien_chinh_sach; business writes belong to stored procedures. */
+/** Read model of public.sinh_vien_chinh_sach; business writes are handled by service-layer code. */
 @Entity
 @Immutable
 @Table(name = "sinh_vien_chinh_sach", schema = "public")
