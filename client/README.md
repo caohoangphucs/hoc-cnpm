@@ -4,7 +4,7 @@ Thư mục giao diện chính của KTX Smart Hub, lựa chọn **React + TypeSc
 
 ## Trạng thái hiện tại
 
-Client dùng React + TypeScript + Vite, pnpm, React Router và theme Material Design 3 theo 5 vai trò. Đã nối API thật cho xác thực, sửa chữa, kiểm soát cổng/khách thăm, danh sách vi phạm và công ích. Tài khoản, đăng ký/duyệt phòng và hóa đơn/thanh toán vẫn có preview dev riêng; chưa nối các API tra cứu mới hoặc còn thiếu endpoint/phần tích hợp cần thiết. Các phần đã nối API sử dụng route thật với session guard.
+Client dùng React + TypeScript + Vite, pnpm, React Router và theme Material Design 3 theo 5 vai trò. Các màn hình phòng/giường, hồ sơ đăng ký, hóa đơn/thanh toán, sửa chữa, cổng/khách thăm, vi phạm và công ích đã sử dụng API thật trong [API.md](../docs/main/API.md). Phần cần API hoặc dịch vụ chưa có được ghi rõ bên dưới. Các route thật giữ session guard; chỉ quản lý tài khoản còn preview do chưa có endpoint.
 
 ### Khung giao diện và điều hướng
 
@@ -30,7 +30,7 @@ Backend nằm trong `server/`, dùng Spring Boot/JAR và PostgreSQL. Danh sách 
 - Giữ đường dẫn đích trong router state để trở lại sau đăng nhập/2FA, chỉ chấp nhận đường dẫn trong không gian của vai trò server trả về.
 - Style dùng chung Google Sans/Roboto, palette xanh dương, token surface/shape của layout; bổ sung token error cho light/dark. Nginx CSP cho phép đúng hai origin Google Fonts cần cho font của mẫu.
 
-Backend expose session/login/logout và các route TOTP. Client dùng trạng thái `twoFactorVerified` thực tế từ session; chưa có giao diện thiết lập secret TOTP. Đã kiểm tra đăng nhập và điều hướng theo vai trò với backend local. Không có tài khoản giả hoặc tùy chọn bỏ qua guard trong sản phẩm.
+Backend expose session/login/logout và các route TOTP. Client dùng trạng thái `twoFactorVerified` thực tế từ session; có hộp thoại thiết lập TOTP cho ADMIN/KETOAN qua nút trên app bar: bắt đầu, nhập khóa vào ứng dụng xác thực rồi xác nhận mã. Secret/URI chỉ giữ trong bộ nhớ; đóng hộp thoại sẽ xóa khỏi giao diện. Đã kiểm tra đăng nhập và điều hướng theo vai trò với backend local. Không có tài khoản giả hoặc tùy chọn bỏ qua guard trong sản phẩm.
 
 Đã kiểm tra login/2FA/logout cho 5 vai trò, CSRF, guard, lỗi HTTP/kết nối, session sai định dạng, phiên hết hạn, chống submit trùng, responsive light/dark từ 320 đến 1440px. `pnpm test` kiểm tra role/session/đường dẫn đích và health; dùng native TypeScript stripping của Node với cờ `--experimental-strip-types`, không thêm test runner hoặc browser dependency vào client.
 
@@ -42,75 +42,45 @@ Backend expose session/login/logout và các route TOTP. Client dùng trạng th
 - Route xem trước và dữ liệu minh họa chỉ có trong Vite dev, không nằm trong bản build production. Không tạo session giả hoặc bỏ guard của `/admin/accounts`; chưa gửi request thay đổi tài khoản.
 - Dùng chung theme, component và style xanh dương của layout. Dialog hỗ trợ Tab/Escape và phục hồi focus; bảng cuộn ngang trong vùng riêng trên màn hình nhỏ.
 
-### Giao diện đăng ký phòng — UC-04
+### Các màn hình dùng API thật
 
-- Ưu tiên phạm vi demo trong `TODO.md`, theo [thiết kế UC-04](../docs/demo/THIET_KE_XU_LY.md) và BR-03/04. `/student/stay` dùng guard sinh viên hiện có; khi chưa có API tra cứu/đợt đăng ký, trang hiển thị trạng thái chưa thể tải dữ liệu.
-- Một trang, ba bước: tra cứu/chọn giường → ảnh hồ sơ/cam kết → kiểm tra và gửi. Có tìm kiếm phòng/tòa, lọc tòa/loại phòng/phòng còn giường trống; sơ đồ giường thể hiện trống, giữ chỗ, đang ở và khóa. Chặn chọn giường không phù hợp giới tính, đợt đóng, đang có đơn chờ duyệt hoặc lưu trú.
-- Desktop hiển thị danh sách và panel giường cạnh nhau. Dưới 1200px, chọn phòng chuyển sang panel giường với nút quay lại danh sách; các bước form giữ phần tóm tắt chỗ ở đã chọn.
-- Hồ sơ gồm một ảnh CCCD, một ảnh thẻ sinh viên và tối đa ba ảnh minh chứng tùy chọn. Mỗi ảnh JPG/PNG tối đa 5 MB; kiểm loại, dung lượng, chữ ký tệp và khả năng đọc ảnh trên client. Có xem/bỏ/thay ảnh và lỗi tại trường. Kiểm tra client không thay việc kiểm nội dung, ownership, quét và bảo vệ tệp ở backend.
-- Link và Back trong ứng dụng hỏi trước khi bỏ bản nháp; tải lại/đóng tab dùng cảnh báo của trình duyệt. Dùng `createBrowserRouter`/`RouterProvider` để hỗ trợ `useBlocker`; URL, session và guard giữ cùng cấu trúc. Hồ sơ chỉ giữ trong bộ nhớ, không lưu browser storage.
-- Chạy `pnpm dev`, mở `/preview/student/stay` để thử bằng dữ liệu minh họa. Có đợt mở/đóng, giới tính hồ sơ, đơn đang chờ/lưu trú, loading/empty/error và kết quả gửi thành công/xung đột/lỗi dịch vụ/lỗi hồ sơ. Khi xung đột, chọn lại giường và giữ hồ sơ; thành công minh họa hiển thị mã đơn, chờ duyệt và hạn 48 giờ theo giờ Việt Nam.
-- Preview và fixture chỉ có ở dev. Không upload ảnh hoặc gửi đăng ký thật; chưa nối API phòng/giường, upload, đợt đăng ký, hồ sơ sinh viên và đơn đăng ký. Các trường tên phòng/tòa/thông tin sinh viên cần được ánh xạ khi API tra cứu hoàn chỉnh. Chưa triển khai đổi phòng UC-07 trong nhánh này.
+| Màn hình | Phạm vi đã nối |
+|---|---|
+| `/admin/rooms`, `/student/stay` | Danh sách/chi tiết phòng, danh sách giường và phân trang. ADMIN thêm/sửa/xóa phòng và giường. Trường cấu hình API đọc chưa trả về cần được nhập và đối chiếu khi sửa; không suy đoán từ tên hiển thị. |
+| `/student/stay`, `/admin/bookings` — UC-04/12 | Tra cứu hồ sơ/danh sách, trạng thái minh chứng và hạn giữ chỗ; hủy hồ sơ đang chờ. ADMIN duyệt/từ chối có lý do và version, yêu cầu đối chiếu hồ sơ gốc khi duyệt. |
+| `/accountant/invoices`, `/admin/invoices` — UC-17 | Tra cứu/chi tiết hóa đơn, đổi hạn và xóa hóa đơn theo điều kiện backend. Kế toán tạo bản nháp từ tháng/mã phòng, kiểm tra số liệu/cảnh báo và phát hành theo draft ID/version. Tiền do server tính. |
+| `/student/invoices`, `/accountant/payments` — UC-08 | Hóa đơn của sinh viên, tạo phiên VNPAY/MoMo, lịch sử/chi tiết phiên, kiểm tra trạng thái và hủy phiên chưa xử lý. Chỉ mở URL HTTPS do server trả về; quay về từ cổng không tự ghi nhận đã trả tiền. Kế toán tra cứu phiên theo quyền. |
+| `/student/repairs`, `/technician/repairs`, `/admin/repairs` — UC-22 | Báo sự cố, danh sách/chi tiết, hủy phiếu chưa phân công; ADMIN giao việc bằng mã tài khoản kỹ thuật viên thật. Kỹ thuật viên đổi lịch/hoàn thành với version và vật tư thực tế. Thiếu tồn kho giữ trạng thái đang xử lý. |
+| `/security/gate`, `/student/entries`, `/admin/entries` — UC-25 | Ghi lượt bằng mã thẻ/thiết bị và UUID, dùng timestamp/vi phạm/barrier của server; tra cứu nhật ký/chi tiết và phân trang. PENDING không có nghĩa cổng đã mở; nhật ký không có thao tác sửa/xóa. |
+| `/student/visitors`, `/security/visitors`, `/admin/visitors` | Khai báo, tra cứu/chi tiết/hủy khai báo chờ duyệt, ADMIN xét duyệt bằng version. Bảo vệ xem phiếu đã duyệt và ghi vào/ra sau khi đối chiếu giấy tờ gốc. API không trả họ tên/giấy tờ đã giải mã. |
+| `/admin/discipline` — UC-14 | Danh sách tất cả/chờ xử lý, chi tiết và lịch sử quyết định, thêm/sửa/xóa hồ sơ thủ công theo version/điều kiện backend. |
+| `/student/community`, `/admin/community` — UC-30 | Danh sách hoạt động; ADMIN mở/sửa/xóa trước khi có lịch sử đăng ký, điểm danh và xác nhận hoàn thành. Sinh viên đăng ký/hủy, đọc điểm, quy đổi và yêu cầu giấy xác nhận. |
 
-### Giao diện phát hành hóa đơn — UC-17
+Danh sách có `total` (phòng, giường, hồ sơ, hóa đơn, nhật ký cổng) dùng tổng do server trả về. Các endpoint trả mảng (sửa chữa, khách thăm, vi phạm, hoạt động, phiên thanh toán) phân trang theo kích thước 8; có thể cần qua một trang trống để biết đã hết. Tìm/lọc tại client chỉ áp dụng trên trang đang tải và được ghi nhãn rõ.
 
-- `/accountant/invoices` giữ guard session/2FA của Kế toán. Chưa nối API hóa đơn, chỉ số, đơn giá và lưu trú nên trang thật hiển thị trạng thái chưa thể tải dữ liệu.
-- Chạy `pnpm dev`, mở `/preview/accountant/invoices`: chọn kỳ/phòng, tìm/lọc tòa, kiểm tra chỉ số và chi phí; thêm khoản thu nguyên đồng với căn cứ; tạo nháp có phiên bản, tải Excel `.xlsx` và xác nhận phát hành. Dữ liệu minh họa có ở kỳ `2026-10`; đổi kỳ không dùng lại chỉ số hoặc đơn giá cũ.
-- Theo BR-06/07/08 của phạm vi demo: điện nước bằng mức sử dụng × đơn giá, không lũy tiến; chia tiền phòng theo lưu trú đầu kỳ, số dư theo MSSV tăng dần; giảm cao nhất đã xác định cho từng sinh viên, chỉ giảm tiền phòng và làm tròn xuống. Tính bằng số nguyên/BigInt, kiểm giới hạn tiền.
-- Phòng thiếu/sai dữ liệu hoặc đã phát hành bị chặn; có thể chọn bỏ qua phòng lỗi. Thay đổi kỳ/phòng/chi phí làm mất hiệu lực nháp; xung đột khi phát hành yêu cầu tạo lại nháp, lỗi dịch vụ giữ nháp để thử lại. Kết quả hiển thị riêng từng phòng, hạn trả bằng ngày phát hành tại Việt Nam + 15 ngày; có mô phỏng lỗi một phòng để thử lại và chống phát hành trùng.
-- Preview/fixture chỉ có ở dev; thao tác trong bộ nhớ, tải lại sẽ đặt lại. Excel đánh dấu nháp minh họa, chưa phát hành. Chưa lưu hóa đơn, gửi thông báo, tạo QR thanh toán hoặc thay đổi backend; nhập chỉ số/đơn giá thuộc UC khác.
+### Các điều kiện còn thiếu
 
-### Giao diện thanh toán hóa đơn — UC-08
+- Gửi đăng ký phòng cần API tra cứu đợt đăng ký/hồ sơ sinh viên và upload tệp để có window ID/file UUID thật. Chức năng gửi đang bị khóa; tra cứu phòng và hồ sơ vẫn dùng được.
+- Duyệt hồ sơ chưa xem được nội dung tệp trực tuyến: chưa có API tải/tra cứu tệp. Đối chiếu hồ sơ gốc trước khi duyệt, không dựng ảnh minh chứng.
+- Ra quyết định kỷ luật cần minh chứng đã lưu, nhưng chưa có upload/tra cứu tệp. Khiếu nại/trả lời đã có endpoint ghi, chưa có endpoint đọc quyết định của sinh viên hoặc danh sách/chi tiết khiếu nại nên chưa mở luồng này.
+- VNPAY/MoMo cần adapter/cấu hình backend. Lỗi 503 được báo và giữ hóa đơn; callback do nhà cung cấp gửi về backend, client không gọi hoặc mô phỏng callback.
+- Giấy xác nhận công ích cần dịch vụ ký và API tải/theo dõi PDF; hiện chỉ hiển thị tiếp nhận yêu cầu nếu server xác nhận.
+- Không có API đọc danh mục tòa/loại phòng, danh sách kỹ thuật viên, kho, lịch hẹn/mô tả/lịch sử sửa chữa đầy đủ. Form quản lý dùng mã thực do đơn vị quản lý cung cấp; không thêm danh mục giả.
+- Công ích chưa có GET toàn bộ đăng ký/danh sách người tham gia; các phiếu QR và kết quả điểm danh vừa nhận chỉ giữ trong phiên, được ghi nhãn rõ. Hủy đăng ký dùng `DELETE /activities/{registrationId}/registrations` với version: ID là **mã đăng ký**, theo service thực tế.
+- Quản lý tài khoản, khôi phục mật khẩu, đơn giá, nhập chỉ số, thu tiền mặt và báo cáo chưa có endpoint tương ứng trong tài liệu hiện tại.
 
-- `/student/invoices` giữ guard Sinh viên. API hóa đơn/phiên thanh toán/biên lai chưa được nối; trang thật hiển thị trạng thái chưa thể tải dữ liệu. `/preview/student/invoices` chỉ có ở Vite dev, với hóa đơn minh họa của phòng lưu trú và thao tác trong bộ nhớ.
-- Một trang gồm danh sách hóa đơn, tìm/lọc kỳ/trạng thái, chi tiết khoản thu, chọn một hoặc nhiều hóa đơn và khung thanh toán. Có VNPAY/MoMo theo `PaymentDto`, không nhập số tiền tùy ý: lấy toàn bộ dư nợ, lưu phân bổ cố định, kiểm VND nguyên đồng/giới hạn tổng tiền. Desktop có khung thanh toán cạnh danh sách; màn hình nhỏ chuyển thành một cột với liên kết đến phần thanh toán.
-- Xác nhận tạo phiên có hạn 15 phút, đếm ngược từng giây và chặn tạo thêm khi đang chờ hoặc cần đối soát. Retry lỗi tạo phiên giữ cùng request key; tạo phiên mới sau kết quả cuối dùng key mới. Quay về từ cổng hoặc đóng cửa sổ không gạch nợ; chỉ phản hồi thành công đã xác nhận mới cập nhật, kiểm tra lặp không cộng tiền lần hai.
-- Xem trước hỗ trợ pending/success/failed/canceled, sai tiền/kết quả không hợp lệ, hết hạn và thành công đến muộn. Thất bại/hủy/hết hạn giữ dư nợ; tiền đến muộn hoặc dữ liệu không khớp chuyển sang đối soát, chưa cho thanh toán lại. Có lịch sử phiên và biên lai minh họa sau thành công; nút in dùng chế độ in của trình duyệt, chỉ in nội dung biên lai có dấu minh họa.
-- Chưa redirect đến cổng thật, tạo QR, xác minh IPN/chữ ký ở browser, tự polling API, thu tiền hoặc cấp biên lai chính thức. Quyền sở hữu, số tiền, chữ ký và kết quả thanh toán thật phải do backend xác minh theo BR-09/10; fixture xem trước không nằm trong build production. Chưa triển khai tải PDF hóa đơn UC-02 trong nhánh UC-08.
+### Preview và kiểm tra
 
-### Sửa chữa — UC-22 và gửi sự cố
+Preview/fixture đăng ký, duyệt hồ sơ, hóa đơn, thanh toán, sửa chữa, cổng, khách thăm, vi phạm và công ích đã bỏ. Các URL preview cũ chuyển tới route thật và yêu cầu đăng nhập. Chỉ `/preview/admin/accounts` còn dữ liệu minh họa.
 
-- `/student/repairs`: `GET /repairs` theo sinh viên đang đăng nhập; `POST /repairs` gửi tiêu đề, mô tả và ưu tiên, không giả lập tệp đính kèm.
-- `/technician/repairs`: danh sách công việc đã phân công cho kỹ thuật viên, tìm/lọc trên trang hiện tại và phân trang máy chủ. `PUT /repairs/{id}/schedule` đổi lịch; `POST /repairs/{id}/complete` gửi version và vật tư thực tế đã dùng.
-- Thiếu tồn kho: hiển thị danh sách mã thiếu và đề nghị mua, giữ phiếu đang xử lý; không báo đã xuất kho/hoàn thành. Khi sửa payload, request key mới được tạo; retry cùng payload lỗi mạng giữ cả hai header chống lặp.
-- Mô tả, lịch sử, lịch hẹn hiện tại và danh mục tồn kho chưa có API đọc; không dựng dữ liệu thay thế. Session chưa trả account ID và chưa có API chọn kỹ thuật viên nên giao diện tiếp nhận/phân công chưa khả dụng. Hủy phiếu và bảo hành ngoài cũng chưa có endpoint.
-- Preview sửa chữa đã xóa. `/preview/technician/repairs` chuyển sang route thật, yêu cầu đăng nhập.
-
-### Kiểm soát cổng và khách thăm — UC-25
-
-- `/security/gate`: `POST /entries` gửi mã thẻ, hướng, thiết bị và UUID sự kiện; dùng thời điểm, vi phạm và trạng thái barrier do server trả về. Trạng thái `PENDING` không được coi là cổng đã mở. Không mô phỏng phản hồi thiết bị hoặc tạo vi phạm phía client.
-- `/student/visitors`: `POST /visitors` khai báo khách với MSSV của tài khoản, giấy tờ và khoảng thời gian UTC+7. Sau khi gửi, hiển thị mã phiếu để người dùng lưu lại.
-- `/security/visitors`: `POST /visitors/{id}/check-in` hoặc `check-out` sau khi đối chiếu giấy tờ/phiếu; dùng mã khai báo thực. Giao diện chưa nối API tra cứu khách hoặc nhật ký đầy đủ. Danh sách lượt vừa ghi chỉ giữ trong phiên trang và được ghi nhãn rõ.
-- Preview cổng/khách thăm đã xóa; đường dẫn cũ chuyển sang route thật.
-
-### Vi phạm và kỷ luật — UC-14
-
-- `/admin/discipline`: `GET /violations/pending` tải hồ sơ chờ xử lý, số lần đã xác nhận theo học kỳ và lịch sử quyết định. Tìm trên trang hiện tại; phân trang từ server, không tính lại số lần bằng số dòng đang hiển thị.
-- Ra quyết định cần UUID minh chứng đã lưu, nhưng chưa có endpoint upload/tra cứu minh chứng. Giao diện không gửi UUID hoặc tên tệp giả; thao tác này chưa khả dụng. API đọc quyết định/khiếu nại dành cho sinh viên cũng chưa có.
-- Preview vi phạm và mô phỏng quyết định/khiếu nại đã xóa.
-
-### Công ích — UC-30
-
-- `/student/community`, `/admin/community`: `GET /activities`, phân trang máy chủ; mở hoạt động qua `POST /activities`, đăng ký qua `POST /activities/{activityId}/registrations`.
-- Phiếu dùng QR token thật server trả về. Hủy qua `DELETE /activities/{registrationId}/registrations` với version; ID ở đường dẫn là **mã đăng ký**, không phải mã hoạt động.
-- Ban quản lý dùng `POST /activities/attendance` và `POST /activities/completion`. Danh sách phiếu hoặc lượt điểm danh trong phiên chỉ gồm kết quả đã xác nhận từ server; chưa có endpoint đọc toàn bộ lịch tham gia/danh sách người tham gia.
-- Sinh viên chọn mã học kỳ để đọc `GET /activities/points`, quy đổi qua `POST /activities/conversions`, yêu cầu giấy qua `POST /activities/certificates`. Quy đổi hiển thị chờ xác nhận; giấy chưa có API tải/poll PDF. Không tự cộng điểm hoặc mô phỏng hệ thống rèn luyện.
-- Đã sửa lỗi service quy đổi truyền mã học kỳ nội bộ vào repository yêu cầu mã số công khai; test hồi quy giữ phân biệt hai loại mã.
-- Preview công ích và dữ liệu mẫu đã xóa.
-
-Các API CRUD và tra cứu phòng/giường, hồ sơ, hóa đơn, khách thăm, nhật ký vừa được bổ sung trên `develop` đã được đồng bộ vào nhánh. Đợt frontend này giữ phạm vi đã triển khai; việc nối các endpoint mới còn lại cần một lượt triển khai tiếp theo.
-
-### API dùng chung và kiểm tra
-
-- `src/shared/api/client.ts`: base URL, cookie và CSRF. `hooks.ts`: tải/hủy request khi đổi trang, loading/error/retry, khóa submit, đọc session/CSRF mới trước mutation. `protocol.ts`: kiểm tra dữ liệu JSON, báo lỗi an toàn và giữ request identity khi retry.
-- Mỗi mutation gửi `Idempotency-Key` và `X-Request-Id` ổn định theo endpoint/method/payload. Không cập nhật thành công trước khi server xác nhận; lỗi giữ nội dung để kiểm tra hoặc retry.
-- Giữ test xác thực, đăng ký phòng, hóa đơn, thanh toán và health. Test engine demo của bốn phần vừa nối được thay bằng test DTO/payload, mã đăng ký, version, timezone, điểm và trạng thái thiếu tồn/chờ xác nhận. Không xóa test backend hiện có.
-- Chạy `pnpm run lint`, `pnpm run typecheck`, `pnpm run test`, `pnpm run build` trong `client/`. Backend chạy test hồi quy service cùng bộ unit test khi build bằng Maven.
-- Đã kiểm tra trên backend/PostgreSQL local: đăng nhập, tải/tạo phiếu sửa chữa, thiếu vật tư, hoàn thành/xuất vật tư, đọc vi phạm, đăng ký/hủy công ích, điểm danh/hoàn thành và quy đổi. Nhập ngày giờ/khai báo khách và ghi lượt cổng cần kiểm tra riêng; không coi unit test là nghiệm thu toàn bộ API.
+- `src/shared/api/client.ts`: base URL, cookie, CSRF. `hooks.ts`: tải/hủy request, loading/error/retry, khóa submit và đọc CSRF mới trước mutation. `protocol.ts`: giải mã DTO/phân trang, lỗi an toàn và request identity.
+- Mutation gửi `Idempotency-Key` và `X-Request-Id` ổn định theo method/path/payload để retry. Chỉ báo thành công khi server xác nhận; version/ownership/điều kiện nghiệp vụ vẫn do backend kiểm tra.
+- Test engine demo đã được thay bằng test DTO/payload, phân trang, version, timezone, URL thanh toán và lỗi API. Giữ test xác thực/health và các test cần thiết; không xóa test backend.
+- Kiểm tra bằng `pnpm run lint`, `pnpm run test`, `pnpm run typecheck`, `pnpm run build`. Test contract không thay thế kiểm thử tích hợp các mutation trên môi trường QA.
+- Kiểm tra đọc API local ngày 2026-10-03: 29 kiểm tra danh sách/chi tiết/DTO/quyền đọc đạt. Có 5 trường hợp GET trả 500 từ backend: ADMIN đọc bookings/visitors/entries; BAOVE đọc visitors/entries. Log PostgreSQL báo không xác định kiểu tham số NULL trong BookingRepository/GateRepository; frontend hiển thị lỗi và retry, không thay dữ liệu bằng demo. Lượt tích hợp này không sửa backend.
+- Trạng thái hồ sơ hợp lệ để duyệt là `VALID` theo RegistrationService thực tế; ví dụ `COMPLETE` trong docs không đủ để mở nút duyệt.
 
 ## 1. Công nghệ và môi trường
-
-Giao diện UC-12 đã có tại `/admin/bookings`: tìm/lọc/sắp ưu tiên, xem hồ sơ/minh chứng, kiểm tra hồ sơ/hạn giữ chỗ/giường, duyệt/từ chối có lý do và duyệt hàng loạt. `/preview/admin/bookings` dùng fixture, trạng thái lỗi/loading/empty và kết quả mô phỏng; chưa gọi API hoặc tạo lưu trú/hợp đồng thật. Preview của các vai trò dùng chung `/preview/:workspace/*`; các route thật giữ session/2FA guard.
 
 | Thành phần | Lựa chọn |
 |---|---|

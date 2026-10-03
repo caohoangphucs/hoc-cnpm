@@ -7,12 +7,8 @@ import { FeatureFrame } from './pages/FeatureFrame'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { featurePages, type FeaturePageModule } from './featurePages'
 const Accounts = lazy(()=>import('@/features/accounts/AccountsPreview').then(module=>({default:module.PreviewAccounts})))
-const Booking = lazy(()=>import('@/features/booking/BookingPreview').then(module=>({default:module.PreviewRegistration})))
-const Registration = lazy(()=>import('@/features/registration-review/RegistrationReviewPreview'))
-const InvoiceIssuance = lazy(()=>import('@/features/invoice-issuance/InvoiceIssuancePreview'))
-const Payments = lazy(()=>import('@/features/payments/PaymentsPreview'))
-const liveRoutes = new Set(['technician/repairs', 'student/repairs', 'student/visitors', 'security/gate', 'security/visitors', 'student/community', 'admin/community', 'admin/discipline', 'student/notifications'])
-const pages = { 'admin/accounts': Accounts, 'student/stay': Booking, 'admin/bookings': Registration, 'accountant/invoices': InvoiceIssuance, 'student/invoices': Payments, ...featurePages(import.meta.glob<FeaturePageModule>('../features/*/preview-route.tsx', { eager: true })) }
+const liveRoutes = new Set(['technician/repairs', 'student/repairs', 'student/visitors', 'security/gate', 'security/visitors', 'student/community', 'admin/community', 'admin/discipline', 'student/notifications', 'admin/rooms', 'student/stay', 'admin/bookings', 'accountant/invoices', 'student/invoices', 'admin/visitors', 'admin/repairs', 'admin/invoices', 'admin/entries', 'student/entries', 'accountant/payments'])
+const pages = { 'admin/accounts': Accounts, ...featurePages(import.meta.glob<FeaturePageModule>('../features/*/preview-route.tsx', { eager: true })) }
 export default function WorkspacePreview() {
   const {workspaceId}=useParams(), workspace=workspaces.find(w=>w.id===workspaceId)
   if(!workspace)return <NotFoundPage standalone />

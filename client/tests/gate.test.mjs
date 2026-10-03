@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { parseEntry, entryPayload, visitorPayload } from '../src/features/gate/model.ts'
+import { parseEntry, parseEntries, parseVisitor, entryPayload, visitorPayload } from '../src/features/gate/model.ts'
 test('server timestamp, violation and pending barrier are authoritative', () => {
   const result = parseEntry({ eventId: 'uuid', studentId: 'SV01', type: 'VAO', time: '2026-10-03T23:30:00+07:00', barrierStatus: 'PENDING', violationId: 17 })
   assert.equal(result.barrierStatus, 'PENDING'); assert.equal(result.violationId, 17)
@@ -16,4 +16,14 @@ test('visitor declaration rejects invalid intervals and preserves document value
   const body = visitorPayload(' SV01 ', 'Khách', '000123456', '2026-12-01T09:00', '2026-12-01T11:00')
   assert.equal(body.identity, '000123456'); assert.equal(body.validFrom, '2026-12-01T09:00:00+07:00')
   assert.throws(() => visitorPayload('SV01', 'Khách', 'ID', '2026-12-01T11:00', '2026-12-01T09:00'))
+})
+test('visitor list and detail preserve approval state and version without inventing decrypted identity', () => {
+  const visitor = parseVisitor({ id: 3, hostStudentId: '21110001', state: 'APPROVED', validFrom: '2026-10-03T08:00:00+07:00', validTo: '2026-10-03T12:00:00+07:00', version: 2 })
+  assert.equal(visitor.state, 'APPROVED'); assert.equal(visitor.version, 2)
+  assert.equal(Object.hasOwn(visitor, 'name'), false); assert.equal(Object.hasOwn(visitor, 'identity'), false)
+  assert.throws(() => parseVisitor({ ...visitor, version: 0 }))
+})
+test('entry history uses paginated server results and keeps audit event IDs', () => {
+  const page = parseEntries({ items: [{ eventId: 'audit-uuid', studentId: '21110001', type: 'RA', time: '2026-10-03T08:00:00Z', barrierStatus: 'OPENED', violationId: null }], page: 1, pageSize: 8, total: 18 })
+  assert.equal(page.total, 18); assert.equal(page.items[0].eventId, 'audit-uuid')
 })
