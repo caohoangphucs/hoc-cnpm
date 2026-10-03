@@ -4,7 +4,7 @@ skinparam classAttributeIconSize 0
 left to right direction
 title Spring Boot 4.1.1 / PostgreSQL16 — thiết kế đích 8 UC
 package "Web / Security" {
- class ThymeleafViews
+ class ReactClient
  class SecurityFilterChain <<Spring Security>>
  class GlobalExceptionHandler <<@RestControllerAdvice>>
  class BookingController <<@RestController>>
@@ -82,7 +82,7 @@ class PostgreSQL16 <<database>> {
  +procedures : PL/pgSQL
  +constraints : FK, UNIQUE, CHECK
 }
-ThymeleafViews --> SecurityFilterChain
+ReactClient --> SecurityFilterChain
 SecurityFilterChain --> BookingController
 BookingController --> BookingService
 BookingService --> RoomRepository

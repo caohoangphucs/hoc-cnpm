@@ -5,7 +5,7 @@
 Class Diagram đích: [thiết kế lớp demo](class-diagrams/README.md).
 Quy tắc chi tiết và hợp đồng SP tại [quy tắc](QUY_TAC_NGHIEP_VU.md) và [dữ liệu](DU_LIEU_VA_SP.md).
 
-Spring Boot @RestController nhận DTO @Valid; SecurityFilterChain và @PreAuthorize kiểm quyền/2FA, Service @Transactional điều phối; @Repository dùng JdbcTemplate gọi SP. Thymeleaf/Bootstrap giữ loading/empty state và lỗi theo trường. Xem [mapping và ranh giới transaction](SPRING_BOOT.md). Danh mục class legacy ở phần bước5 dưới đây được thay bằng class đích; toàn bộ còn là thiết kế, chưa có code Boot.
+Spring Boot @RestController nhận DTO @Valid; SecurityFilterChain và @PreAuthorize kiểm quyền/2FA, Service @Transactional điều phối; @Repository dùng JdbcTemplate gọi SP. React/Bootstrap giữ loading/empty state và lỗi theo trường. Xem [mapping và ranh giới transaction](SPRING_BOOT.md). Danh mục class legacy ở phần bước5 dưới đây được thay bằng class đích; toàn bộ còn là thiết kế, chưa có code Boot.
 
 ## UC-04 Đăng ký phòng
 

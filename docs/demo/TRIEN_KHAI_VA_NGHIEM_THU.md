@@ -6,7 +6,7 @@ Bộ tài liệu áp dụng cho 8 UC trong NGUON.md. Tất cả class/API/bảng
 
 | Đợt | Sản phẩm code phải có | Điều kiện qua đợt |
 |---|---|---|
-| 0 | Spring Boot skeleton/JAR theo SPRING_BOOT.md, Thymeleaf/Spring Security/JdbcTemplate; sửa sai lệch PostgreSQL trong POSTGRESQL.md; auth/2FA/RBAC/CSRF; fixture riêng; quản lý secret | Build Boot4.1.1/Java17 JAR; schema/seed nạp PG16; kiểm function và 9 procedure qua JDBC; login sai/hash lỗi bị chặn |
+| 0 | Spring Boot skeleton/JAR theo SPRING_BOOT.md, React/Spring Security/JdbcTemplate; sửa sai lệch PostgreSQL trong POSTGRESQL.md; auth/2FA/RBAC/CSRF; fixture riêng; quản lý secret | Build Boot4.1.1/Java17 JAR; schema/seed nạp PG16; kiểm function và 9 procedure qua JDBC; login sai/hash lỗi bị chặn |
 | 1 | Dữ liệu học kỳ/đợt/hồ sơ/hợp đồng; UC04/12 | Tranh chấp một giường, hết hạn48h, duyệt/từ chối rollback; email lỗi vẫn giữ quyết định |
 | 2 | Giá/chính sách/snapshot/draft; UC17/08 | Hóa đơn khớp tiền; IPN sandbox thật, chữ ký sai/lặp/tiền sai không gạch sai; gộp và đối soát |
 | 3 | Phân công/lịch sử/sửa chữa; thẻ/log/khách/barrier; UC22/25 | Không âm kho; hoàn thành lặp không xuất lại; mốc giờ Việt Nam; mock barrier được gắn nhãn |
@@ -41,4 +41,4 @@ Mỗi test có mã UC/BR, fixture, requestId, request/response đã che dữ li�
 
 Tài liệu là đầu vào triển khai; ứng dụng chỉ sẵn sàng demo khi các điều kiện trên có bằng chứng. SRS lịch sử giữ nguyên. Các UC ngoài 8 UC vẫn nằm backlog. Bộ docs không tạo tài khoản sandbox, chứng thư ký số hoặc tích hợp nhà cung cấp thay nhóm triển khai.
 
-Điều kiện công nghệ: executable JAR khởi động, Spring Security trả đúng JSON/CSRF/2FA, app không tự DROP/seed DB, TestcontainersPG16 kiểm rollback và gọi SP; Thymeleaf thay JSP. Chi tiết [chuyển đổi Spring Boot](SPRING_BOOT.md).
+Điều kiện công nghệ: executable JAR khởi động, Spring Security trả đúng JSON/CSRF/2FA, app không tự DROP/seed DB, TestcontainersPG16 kiểm rollback và gọi SP; React thay JSP. Chi tiết [chuyển đổi Spring Boot](SPRING_BOOT.md).

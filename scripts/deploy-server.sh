@@ -1,65 +1,51 @@
 #!/usr/bin/env bash
-# Trusted develop-only job. No schema/seed replay on an initialized database.
-set -euo pipefail
+# Deploy locally tested images with Compose; never alter production DB data.
+set -Eeuo pipefail
 umask 077
 sha=${1:?Commit SHA required}
-archive=${2:?Image archive required}
+server_image=${2:?Verified server image required}
+client_image=${3:?Verified client image required}
 [[ "$sha" =~ ^[a-f0-9]{40}$ ]]
-deploy_dir=/home/phuc/deployments/hoc-cnpm
-test -r "$deploy_dir/runtime.env"
-exec 9> "$deploy_dir/deploy.lock"
+[[ "$server_image" = "cnpm-server-ci:$sha" && "$client_image" = "cnpm-client-ci:$sha" ]]
+export DEPLOY_DIR=${CNPM_DEPLOY_DIR:-/home/phuc/deployments/hoc-cnpm}
+export WEB_PORT=${CNPM_WEB_PORT:-8091}
+export DEPLOY_NETWORK=${CNPM_NETWORK:-cnpm-production}
+test -r "$DEPLOY_DIR/runtime.env"
+exec 9> "$DEPLOY_DIR/deploy.lock"
 flock -n 9 || { echo 'Another deployment is active'; exit 1; }
-# Check readiness before stopping the current app.
-docker exec cnpm-postgres pg_isready -U cnpm_user -d cnpm_db
-schema_count=$(docker exec cnpm-postgres psql -U cnpm_user -d cnpm_db -Atc "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")
-[[ "$schema_count" = 0 || "$schema_count" = 27 ]] || { echo 'Unexpected schema; manual review required'; exit 1; }
-gzip -dc "$archive" | docker load
-docker tag cnpm-ci:latest "cnpm-release:$sha"
-previous="cnpm-web-previous-${sha:0:12}"
-# Do not discard an existing rollback container.
-if docker inspect "$previous" >/dev/null 2>&1; then echo 'Rollback container already exists; review before retry'; exit 1; fi
+for image in "$server_image" "$client_image"; do
+  [[ "$(docker image inspect "$image" --format '{{index .Config.Labels "cnpm.commit"}}')" = "$sha" ]]
+done
+compose_file=$(cd "$(dirname "$0")/.." && pwd)/docker-compose.prod.yml
+release="$DEPLOY_DIR/release.env"
+previous="$DEPLOY_DIR/previous-release.env"
+# The initial adoption is performed once; subsequent releases only recreate apps.
+test -r "$release"
+cp "$release" "$previous"
+compose() {
+  docker compose -p cnpm --env-file "$1" -f "$compose_file" up -d --no-build --pull never
+}
 rollback() {
   code=$?
   trap - ERR
-  docker logs --tail 80 cnpm-web 2>&1 || true
-  if docker inspect "$previous" >/dev/null 2>&1; then
-    docker rm -f cnpm-web >/dev/null 2>&1 || true
-    docker rename "$previous" cnpm-web
-    docker start cnpm-web
-  elif docker inspect cnpm-web >/dev/null 2>&1; then
-    docker start cnpm-web
-  fi
-  echo 'Deployment failed; previous app restored if available'
+  echo 'Deployment failed; restoring previous images'
+  cp "$previous" "$release"
+  compose "$release" || { echo 'Rollback failed; inspect Compose logs'; exit 1; }
   exit "$code"
 }
 trap rollback ERR
-if docker inspect cnpm-web >/dev/null 2>&1; then
-  docker stop cnpm-web
-  docker rename cnpm-web "$previous"
-fi
-if [[ "$schema_count" = 0 ]]; then
-  docker inspect cnpm-mysql >/dev/null
-  backup_dir=$(mktemp -d "$deploy_dir/mysql-before-postgres-XXXXXXXX")
-  docker exec cnpm-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysqldump -uroot --single-transaction --no-tablespaces --routines --events --triggers cnpm_db' > "$backup_dir/cnpm_db.sql"
-  grep -q 'Dump completed' "$backup_dir/cnpm_db.sql"
-  python3 scripts/import-legacy-mysql.py
-fi
-docker run -d --name cnpm-web --restart unless-stopped \
-  --network cnpm-production -p 8091:8080 \
-  --env-file "$deploy_dir/runtime.env" \
-  --label "cnpm.commit=$sha" "cnpm-release:$sha"
+printf 'SERVER_IMAGE=%s\nCLIENT_IMAGE=%s\n' "$server_image" "$client_image" > "$release.tmp"
+mv "$release.tmp" "$release"
+compose "$release"
 ready=false
-for attempt in $(seq 1 60); do
-  if curl --fail --silent http://127.0.0.1:8091/ > "$deploy_dir/index-check.html"; then ready=true; break; fi
+for attempt in $(seq 1 "${CNPM_HEALTH_ATTEMPTS:-60}"); do
+  if curl --fail --silent --max-time 5 "http://127.0.0.1:$WEB_PORT/api/health" | grep -q '"status":"UP"'; then
+    ready=true; break
+  fi
   sleep 2
 done
 [[ "$ready" = true ]]
-# A DB-backed request catches pool/function errors hidden by the landing page.
-curl --fail --silent --show-error \
-  --data-urlencode username=ci-nonexistent-account --data-urlencode password=invalid \
-  http://127.0.0.1:8091/auth/login > "$deploy_dir/login-check.html"
-grep -q 'không chính xác' "$deploy_dir/login-check.html"
-if docker logs cnpm-web 2>&1 | grep -E 'SEVERE|Exception|ERROR'; then false; fi
-printf '%s\n' "$sha" > "$deploy_dir/deployed-sha"
+curl --fail --silent --max-time 5 "http://127.0.0.1:$WEB_PORT/" | grep -q 'KTX Smart Hub'
+printf '%s\n' "$sha" > "$DEPLOY_DIR/deployed-sha"
 trap - ERR
-echo "Deployed $sha; rollback container: $previous"
+echo "Deployed $sha with Docker Compose"
