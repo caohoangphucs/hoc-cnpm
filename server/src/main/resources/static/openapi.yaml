@@ -1,0 +1,893 @@
+openapi: 3.1.0
+info:
+  title: KTX Smart Hub API
+  version: 1.0.0
+  description: |
+    API dùng session cookie. Trước khi đăng nhập, gọi GET /api/v1/auth/session và lấy csrfToken.
+    Authorize Swagger bằng token đó, gọi login, sau đó gọi lại auth/session và cập nhật token mới
+    trong Authorize. Trình duyệt tự gửi JSESSIONID cùng origin.
+servers:
+  - url: /
+tags:
+  - name: Auth
+  - name: Rooms and bookings
+  - name: Invoices and payments
+  - name: Repairs
+  - name: Gate and visitors
+  - name: Discipline
+  - name: Community
+paths:
+  /api/v1/auth/session:
+    get:
+      tags: [Auth]
+      summary: Get session and CSRF token
+      operationId: getSession
+      responses:
+        '200':
+          description: Current session and CSRF token
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Session'}
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login
+      operationId: login
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/Login'}
+      responses:
+        '200': {description: Login successful, content: {application/json: {schema: {$ref: '#/components/schemas/Session'}}}}
+        '401': {$ref: '#/components/responses/Error'}
+  /api/v1/auth/2fa:
+    post:
+      tags: [Auth]
+      summary: Verify authenticator code
+      operationId: verifyTwoFactor
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/Otp'}
+      responses:
+        '200': {description: Updated session, content: {application/json: {schema: {$ref: '#/components/schemas/Session'}}}}
+        '401': {$ref: '#/components/responses/Error'}
+  /api/v1/auth/2fa/setup:
+    post:
+      tags: [Auth]
+      summary: Start authenticator setup
+      operationId: startTwoFactorSetup
+      security: [{csrfToken: []}]
+      responses:
+        '200': {description: Authenticator provisioning details, content: {application/json: {schema: {$ref: '#/components/schemas/TwoFactorSetup'}}}}
+  /api/v1/auth/2fa/setup/confirm:
+    post:
+      tags: [Auth]
+      summary: Confirm authenticator setup
+      operationId: confirmTwoFactorSetup
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/Otp'}
+      responses:
+        '200': {description: Updated session, content: {application/json: {schema: {$ref: '#/components/schemas/Session'}}}}
+  /api/v1/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout
+      operationId: logout
+      security: [{csrfToken: []}]
+      responses:
+        '200': {description: Anonymous session and refreshed CSRF token, content: {application/json: {schema: {$ref: '#/components/schemas/Session'}}}}
+
+  /api/v1/rooms:
+    get:
+      tags: [Rooms and bookings]
+      summary: List rooms
+      operationId: listRooms
+      parameters: [{$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/PageSize'}]
+      responses:
+        '200': {description: Room page, content: {application/json: {schema: {$ref: '#/components/schemas/RoomPage'}}}}
+    post:
+      tags: [Rooms and bookings]
+      summary: Create room (ADMIN)
+      operationId: createRoom
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/RoomWrite'}
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+  /api/v1/rooms/{id}:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    get:
+      tags: [Rooms and bookings]
+      summary: Get room
+      operationId: getRoom
+      responses:
+        '200': {description: Room, content: {application/json: {schema: {$ref: '#/components/schemas/Room'}}}}
+        '404': {$ref: '#/components/responses/Error'}
+    put:
+      tags: [Rooms and bookings]
+      summary: Update room (ADMIN)
+      operationId: updateRoom
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/RoomWrite'}
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+    delete:
+      tags: [Rooms and bookings]
+      summary: Delete room when no linked records exist (ADMIN)
+      operationId: deleteRoom
+      security: [{csrfToken: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/rooms/{id}/beds:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    get:
+      tags: [Rooms and bookings]
+      summary: List beds in room
+      operationId: listRoomBeds
+      parameters: [{$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/PageSize'}]
+      responses:
+        '200': {description: Bed page, content: {application/json: {schema: {$ref: '#/components/schemas/BedPage'}}}}
+  /api/v1/beds:
+    post:
+      tags: [Rooms and bookings]
+      summary: Create bed (ADMIN)
+      operationId: createBed
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/BedWrite'}
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+  /api/v1/beds/{id}:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    put:
+      tags: [Rooms and bookings]
+      summary: Update bed (ADMIN)
+      operationId: updateBed
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/BedWrite'}
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+    delete:
+      tags: [Rooms and bookings]
+      summary: Delete bed without booking/residency history (ADMIN)
+      operationId: deleteBed
+      security: [{csrfToken: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/bookings:
+    get:
+      tags: [Rooms and bookings]
+      summary: List bookings visible to caller
+      operationId: listBookings
+      parameters: [{$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/PageSize'}]
+      responses:
+        '200': {description: Booking page, content: {application/json: {schema: {$ref: '#/components/schemas/BookingPage'}}}}
+    post:
+      tags: [Rooms and bookings]
+      summary: Create a room booking (SINHVIEN)
+      operationId: createBooking
+      security: [{csrfToken: []}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {$ref: '#/components/requestBodies/Booking'}
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/bookings/{id}:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    get:
+      tags: [Rooms and bookings]
+      summary: Get booking
+      operationId: getBooking
+      responses:
+        '200': {description: Booking detail, content: {application/json: {schema: {$ref: '#/components/schemas/Booking'}}}}
+    delete:
+      tags: [Rooms and bookings]
+      summary: Delete a pending booking and release its bed
+      operationId: deleteBooking
+      security: [{csrfToken: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/bookings/{id}/decision:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    post:
+      tags: [Rooms and bookings]
+      summary: Approve or reject booking (ADMIN)
+      operationId: decideBooking
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/Approval'}
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+
+  /api/v1/invoice-drafts:
+    post:
+      tags: [Invoices and payments]
+      summary: Preview monthly invoices (KETOAN)
+      operationId: previewInvoices
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/InvoiceDraft'}
+      responses:
+        '200': {description: Draft snapshot, content: {application/json: {schema: {$ref: '#/components/schemas/InvoiceDraft'}}}}
+  /api/v1/invoices/issue:
+    post:
+      tags: [Invoices and payments]
+      summary: Issue reviewed invoice draft (KETOAN)
+      operationId: issueInvoices
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/IssueInvoices'}
+      responses:
+        '200': {description: Result per room, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/IssueResult'}}}}}
+  /api/v1/invoices:
+    get:
+      tags: [Invoices and payments]
+      summary: List invoices visible to caller
+      operationId: listInvoices
+      parameters: [{$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/PageSize'}]
+      responses:
+        '200': {description: Invoice page, content: {application/json: {schema: {$ref: '#/components/schemas/InvoicePage'}}}}
+  /api/v1/invoices/{id}:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    get:
+      tags: [Invoices and payments]
+      summary: Get invoice and line items
+      operationId: getInvoice
+      responses:
+        '200': {description: Invoice, content: {application/json: {schema: {$ref: '#/components/schemas/Invoice'}}}}
+    put:
+      tags: [Invoices and payments]
+      summary: Update due date while unpaid (KETOAN/ADMIN)
+      operationId: updateInvoice
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/InvoiceUpdate'}
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+        '409': {$ref: '#/components/responses/Error'}
+    delete:
+      tags: [Invoices and payments]
+      summary: Delete unpaid invoice without payments (KETOAN/ADMIN)
+      operationId: deleteInvoice
+      security: [{csrfToken: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/payment-sessions:
+    get:
+      tags: [Invoices and payments]
+      summary: List visible payment sessions
+      operationId: listPaymentSessions
+      parameters: [{$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/PageSize'}]
+      responses:
+        '200': {description: Payment sessions, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/PaymentSession'}}}}}
+    post:
+      tags: [Invoices and payments]
+      summary: Start payment session
+      operationId: createPaymentSession
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/Payment'}
+      responses:
+        '200': {description: Payment session, content: {application/json: {schema: {$ref: '#/components/schemas/PaymentSession'}}}}
+        '503': {$ref: '#/components/responses/Error'}
+  /api/v1/payment-sessions/{id}:
+    parameters: [{$ref: '#/components/parameters/Uuid'}]
+    get:
+      tags: [Invoices and payments]
+      summary: Get payment session
+      operationId: getPaymentSession
+      responses:
+        '200': {description: Payment session, content: {application/json: {schema: {$ref: '#/components/schemas/PaymentSession'}}}}
+    delete:
+      tags: [Invoices and payments]
+      summary: Delete session before gateway processing starts
+      operationId: deletePaymentSession
+      security: [{csrfToken: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/payment-callbacks/{gateway}:
+    post:
+      tags: [Invoices and payments]
+      summary: Receive signed gateway callback
+      operationId: paymentCallback
+      description: Send the provider-specific callback fields as form/query parameters. No browser session or CSRF token is used.
+      parameters:
+        - name: gateway
+          in: path
+          required: true
+          schema: {type: string, enum: [vnpay, momo]}
+      responses:
+        '200': {description: Updated payment session, content: {application/json: {schema: {$ref: '#/components/schemas/PaymentSession'}}}}
+
+  /api/v1/repairs:
+    get:
+      tags: [Repairs]
+      summary: List repairs visible to caller
+      operationId: listRepairs
+      parameters: [{$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/Size'}]
+      responses:
+        '200': {description: Repair records, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Repair'}}}}}
+    post:
+      tags: [Repairs]
+      summary: Create repair request (SINHVIEN)
+      operationId: createRepair
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/Repair'}
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+  /api/v1/repairs/{id}:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    get:
+      tags: [Repairs]
+      summary: Get repair request
+      operationId: getRepair
+      responses:
+        '200': {description: Repair record, content: {application/json: {schema: {$ref: '#/components/schemas/Repair'}}}}
+    delete:
+      tags: [Repairs]
+      summary: Delete unassigned repair request
+      operationId: deleteRepair
+      security: [{csrfToken: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/repairs/{id}/assignment:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    post:
+      tags: [Repairs]
+      summary: Assign technician
+      operationId: assignRepair
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/Assignment'}
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+  /api/v1/repairs/{id}/schedule:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    put:
+      tags: [Repairs]
+      summary: Change repair schedule
+      operationId: rescheduleRepair
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/RepairSchedule'}
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+  /api/v1/repairs/{id}/complete:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    post:
+      tags: [Repairs]
+      summary: Complete repair
+      operationId: completeRepair
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/RepairComplete'}
+      responses:
+        '200': {description: Completion result and material shortages, content: {application/json: {schema: {$ref: '#/components/schemas/RepairCompletion'}}}}
+
+  /api/v1/entries:
+    get:
+      tags: [Gate and visitors]
+      summary: List gate entries
+      operationId: listEntries
+      parameters: [{$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/Size'}]
+      responses:
+        '200': {description: Entry page, content: {application/json: {schema: {$ref: '#/components/schemas/EntryPage'}}}}
+    post:
+      tags: [Gate and visitors]
+      summary: Record card entry/exit (BAOVE)
+      operationId: recordEntry
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/Entry'}
+      responses:
+        '200': {description: Recorded gate event, content: {application/json: {schema: {$ref: '#/components/schemas/Entry'}}}}
+  /api/v1/entries/{id}:
+    parameters: [{$ref: '#/components/parameters/Uuid'}]
+    get:
+      tags: [Gate and visitors]
+      summary: Get immutable gate event
+      operationId: getEntry
+      responses:
+        '200': {description: Gate event record, content: {application/json: {schema: {$ref: '#/components/schemas/Entry'}}}}
+  /api/v1/visitors:
+    get:
+      tags: [Gate and visitors]
+      summary: List visitor requests visible to caller
+      operationId: listVisitors
+      parameters: [{$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/Size'}]
+      responses:
+        '200': {description: Visitor records, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Visitor'}}}}}
+    post:
+      tags: [Gate and visitors]
+      summary: Declare visitor (SINHVIEN)
+      operationId: declareVisitor
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/Visitor'}
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+  /api/v1/visitors/{id}:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    get:
+      tags: [Gate and visitors]
+      summary: Get visitor request
+      operationId: getVisitor
+      responses:
+        '200': {description: Visitor record without decrypted identity fields, content: {application/json: {schema: {$ref: '#/components/schemas/Visitor'}}}}
+    delete:
+      tags: [Gate and visitors]
+      summary: Delete pending visitor declaration
+      operationId: deleteVisitor
+      security: [{csrfToken: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/visitors/{id}/approval:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    post:
+      tags: [Gate and visitors]
+      summary: Approve or reject visitor (ADMIN)
+      operationId: approveVisitor
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/Approval'}
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+  /api/v1/visitors/{id}/check-in:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    post:
+      tags: [Gate and visitors]
+      summary: Check visitor in (BAOVE)
+      operationId: checkVisitorIn
+      security: [{csrfToken: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+  /api/v1/visitors/{id}/check-out:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    post:
+      tags: [Gate and visitors]
+      summary: Check visitor out (BAOVE)
+      operationId: checkVisitorOut
+      security: [{csrfToken: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+
+  /api/v1/violations:
+    get:
+      tags: [Discipline]
+      summary: List violations
+      operationId: listViolations
+      parameters: [{$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/Size'}]
+      responses:
+        '200': {description: Violation records, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Violation'}}}}}
+    post:
+      tags: [Discipline]
+      summary: Create manual violation (ADMIN)
+      operationId: createViolation
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/ViolationCreate'}
+      responses:
+        '200': {description: Created violation, content: {application/json: {schema: {$ref: '#/components/schemas/Violation'}}}}
+  /api/v1/violations/pending:
+    get:
+      tags: [Discipline]
+      summary: List pending violations
+      operationId: listPendingViolations
+      parameters: [{$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/Size'}]
+      responses:
+        '200': {description: Pending violations, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Violation'}}}}}
+  /api/v1/violations/{id}:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    get:
+      tags: [Discipline]
+      summary: Get violation and decision history
+      operationId: getViolation
+      responses:
+        '200': {description: Violation, content: {application/json: {schema: {$ref: '#/components/schemas/Violation'}}}}
+    put:
+      tags: [Discipline]
+      summary: Update pending violation details (ADMIN)
+      operationId: updateViolation
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/ViolationUpdate'}
+      responses:
+        '200': {description: Updated violation, content: {application/json: {schema: {$ref: '#/components/schemas/Violation'}}}}
+        '409': {$ref: '#/components/responses/Error'}
+    delete:
+      tags: [Discipline]
+      summary: Delete eligible manual violation (ADMIN)
+      operationId: deleteViolation
+      security: [{csrfToken: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/violations/decisions:
+    post:
+      tags: [Discipline]
+      summary: Apply disciplinary decisions as a batch (ADMIN)
+      operationId: decideViolations
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/DisciplineDecision'}
+      responses:
+        '200': {description: Updated violations and decision histories, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Violation'}}}}}
+  /api/v1/decisions/{id}/appeals:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    post:
+      tags: [Discipline]
+      summary: Appeal a decision (SINHVIEN)
+      operationId: appealDecision
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/Appeal'}
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+  /api/v1/appeals/{id}/response:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    post:
+      tags: [Discipline]
+      summary: Respond to appeal (ADMIN)
+      operationId: respondToAppeal
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/AppealResponse'}
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+
+  /api/v1/activities:
+    get:
+      tags: [Community]
+      summary: List activities
+      operationId: listActivities
+      parameters: [{$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/Size'}]
+      responses:
+        '200': {description: Activities, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Activity'}}}}}
+    post:
+      tags: [Community]
+      summary: Create activity (ADMIN)
+      operationId: createActivity
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/Activity'}
+      responses:
+        '200': {description: Created activity, content: {application/json: {schema: {$ref: '#/components/schemas/Activity'}}}}
+  /api/v1/activities/{id}:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    put:
+      tags: [Community]
+      summary: Update activity before registrations exist (ADMIN)
+      operationId: updateActivity
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/Activity'}
+      responses:
+        '200': {description: Updated activity, content: {application/json: {schema: {$ref: '#/components/schemas/Activity'}}}}
+    delete:
+      tags: [Community]
+      summary: Delete activity before registrations exist (ADMIN)
+      operationId: deleteActivity
+      security: [{csrfToken: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/activities/{id}/registrations:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    post:
+      tags: [Community]
+      summary: Register for activity (SINHVIEN)
+      operationId: registerActivity
+      security: [{csrfToken: []}]
+      responses:
+        '200': {description: Registration and one-time QR token, content: {application/json: {schema: {$ref: '#/components/schemas/Registration'}}}}
+    delete:
+      tags: [Community]
+      summary: Cancel own activity registration (SINHVIEN)
+      operationId: cancelActivityRegistration
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/Version'}
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+  /api/v1/activities/attendance:
+    post:
+      tags: [Community]
+      summary: Record QR attendance (ADMIN)
+      operationId: recordAttendance
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/Attendance'}
+      responses:
+        '200': {$ref: '#/components/responses/Command'}
+  /api/v1/activities/completion:
+    post:
+      tags: [Community]
+      summary: Confirm completed registrations (ADMIN)
+      operationId: confirmActivityCompletion
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/Confirm'}
+      responses:
+        '200': {description: Command result for each registration, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Command'}}}}}
+  /api/v1/activities/points:
+    get:
+      tags: [Community]
+      summary: Get own points in semester
+      operationId: getActivityPoints
+      parameters:
+        - name: semesterId
+          in: query
+          required: true
+          schema: {type: integer, format: int64, minimum: 1}
+      responses:
+        '200': {description: Points ledger, content: {application/json: {schema: {$ref: '#/components/schemas/Points'}}}}
+  /api/v1/activities/conversions:
+    post:
+      tags: [Community]
+      summary: Convert activity points to DRL
+      operationId: convertActivityPoints
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/Convert'}
+      responses:
+        '200': {description: Conversion state, content: {application/json: {schema: {$ref: '#/components/schemas/Conversion'}}}}
+  /api/v1/activities/certificates:
+    post:
+      tags: [Community]
+      summary: Request semester certificate
+      operationId: requestActivityCertificate
+      security: [{csrfToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/Certificate'}
+      responses:
+        '200': {description: Certificate job, content: {application/json: {schema: {$ref: '#/components/schemas/Certificate'}}}}
+
+components:
+  securitySchemes:
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-TOKEN
+      description: Get this from GET /api/v1/auth/session. Login rotates the token; refresh it after login.
+  parameters:
+    Id: {name: id, in: path, required: true, schema: {type: string}}
+    Uuid: {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+    Page: {name: page, in: query, required: false, schema: {type: integer, default: 1, minimum: 1}}
+    PageSize: {name: pageSize, in: query, required: false, schema: {type: integer, default: 20, minimum: 1, maximum: 100}}
+    Size: {name: size, in: query, required: false, schema: {type: integer, default: 20, minimum: 1, maximum: 100}}
+    IdempotencyKey: {name: Idempotency-Key, in: header, required: true, schema: {type: string, format: uuid}}
+  requestBodies:
+    Login: {required: true, content: {application/json: {schema: {type: object, required: [username, password], properties: {username: {type: string, example: sv001}, password: {type: string, format: password, example: '123456'}}}}}}
+    Otp: {required: true, content: {application/json: {schema: {type: object, required: [code], properties: {code: {type: string, pattern: '^[0-9]{6}$', example: '123456'}}}}}}
+    RoomWrite: {required: true, content: {application/json: {schema: {type: object, required: [id, buildingId, number, floor, capacity, basePrice, status], properties: {id: {type: string}, buildingId: {type: string}, roomTypeId: {type: string, nullable: true}, number: {type: string}, floor: {type: integer, minimum: 1}, capacity: {type: integer, minimum: 1}, basePrice: {type: integer, minimum: 0}, status: {type: string, enum: [TRONG, CON_CHO, DAY, DANG_SUA, KHOA]}}}}}}
+    BedWrite: {required: true, content: {application/json: {schema: {type: object, required: [id, roomId, number, status], properties: {id: {type: string}, roomId: {type: string}, number: {type: string}, position: {type: string, nullable: true}, status: {type: string, enum: [TRONG, GIU_CHO, DANG_O, KHOA]}}}}}}
+    Booking: {required: true, content: {application/json: {schema: {type: object, required: [bedId, windowId, fileIds, acceptedTerms], properties: {bedId: {type: string}, windowId: {type: integer, format: int64}, fileIds: {type: array, minItems: 2, maxItems: 5, items: {type: string, format: uuid}}, acceptedTerms: {type: boolean, enum: [true]}}}}}}
+    Approval: {required: true, content: {application/json: {schema: {type: object, required: [decision, version], properties: {decision: {type: string, enum: [DUYET, TU_CHOI]}, reason: {type: string, nullable: true}, version: {type: integer, format: int64, minimum: 1}}}}}}
+    InvoiceDraft: {required: true, content: {application/json: {schema: {type: object, required: [month, roomIds], properties: {month: {type: string, pattern: '^\d{4}-(0[1-9]|1[0-2])$'}, roomIds: {type: array, minItems: 1, maxItems: 100, uniqueItems: true, items: {type: string}}}}}}}
+    IssueInvoices: {required: true, content: {application/json: {schema: {type: object, required: [draftId, version], properties: {draftId: {type: string, format: uuid}, version: {type: integer, format: int64, minimum: 1}}}}}}
+    InvoiceUpdate: {required: true, content: {application/json: {schema: {type: object, required: [dueDate], properties: {dueDate: {type: string, format: date}}}}}}
+    Payment: {required: true, content: {application/json: {schema: {type: object, required: [invoiceIds, gateway], properties: {invoiceIds: {type: array, minItems: 1, uniqueItems: true, items: {type: integer, format: int64, minimum: 1}}, gateway: {type: string, enum: [VNPAY, MOMO]}}}}}}
+    Repair: {required: true, content: {application/json: {schema: {type: object, required: [title, description, priority], properties: {title: {type: string}, description: {type: string}, priority: {type: string, enum: [THAP, TRUNG_BINH, CAO, KHAN_CAP]}, fileIds: {type: array, maxItems: 5, items: {type: string, format: uuid}}}}}}}
+    Assignment: {required: true, content: {application/json: {schema: {type: object, required: [technicianAccountId, scheduledAt, version], properties: {technicianAccountId: {type: integer, format: int64}, scheduledAt: {type: string, format: date-time}, version: {type: integer, format: int64}}}}}}
+    RepairSchedule: {required: true, content: {application/json: {schema: {type: object, required: [version, scheduledAt, note], properties: {version: {type: integer, format: int64}, scheduledAt: {type: string, format: date-time}, warrantyUntil: {type: string, format: date, nullable: true}, note: {type: string}}}}}}
+    RepairComplete: {required: true, content: {application/json: {schema: {type: object, required: [version, note, supplies], properties: {version: {type: integer, format: int64}, note: {type: string}, supplies: {type: array, items: {type: object, required: [supplyId, quantity], properties: {supplyId: {type: string}, quantity: {type: integer, minimum: 1}}}}, warrantyUntil: {type: string, format: date, nullable: true}}}}}}
+    Entry: {required: true, content: {application/json: {schema: {type: object, required: [eventId, cardToken, type, deviceId], properties: {eventId: {type: string, format: uuid}, cardToken: {type: string, writeOnly: true}, type: {type: string, enum: [VAO, RA]}, deviceId: {type: string}, note: {type: string, nullable: true}}}}}}
+    Visitor: {required: true, content: {application/json: {schema: {type: object, required: [hostStudentId, name, identity, validFrom, validTo], properties: {hostStudentId: {type: string}, name: {type: string}, identity: {type: string}, validFrom: {type: string, format: date-time}, validTo: {type: string, format: date-time}}}}}}
+    ViolationCreate: {required: true, content: {application/json: {schema: {type: object, required: [studentId, content, level], properties: {studentId: {type: string}, content: {type: string, maxLength: 2000}, level: {type: string, enum: [LOW, MEDIUM, HIGH, CRITICAL]}, occurredAt: {type: string, format: date-time, nullable: true}}}}}}
+    ViolationUpdate: {required: true, content: {application/json: {schema: {type: object, required: [content, level, version], properties: {content: {type: string, maxLength: 2000}, level: {type: string, enum: [LOW, MEDIUM, HIGH, CRITICAL]}, version: {type: integer, format: int64, minimum: 1}}}}}}
+    DisciplineDecision: {required: true, content: {application/json: {schema: {type: object, required: [violationIds, decision, reason, evidenceFileId, versions], properties: {violationIds: {type: array, minItems: 1, items: {type: integer, format: int64}}, decision: {type: string}, reason: {type: string}, evidenceFileId: {type: string, format: uuid}, versions: {type: object, additionalProperties: {type: integer, format: int64}}}}}}}
+    Appeal: {required: true, content: {application/json: {schema: {type: object, required: [content], properties: {content: {type: string}}}}}}
+    AppealResponse: {required: true, content: {application/json: {schema: {type: object, required: [accepted, reason, version], properties: {accepted: {type: boolean}, reason: {type: string}, version: {type: integer, format: int64}}}}}}
+    Activity: {required: true, content: {application/json: {schema: {type: object, required: [semesterId, title, startAt, endAt, capacity, points], properties: {semesterId: {type: integer, format: int64}, title: {type: string}, startAt: {type: string, format: date-time}, endAt: {type: string, format: date-time}, capacity: {type: integer, format: int64}, points: {type: integer, format: int64}}}}}}
+    Version: {required: true, content: {application/json: {schema: {type: object, required: [version], properties: {version: {type: integer, format: int64}}}}}}
+    Attendance: {required: true, content: {application/json: {schema: {type: object, required: [qrToken], properties: {qrToken: {type: string}}}}}}
+    Confirm: {required: true, content: {application/json: {schema: {type: object, required: [registrationIds], properties: {registrationIds: {type: array, minItems: 1, maxItems: 100, uniqueItems: true, items: {type: integer, format: int64}}}}}}}
+    Convert: {required: true, content: {application/json: {schema: {type: object, required: [semesterId, drl], properties: {semesterId: {type: integer, format: int64}, drl: {type: integer, minimum: 1, maximum: 5}}}}}}
+    Certificate: {required: true, content: {application/json: {schema: {type: object, required: [semesterId], properties: {semesterId: {type: integer, format: int64}}}}}}
+  responses:
+    Command:
+      description: Command completed
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Command'}
+    Error:
+      description: Request failed
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+  schemas:
+    Command:
+      type: object
+      properties:
+        id: {type: string}
+        status: {type: string}
+        version: {type: integer, format: int64}
+        requestId: {type: string, format: uuid}
+    Error:
+      type: object
+      properties:
+        code: {type: string}
+        message: {type: string}
+        requestId: {type: string, format: uuid}
+        fieldErrors: {type: object, additionalProperties: {type: string}}
+    Session:
+      type: object
+      properties:
+        authenticated: {type: boolean}
+        role: {type: string, nullable: true}
+        twoFactorVerified: {type: boolean}
+        csrfToken: {type: string}
+        idleExpiresAt: {type: string, format: date-time, nullable: true}
+    TwoFactorSetup:
+      type: object
+      properties:
+        secret: {type: string}
+        provisioningUri: {type: string}
+    Page:
+      type: object
+      properties:
+        page: {type: integer}
+        pageSize: {type: integer}
+        total: {type: integer, format: int64}
+    Room:
+      type: object
+      properties:
+        id: {type: string}
+        buildingId: {type: string}
+        roomType: {type: string}
+        gender: {type: string}
+        capacity: {type: integer, format: int64}
+        availableBeds: {type: integer, format: int64}
+    RoomPage:
+      allOf: [{$ref: '#/components/schemas/Page'}]
+      type: object
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/Room'}}
+    Bed:
+      type: object
+      properties:
+        id: {type: string}
+        number: {type: string}
+        status: {type: string}
+        version: {type: integer, format: int64}
+    BedPage:
+      allOf: [{$ref: '#/components/schemas/Page'}]
+      type: object
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/Bed'}}
+    Booking:
+      type: object
+      properties:
+        id: {type: integer}
+        bedId: {type: string}
+        studentId: {type: string}
+        status: {type: string}
+        expiresAt: {type: string, format: date-time}
+        profileState: {type: string}
+        version: {type: integer, format: int64}
+        fileIds: {type: array, items: {type: string, format: uuid}}
+        reason: {type: string, nullable: true}
+    BookingPage:
+      allOf: [{$ref: '#/components/schemas/Page'}]
+      type: object
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/Booking'}}
+    Invoice:
+      type: object
+      properties:
+        id: {type: integer}
+        roomId: {type: string}
+        month: {type: string}
+        lines: {type: array, items: {type: object, properties: {name: {type: string}, quantity: {type: number}, unitPrice: {type: integer}, total: {type: integer}}}}
+        discount: {type: integer}
+        total: {type: integer}
+        paid: {type: integer}
+        balance: {type: integer}
+        dueDate: {type: string, format: date}
+        status: {type: string}
+    InvoicePage:
+      allOf: [{$ref: '#/components/schemas/Page'}]
+      type: object
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/Invoice'}}
+    InvoiceDraft:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        version: {type: integer}
+        month: {type: string}
+        rooms: {type: array, items: {type: object, properties: {roomId: {type: string}, total: {type: integer}, warnings: {type: array, items: {type: string}}}}}
+        inputHash: {type: string}
+    IssueResult:
+      type: object
+      properties:
+        roomId: {type: string}
+        status: {type: string}
+        invoiceId: {type: string, nullable: true}
+        message: {type: string}
+    PaymentSession:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        gateway: {type: string}
+        providerRef: {type: string}
+        amount: {type: integer}
+        invoiceIds: {type: array, items: {type: integer}}
+        status: {type: string}
+        payUrl: {type: string, format: uri, nullable: true}
+        expiresAt: {type: string, format: date-time}
+    Repair:
+      type: object
+      properties:
+        id: {type: integer}
+        roomId: {type: string}
+        studentId: {type: string}
+        title: {type: string}
+        priority: {type: string}
+        status: {type: string}
+        version: {type: integer}
+    RepairCompletion:
+      type: object
+      properties:
+        status: {type: string}
+        result: {$ref: '#/components/schemas/Command'}
+        shortages: {type: array, items: {type: string}}
+    Entry:
+      type: object
+      properties:
+        eventId: {type: string, format: uuid}
+        studentId: {type: string}
+        type: {type: string}
+        time: {type: string, format: date-time}
+        barrierStatus: {type: string}
+        violationId: {type: integer, nullable: true}
+    EntryPage:
+      allOf: [{$ref: '#/components/schemas/Page'}]
+      type: object
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/Entry'}}
+    Visitor:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        hostStudentId: {type: string}
+        state: {type: string}
+        validFrom: {type: string, format: date-time}
+        validTo: {type: string, format: date-time}
+        version: {type: integer, format: int64}
+    Violation:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        studentId: {type: string}
+        semesterId: {type: integer, format: int64}
+        content: {type: string}
+        level: {type: string}
+        status: {type: string}
+        semesterCount: {type: integer, format: int64}
+        decisions: {type: array, items: {type: object}}
+        version: {type: integer, format: int64}
+    Activity:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        semesterId: {type: integer, format: int64}
+        title: {type: string}
+        startAt: {type: string, format: date-time}
+        endAt: {type: string, format: date-time}
+        capacity: {type: integer, format: int64}
+        remaining: {type: integer, format: int64}
+        points: {type: integer, format: int64}
+        status: {type: string}
+        version: {type: integer, format: int64}
+    Registration:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        activityId: {type: string}
+        status: {type: string}
+        qrToken: {type: string}
+        version: {type: integer, format: int64}
+    Points:
+      type: object
+      properties:
+        semesterId: {type: integer, format: int64}
+        earned: {type: integer, format: int64}
+        available: {type: integer, format: int64}
+        convertedDrl: {type: integer, format: int64}
+        ledger: {type: array, items: {type: object}}
+    Conversion:
+      type: object
+      properties:
+        id: {type: string}
+        status: {type: string}
+        pointsSpent: {type: integer}
+        drl: {type: integer}
+        externalState: {type: string}
+    Certificate:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        status: {type: string}
+        downloadUrl: {type: string, format: uri, nullable: true}
+        sha256: {type: string, nullable: true}
+        signedAt: {type: string, format: date-time, nullable: true}

@@ -4,6 +4,8 @@ Tài liệu này mô tả các HTTP route đang được khai báo trong `ApiRou
 
 ## Đăng nhập, session và CSRF
 
+Swagger UI được mở tại `/swagger-ui.html` (JSON OpenAPI tĩnh tại `/openapi.yaml`). Mở UI cùng host với API để trình duyệt tự gửi session cookie. Trong Swagger, gọi `GET /api/v1/auth/session`, copy `csrfToken` vào nút **Authorize** (`X-CSRF-TOKEN`), rồi thử `POST /api/v1/auth/login`. Sau khi đăng nhập, gọi lại session và cập nhật token trong **Authorize** vì login thay token CSRF. Các lệnh ghi cần token mới; callback thanh toán không dùng session/CSRF.
+
 Ứng dụng dùng session cookie (`JSESSIONID` mặc định), không dùng bearer token. Trình tự gọi API từ client:
 
 1. Gọi `GET /api/v1/auth/session`; giữ cookie và đọc `csrfToken` trong JSON.

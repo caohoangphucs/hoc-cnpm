@@ -1,10 +1,15 @@
 package vn.id.caohoangphuc.cnpm.persistence;
 
 import jakarta.persistence.EntityManagerFactory;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.ApplicationContext;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -23,6 +28,27 @@ class DatabaseFoundationIT {
     @Autowired PasswordEncoder encoder;
     @Autowired ApplicationContext context;
     @Autowired EntityManagerFactory entityManagerFactory;
+    @LocalServerPort int port;
+
+    @Test
+    void swaggerUiServesTheHandAuthoredOpenApiContract() throws Exception {
+        var client = HttpClient.newHttpClient();
+        var ui = client.send(HttpRequest.newBuilder(uri("/swagger-ui.html")).GET().build(),
+                HttpResponse.BodyHandlers.ofString());
+        assertEquals(302, ui.statusCode());
+
+        var spec = client.send(HttpRequest.newBuilder(uri("/openapi.yaml")).GET().build(),
+                HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, spec.statusCode());
+        assertTrue(spec.body().contains("/api/v1/rooms"));
+
+        var config = client.send(HttpRequest.newBuilder(uri("/v3/api-docs/swagger-config")).GET().build(),
+                HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, config.statusCode());
+        assertTrue(config.body().contains("/openapi.yaml"));
+    }
+
+    private URI uri(String path) { return URI.create("http://127.0.0.1:" + port + path); }
 
     @Test
     void schemaHasNoStoredProceduresOrUspFunctions() {
