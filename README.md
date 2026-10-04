@@ -57,7 +57,7 @@ Mật khẩu các tài khoản `demo_*` là **`123456`**. Sau lần nạp đầu
 | `demo_rejected` | Đơn 900007 bị từ chối có lý do; không có lưu trú, giường trống. |
 | `demo_cancelled` | Đơn 900008 đã hủy; không có lưu trú, giường trống. |
 
-Chi tiết dữ liệu, điều kiện từng UC và giới hạn adapter: [Demo seed cho 8 UC](docs/demo/DEMO_SEED.md). Migration bổ sung dữ liệu, không reset database hay khóa 2FA. Hồ sơ dùng metadata giấy tờ tổng hợp cho demo; không chứa ảnh CCCD thật. Giao dịch seed không chuyển tiền thật.
+Chi tiết dữ liệu, điều kiện từng UC và giới hạn adapter: [Demo seed cho 8 UC](docs/demo/DEMO_SEED.md). Migration bổ sung dữ liệu, không reset database hay khóa 2FA. Hồ sơ có ảnh minh chứng tổng hợp ghi rõ DỮ LIỆU DEMO; chủ hồ sơ và admin có thể xem/tải ảnh. Không chứa CCCD thật. Giao dịch seed không chuyển tiền thật.
 
 ### Tài khoản chỉ có trong seed local/test
 

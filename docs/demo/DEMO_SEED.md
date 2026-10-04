@@ -20,7 +20,7 @@ Mật khẩu mặc định: `123456`. Admin/kế toán đã bật 2FA vẫn ph�
 ## Dữ liệu tổng hợp và giới hạn
 
 - Các phòng, sinh viên và mã `DEMO-*` tách riêng khỏi dữ liệu gốc. Không dùng thông tin cá nhân thật.
-- Tham chiếu giấy tờ trong hồ sơ là metadata fixture đáp ứng hợp đồng service hiện tại, không phải ảnh CCCD lưu trong object storage. Bộ seed không cung cấp luồng xem/tải ảnh giấy tờ.
+- Mỗi tham chiếu giấy tờ seed có ảnh PNG tổng hợp, ghi rõ DỮ LIỆU DEMO. Nội dung được mã hóa và lưu trong PostgreSQL; chủ hồ sơ và admin được phép xem/tải ảnh qua API riêng tư.
 - Thanh toán SUCCESS là lịch sử tổng hợp có tiền tố DEMO, không có giao dịch với ngân hàng. Tạo thanh toán mới/callback thật cần adapter provider đã cấu hình. Seed không giả lập cấu hình provider.
 - Khách dùng ciphertext AES-GCM của dữ liệu giả với khóa fixture riêng; API hiện chỉ trả trạng thái/thời hạn, không trả thông tin định danh. Không thay khóa mã hóa của server.
 - Thẻ `DEMO-CARD-NAM-2026` chỉ dành cho demo. Ghi sự kiện mới vẫn cần cấu hình adapter barrier; không suy ra cổng vật lý đã mở từ dữ liệu seed.
@@ -29,6 +29,16 @@ Mật khẩu mặc định: `123456`. Admin/kế toán đã bật 2FA vẫn ph�
 
 ## Nạp và kiểm thử
 
-Volume PostgreSQL mới chạy `01_schema.sql`, `02_seed.sql`, `04_demo_usecases.sql`. Reset local có cờ xác nhận qua `scripts/reset-db.sh --reset-demo`. Deploy database hiện hữu chỉ áp dụng migration bổ sung trong transaction; không chạy lại schema/seed gốc trên production.
+Volume PostgreSQL mới chạy `01_schema.sql`, `02_seed.sql`, `04_demo_usecases.sql`, `05_evidence_file_content.sql`. Backend bổ sung nội dung ảnh seed khi khởi động, giữ nguyên ID tệp và trạng thái đơn. Reset local có cờ xác nhận qua `scripts/reset-db.sh --reset-demo`. Deploy database hiện hữu chỉ áp dụng migration bổ sung trong transaction; không chạy lại schema/seed gốc trên production.
 
 CI chạy các test nghiệp vụ/API gốc trước, sau đó kiểm tra migration chạy hai lần không tạo trùng hay đổi mật khẩu/quyết định người dùng. `DemoSeedApiIT` dùng Java HttpClient gọi server thật với PostgreSQL tạm: danh sách hồ sơ, duyệt/từ chối, quyền admin, version sai, thiếu lý do, quyền hóa đơn, sửa chữa, thanh toán, khách, ra/vào, vi phạm và điểm công ích. Các đơn bị thao tác trong test được khôi phục sau mỗi case. Đây là kiểm tra dữ liệu và endpoint, không phải nghiệm thu giao dịch provider hoặc thiết bị vật lý.
+
+## Kiểm tra đăng ký và minh chứng trên giao diện
+
+1. Đăng nhập `sv041`/`123456`, mở Phòng & lưu trú, chọn giường trống phù hợp giới tính bằng nút **Chọn đăng ký**.
+2. Form hiển thị đợt đang mở. Tải ảnh CCCD mặt trước, mặt sau và thẻ sinh viên; PNG/JPEG, tối đa 5 MiB mỗi ảnh. Có thể dùng ảnh mẫu trong `server/src/main/resources/demo-evidence/` trên môi trường demo.
+3. Kiểm tra ảnh xem trước, đánh dấu đồng ý nội quy và gửi hồ sơ. Thành công chuyển sang Hồ sơ của tôi, đơn CHO_DUYET và giường GIU_CHO.
+4. Admin đăng nhập, xác thực OTP nếu đã bật, mở chi tiết đơn: ba ảnh xuất hiện, có thể mở lớn hoặc tải ảnh. Đối chiếu, chọn duyệt/từ chối và lưu.
+5. Tài khoản sinh viên khác không xem được hồ sơ/tệp này; API trả 404. Admin không đọc được tệp nháp chưa gắn vào hồ sơ.
+
+Nội dung mã hóa nằm trong `svc_file_content`, metadata trong `svc_file`. Khóa `FILE_ENCRYPTION_KEY` mặc định lấy từ `TOTP_ENCRYPTION_KEY`; giữ khóa ổn định giữa các deployment để đọc lại ảnh. Không thay khóa mà không có kế hoạch chuyển mã dữ liệu. Kiểm tra ảnh gồm MIME thực, giải mã raster, giới hạn kích thước và ghi lại ảnh để bỏ metadata; không phải tích hợp dịch vụ antivirus bên ngoài.

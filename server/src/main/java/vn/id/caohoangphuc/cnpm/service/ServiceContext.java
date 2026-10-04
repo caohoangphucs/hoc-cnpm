@@ -61,6 +61,9 @@ public class ServiceContext {
       throw new ServiceException(401, "UNAUTHENTICATED", "Account is not active");
     if (!Arrays.asList(roles).contains(account.role()))
       throw new ServiceException(403, "FORBIDDEN", "Role is not allowed");
+    // Không để studentId null trở thành điều kiện xem toàn bộ dữ liệu trong repository.
+    if ("SINHVIEN".equals(account.role()) && account.studentId() == null)
+      throw new ServiceException(403, "STUDENT_PROFILE_REQUIRED", "Student profile is required");
     return account;
   }
 

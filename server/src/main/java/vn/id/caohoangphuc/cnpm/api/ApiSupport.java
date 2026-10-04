@@ -42,6 +42,7 @@ public class ApiSupport {
         try {
             requestId = requestId(request);
             var result = operation.run(actor(request), requestContext(request, requestId));
+            if (result instanceof ServerResponse response) return response;
             return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(result);
         } catch (ServiceException exception) {
             return error(exception.getStatus(), exception.getCode(), exception.getMessage(), requestId);

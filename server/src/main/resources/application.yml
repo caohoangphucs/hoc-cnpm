@@ -10,6 +10,10 @@ spring:
       minimum-idle: 3
       connection-timeout: 10000
       connection-init-sql: SET TIME ZONE 'Asia/Ho_Chi_Minh'
+  servlet:
+    multipart:
+      max-file-size: 6MB
+      max-request-size: 6MB
   sql:
     init:
       mode: never
@@ -22,6 +26,7 @@ spring:
         jdbc:
           time_zone: Asia/Ho_Chi_Minh
 security:
+  file-encryption-key: ${FILE_ENCRYPTION_KEY:${TOTP_ENCRYPTION_KEY:local-development-only-change-me}}
   totp-encryption-key: ${TOTP_ENCRYPTION_KEY:local-development-only-change-me}
 server:
   port: ${SERVER_PORT:8080}
