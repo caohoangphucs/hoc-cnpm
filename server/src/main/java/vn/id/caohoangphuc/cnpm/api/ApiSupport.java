@@ -60,13 +60,21 @@ public class ApiSupport {
         }
     }
 
-    /** Builds the actor from the authenticated account without requiring a second factor. */
+    /** Blocks business actions until an enrolled administrator verifies the session OTP. */
     private Actor actor(ServerRequest request) {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null) throw new ServiceException(401, "UNAUTHENTICATED", "Login required");
         var account = accounts.findByUsername(authentication.getName()).orElse(null);
         if (account == null) throw new ServiceException(401, "UNAUTHENTICATED", "Login required");
-        return new Actor(account.accountId(), true);
+        var session = request.servletRequest().getSession(false);
+        boolean verified = session != null
+                && Boolean.TRUE.equals(session.getAttribute(AuthController.TWO_FACTOR_ATTRIBUTE));
+        boolean needsCode = "ADMIN".equals(account.role())
+                && accounts.findTotpSecret(account.accountId()).isPresent();
+        if (needsCode && !verified) {
+            throw new ServiceException(403, "TWO_FACTOR_REQUIRED", "Authenticator verification required");
+        }
+        return new Actor(account.accountId(), !needsCode || verified);
     }
 
     /** Uses caller idempotency headers when supplied and creates safe defaults otherwise. */

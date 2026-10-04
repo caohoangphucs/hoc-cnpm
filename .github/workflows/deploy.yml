@@ -106,6 +106,7 @@ jobs:
             --select-class vn.id.caohoangphuc.cnpm.api.BookingApiBlackBoxIT \
             --select-class vn.id.caohoangphuc.cnpm.api.RoomCatalogApiBlackBoxIT \
             --select-class vn.id.caohoangphuc.cnpm.api.RemainingUseCasesApiBlackBoxIT \
+            --select-class vn.id.caohoangphuc.cnpm.api.AdminTwoFactorApiBlackBoxIT \
             --fail-if-no-tests --details=summary
       - name: Build immutable backend and frontend images locally
         run: |
