@@ -116,7 +116,7 @@ function BookingDetail({ id, admin, onClose, onSave }: { id: number; admin: bool
           description="Thông tin mới nhất từ hệ thống."
           view={resource.loading ? 'loading' : resource.error ? 'error' : 'data'}
           error={resource.error}
-          onRetry={() => { resource.reload(); setVerified(false); setAssignedBedNum(null); }}
+          onRetry={() => { resource.reload(); setVerified(false); }}
         >
           {record && (
             <>
