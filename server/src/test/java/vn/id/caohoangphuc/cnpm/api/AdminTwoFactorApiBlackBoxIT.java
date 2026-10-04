@@ -127,6 +127,16 @@ class AdminTwoFactorApiBlackBoxIT {
         }
     }
 
+    /** Every advertised student demo account must accept the documented password over HTTP. */
+    @Test
+    void allStudentDemoAccountsAcceptDocumentedPassword() throws Exception {
+        for (int index = 1; index <= 55; index++) {
+            var session = login(String.format("sv%03d", index));
+            assertTrue(session.verified());
+            assertEquals(200, post(session, ApiRoutes.AUTH_LOGOUT, "").statusCode());
+        }
+    }
+
     /** Generate the app code independently with the standard test-secret bytes and current counter. */
     private String currentCode() throws Exception {
         Mac mac = Mac.getInstance("HmacSHA1");
