@@ -103,14 +103,14 @@ FROM dot_dang_ky d JOIN hoc_ky h USING(mahocky) WHERE d.madot=?
   public BookingResourceDto bookingResource(int id) {
     var rows = jdbc.query("""
         SELECT d.madangky,d.magiuong,d.masinhvien,d.trangthai,d.ngayhethan,
-               COALESCE(p.state,'PENDING'),COALESCE(p.file_ids::text,'[]'),d.version,d.ghichulydo
-        FROM dang_ky_phong d LEFT JOIN svc_profile p ON p.booking_id=d.madangky
+               COALESCE(p.state,'PENDING'),COALESCE(p.file_ids::text,'[]'),d.version,d.ghichulydo,g.maphong
+        FROM dang_ky_phong d JOIN giuong g ON g.magiuong=d.magiuong LEFT JOIN svc_profile p ON p.booking_id=d.madangky
         WHERE d.madangky=?
         """, (rs, n) -> new BookingResourceDto(
         (long) rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4),
         rs.getObject(5, LocalDateTime.class).atZone(ServiceContext.ZONE).toOffsetDateTime(),
         rs.getString(6), rs.getLong(8), java.util.Arrays.asList(json.readValue(
-                rs.getString(7), java.util.UUID[].class)), rs.getString(9)), id);
+                rs.getString(7), java.util.UUID[].class)), rs.getString(9), rs.getString(10)), id);
     return rows.isEmpty() ? null : rows.get(0);
   }
 
@@ -118,8 +118,8 @@ FROM dot_dang_ky d JOIN hoc_ky h USING(mahocky) WHERE d.madot=?
   public BookingPage bookings(String studentId, int page, int size) {
     var items = jdbc.query("""
         SELECT d.madangky,d.magiuong,d.masinhvien,d.trangthai,d.ngayhethan,
-               COALESCE(p.state,'PENDING'),COALESCE(p.file_ids::text,'[]'),d.version,d.ghichulydo
-        FROM dang_ky_phong d LEFT JOIN svc_profile p ON p.booking_id=d.madangky
+               COALESCE(p.state,'PENDING'),COALESCE(p.file_ids::text,'[]'),d.version,d.ghichulydo,g.maphong
+        FROM dang_ky_phong d JOIN giuong g ON g.magiuong=d.magiuong LEFT JOIN svc_profile p ON p.booking_id=d.madangky
         WHERE (CAST(? AS varchar) IS NULL OR d.masinhvien=?)
         ORDER BY d.ngaydangky DESC,d.madangky DESC LIMIT ? OFFSET ?
         """, (rs, n) -> bookingResource(rs), studentId, studentId, size, (page - 1) * size);
@@ -134,7 +134,7 @@ FROM dot_dang_ky d JOIN hoc_ky h USING(mahocky) WHERE d.madot=?
     return new BookingResourceDto((long) rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4),
         rs.getObject(5, LocalDateTime.class).atZone(ServiceContext.ZONE).toOffsetDateTime(),
         rs.getString(6), rs.getLong(8), java.util.Arrays.asList(json.readValue(
-            rs.getString(7), java.util.UUID[].class)), rs.getString(9));
+            rs.getString(7), java.util.UUID[].class)), rs.getString(9), rs.getString(10));
   }
 
   /** Ánh xạ một dòng đăng ký từ SQL sang mô hình dùng trong service. */
