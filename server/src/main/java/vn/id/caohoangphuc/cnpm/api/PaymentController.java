@@ -48,6 +48,47 @@ public class PaymentController {
                 UUID.fromString(request.pathVariable("id"))));
     }
 
+    /** IPN của VNPAY dùng GET và phản hồi RspCode, không cần phiên trình duyệt. */
+    public ServerResponse vnpayIpn(ServerRequest request) {
+        try {
+            var verified = payments.verify("VNPAY", vnpayParameters(request));
+            payments.accept(null, new RequestContext(UUID.randomUUID(), UUID.randomUUID()), verified);
+            return vnpayAck("00", "Confirm Success");
+        } catch (ServiceException exception) {
+            String code = switch (exception.getCode()) {
+                case "VNPAY_INVALID_SIGNATURE" -> "97";
+                case "CALLBACK_AMOUNT_MISMATCH" -> "04";
+                case "NOT_FOUND" -> "01";
+                default -> "99";
+            };
+            return vnpayAck(code, "Cannot confirm payment");
+        } catch (Exception exception) { return vnpayAck("99", "Cannot confirm payment"); }
+    }
+
+    /** ReturnURL chỉ xác minh rồi mở trang trạng thái; tuyệt đối không cộng tiền. */
+    public ServerResponse vnpayReturn(ServerRequest request) {
+        try {
+            var verified = payments.verify("VNPAY", vnpayParameters(request));
+            return ServerResponse.status(303).header("Location", "/student/invoices?paymentSession="
+                    + UUID.fromString(verified.providerRef())).header("Cache-Control", "no-store").build();
+        } catch (Exception exception) {
+            return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of("code", "INVALID_VNPAY_RETURN", "message", "Invalid payment return signature"));
+        }
+    }
+
+    /** Từ chối tham số lặp để không có cách hiểu chữ ký khác nhau giữa các hệ thống. */
+    private Map<String, String> vnpayParameters(ServerRequest request) {
+        if (request.params().entrySet().stream().anyMatch(entry -> entry.getValue().size() != 1))
+            throw new ServiceException(400, "VNPAY_INVALID_SIGNATURE", "Duplicate callback parameters");
+        return request.params().toSingleValueMap();
+    }
+
+    private ServerResponse vnpayAck(String code, String message) {
+        return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
+                .header("Cache-Control", "no-store").body(Map.of("RspCode", code, "Message", message));
+    }
+
     /** Verifies and applies a signed provider callback; callbacks do not require a browser session. */
     public ServerResponse callback(ServerRequest request) {
         var requestId = UUID.randomUUID();

@@ -35,6 +35,8 @@ public class ApiRoutes {
     public static final String INVOICES_ISSUE = "/api/v1/invoices/issue";
     public static final String PAYMENT_SESSIONS = "/api/v1/payment-sessions";
     public static final String PAYMENT_SESSION = "/api/v1/payment-sessions/{id}";
+    public static final String VNPAY_IPN = "/api/v1/payments/vnpay/ipn";
+    public static final String VNPAY_RETURN = "/api/v1/payments/vnpay/return";
     public static final String PAYMENT_CALLBACK = "/api/v1/payment-callbacks/{gateway}";
     public static final String REPAIRS = "/api/v1/repairs";
     public static final String REPAIR = "/api/v1/repairs/{id}";
@@ -116,6 +118,8 @@ public class ApiRoutes {
                 .GET(PAYMENT_SESSION, payments::status)
                 .DELETE(PAYMENT_SESSION, payments::delete)
                 .POST(PAYMENT_CALLBACK, payments::callback)
+                .GET(VNPAY_IPN, payments::vnpayIpn)
+                .GET(VNPAY_RETURN, payments::vnpayReturn)
                 .POST(REPAIRS, repairs::create)
                 .GET(REPAIRS, repairs::list)
                 .GET(REPAIR, repairs::get)

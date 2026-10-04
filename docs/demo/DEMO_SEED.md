@@ -21,7 +21,7 @@ Mật khẩu mặc định: `123456`. Admin/kế toán đã bật 2FA vẫn ph�
 
 - Các phòng, sinh viên và mã `DEMO-*` tách riêng khỏi dữ liệu gốc. Không dùng thông tin cá nhân thật.
 - Mỗi tham chiếu giấy tờ seed có ảnh PNG tổng hợp, ghi rõ DỮ LIỆU DEMO. Nội dung được mã hóa và lưu trong PostgreSQL; chủ hồ sơ và admin được phép xem/tải ảnh qua API riêng tư.
-- Thanh toán SUCCESS là lịch sử tổng hợp có tiền tố DEMO, không có giao dịch với ngân hàng. Tạo thanh toán mới/callback thật cần adapter provider đã cấu hình. Seed không giả lập cấu hình provider.
+- Thanh toán SUCCESS là lịch sử tổng hợp có tiền tố DEMO, không có giao dịch với ngân hàng. VNPAY Sandbox đã có adapter; tạo giao dịch mới cần bật cấu hình merchant và đăng ký IPN URL. Seed không chứa khóa merchant.
 - Khách dùng ciphertext AES-GCM của dữ liệu giả với khóa fixture riêng; API hiện chỉ trả trạng thái/thời hạn, không trả thông tin định danh. Không thay khóa mã hóa của server.
 - Thẻ `DEMO-CARD-NAM-2026` chỉ dành cho demo. Ghi sự kiện mới vẫn cần cấu hình adapter barrier; không suy ra cổng vật lý đã mở từ dữ liệu seed.
 - Quy đổi điểm và ký chứng nhận vẫn cần adapter tương ứng. Không tạo chứng nhận giả đã ký.

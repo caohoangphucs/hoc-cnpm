@@ -45,7 +45,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/actuator/health", "/actuator/health/**",
                                 "/swagger-ui.html", "/swagger-ui/**", "/openapi.yaml",
                                 "/v3/api-docs/**").permitAll()
-                        .requestMatchers(ApiRoutes.PAYMENT_CALLBACK).permitAll()
+                        .requestMatchers(ApiRoutes.PAYMENT_CALLBACK, ApiRoutes.VNPAY_IPN, ApiRoutes.VNPAY_RETURN).permitAll()
                         .requestMatchers(ApiRoutes.AUTH_SESSION, ApiRoutes.AUTH_LOGIN).permitAll()
                         .requestMatchers(ApiRoutes.AUTH_TWO_FACTOR, ApiRoutes.AUTH_TWO_FACTOR_SETUP,
                                 ApiRoutes.AUTH_TWO_FACTOR_CONFIRM, ApiRoutes.AUTH_LOGOUT).authenticated()
