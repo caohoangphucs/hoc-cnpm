@@ -7,7 +7,6 @@ import vn.id.caohoangphuc.cnpm.api.dto.AssignmentDto;
 import vn.id.caohoangphuc.cnpm.api.dto.CommandResultDto;
 import vn.id.caohoangphuc.cnpm.api.dto.RepairCompleteDto;
 import vn.id.caohoangphuc.cnpm.api.dto.RepairDto;
-import vn.id.caohoangphuc.cnpm.api.dto.CommandResultDto;
 import vn.id.caohoangphuc.cnpm.persistence.service.RepairRepository;
 import vn.id.caohoangphuc.cnpm.persistence.service.ServiceRepository;
 
@@ -34,6 +33,7 @@ public class RepairService {
         CommandResultDto.class,
         () -> {
           var account = context.require(actor, "SINHVIEN");
+          requireCurrentRoom(account.studentId());
           var fileIds = input.fileIds() == null ? List.<java.util.UUID>of() : input.fileIds();
           context.files(fileIds, account.id(), "REPAIR");
           int repairId =
@@ -105,6 +105,14 @@ public class RepairService {
     });
   }
 
+  /** Chỉ trả ảnh khi người gọi được phép đọc chính phiếu sửa chữa này. */
+  public List<java.util.UUID> files(Actor actor, int id) {
+    return context.transaction(() -> {
+      get(actor, id);
+      return repository.files(id);
+    });
+  }
+
   /** Deletes an unassigned request owned by the student, or any eligible request for an admin. */
   public CommandResultDto delete(Actor actor, RequestContext request, int id) {
     context.positive(id, "repairId");
@@ -160,6 +168,40 @@ public class RepairService {
         "ADMIN");
   }
 
+  /** Validate DTO trước khi unbox version hoặc đọc ngày hẹn. */
+  public CommandResultDto reschedule(Actor actor, RequestContext request, int id,
+      vn.id.caohoangphuc.cnpm.api.dto.RepairScheduleDto input) {
+    context.validate(input);
+    return reschedule(actor, request, id, input.version(), input.scheduledAt(),
+        input.warrantyUntil(), input.note());
+  }
+
+  /** Sinh viên phải có phòng hiện tại trước khi tạo phiếu hoặc gắn ảnh. */
+  private void requireCurrentRoom(String studentId) {
+    if (!repository.hasCurrentRoom(studentId))
+      throw new ServiceException(422, "NO_CURRENT_ROOM", "Student has no current room");
+  }
+
+  /** Đọc danh mục kho theo quyền quản lý hoặc kỹ thuật viên. */
+  public List<RepairRepository.Material> materials(Actor actor) {
+    return context.transaction(() -> {
+      context.require(actor, "ADMIN", "KYTHUAT");
+      return repository.materials();
+    });
+  }
+
+  /** Thêm danh mục mới; số lượng ban đầu không được âm và không ghi đè mã cũ. */
+  public CommandResultDto createMaterial(Actor actor, RequestContext request,
+      vn.id.caohoangphuc.cnpm.api.dto.MaterialDto input) {
+    context.validate(input);
+    return context.write(actor, request, "materials", input, CommandResultDto.class, () -> {
+      context.require(actor, "ADMIN", "KYTHUAT");
+      if (!repository.createMaterial(input)) throw ServiceException.conflict("Material code already exists");
+      context.event(actor, request, "MATERIAL_CREATED", input.id(), Map.of("name", input.name()));
+      return new CommandResultDto(input.id(), "CREATED", 1L, request.requestId());
+    }, "ADMIN", "KYTHUAT");
+  }
+
   /** Đổi lịch xử lý phiếu sửa chữa đang được giao. */
   public CommandResultDto reschedule(
       Actor actor,
@@ -169,6 +211,8 @@ public class RepairService {
       java.time.OffsetDateTime scheduledAt,
       java.time.LocalDate warrantyUntil,
       String note) {
+    if (scheduledAt == null) throw ServiceException.invalid("scheduledAt is required");
+    context.positive(version, "version");
     context.text(note, 1000, "note");
     record Input(
         long version,
@@ -227,6 +271,10 @@ public class RepairService {
     if (!shortages.isEmpty())
       return reportShortages(actor, request, id, input.version(), shortages);
 
+    var fileIds = input.fileIds() == null ? List.<java.util.UUID>of() : input.fileIds();
+    context.files(fileIds, actor.accountId(), "REPAIR");
+    repository.attachCompletionFiles(id, context.json(fileIds));
+    context.attach(fileIds);
     finishRepair(actor, request, repair, id, input, lines);
     return new Completion(
         "HOAN_THANH",

@@ -41,6 +41,7 @@ public class ApiRoutes {
     public static final String REPAIRS = "/api/v1/repairs";
     public static final String REPAIR = "/api/v1/repairs/{id}";
     public static final String REPAIR_PRIORITY = "/api/v1/repairs/{id}/priority";
+    public static final String MATERIALS = "/api/v1/materials";
     public static final String STUDENTS = "/api/v1/students";
     public static final String REPAIR_ASSIGNMENT = "/api/v1/repairs/{id}/assignment";
     public static final String REPAIR_SCHEDULE = "/api/v1/repairs/{id}/schedule";
@@ -124,8 +125,11 @@ public class ApiRoutes {
                 .POST(PAYMENT_CALLBACK, payments::callback)
                 .GET(VNPAY_IPN, payments::vnpayIpn)
                 .GET(VNPAY_RETURN, payments::vnpayReturn)
+                .GET(MATERIALS, repairs::materials)
+                .POST(MATERIALS, repairs::createMaterial)
                 .POST(REPAIRS, repairs::create)
                 .GET(REPAIRS, repairs::list)
+                .GET("/api/v1/repairs/{id}/files", repairs::files)
                 .GET(REPAIR, repairs::get)
                 .DELETE(REPAIR, repairs::delete)
                 .GET(STUDENTS, gate::students)

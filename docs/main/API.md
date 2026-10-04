@@ -432,3 +432,13 @@ Mã khai báo khách trên giao diện là `KT-{id}` của phiếu. Bảo vệ c
 - POST repairs không dùng ưu tiên do sinh viên gửi: luôn tạo TRUNG_BINH (mức mặc định khi chưa được kỹ thuật viên đánh giá). Bỏ `priority` trên form sinh viên; giá trị trong request cũ không được nâng ưu tiên.
 - `PUT /api/v1/repairs/{id}/priority`, body `{priority: "CAO", version: 2}`: chỉ KYTHUAT đã được phân công và phiếu DANG_XU_LY; trả CommandResultDto, tăng version và ghi lịch sử mức cũ/mới. Sinh viên/admin không đánh giá bằng endpoint này (403); phiếu không thuộc kỹ thuật viên 404, phiên bản cũ 409.
 - GET entries trả chi tiết vi phạm trong từng dòng để UI hiển thị nội dung. Trạng thái lưu sự kiện và barrier được trình bày riêng. BR-12 áp dụng lượt VAO (>23:00 hoặc <05:00); đúng 23:00/05:00 và RA không tự sinh vi phạm về muộn. Đã xác nhận giữ BR-12 cho issue #45: lượt RA không thuộc quy tắc vi phạm về muộn.
+
+### Kho vật tư và nghiệm thu sửa chữa (#46–#51)
+
+- `GET /api/v1/materials`: ADMIN/KYTHUAT nhận mảng `{id,name,unit,stock,price}` từ kho thực tế.
+- `POST /api/v1/materials`: ADMIN/KYTHUAT, JSON `{ "id":"VT-NEW", "name":"Bóng đèn", "unit":"cái", "stock":10, "price":25000 }`; cần CSRF và Idempotency-Key. Mã tối đa 20 ký tự chữ/số/gạch nối/gạch dưới; tên 100, đơn vị 20; tồn và giá nguyên không âm. Mã trùng trả 409, dữ liệu sai trả 422. Tồn ban đầu chỉ khai báo khi thêm mã mới; xuất kho qua nghiệp vụ hoàn thành.
+- Form báo sự cố: tiêu đề 1–255 ký tự, mô tả 1–1.000 ký tự; tối đa 5 ảnh REPAIR. Sinh viên chưa có phòng nhận 422 `NO_CURRENT_ROOM`, không tạo phiếu.
+- Đổi lịch: validate `version >= 1`, `scheduledAt` bắt buộc và `note` 1–1.000 ký tự trước khi xử lý. Thiếu/null/sai dữ liệu trả 422 với `fieldErrors`.
+- `POST /api/v1/repairs/{id}/complete`: bổ sung `fileIds` tùy chọn, tối đa 10 UUID ảnh REPAIR do kỹ thuật viên tải qua multipart `POST /api/v1/files`. Giữ body cũ `{version,note,supplies,warrantyUntil}`. Khi đủ kho, gắn ảnh, xuất kho và hoàn tất cùng transaction; retry cùng key không xuất lần hai. Thiếu kho giữ phiếu đang xử lý và chưa gắn ảnh nghiệm thu.
+- `GET /api/v1/repairs/{id}/files`: mảng UUID ảnh đã gắn, kiểm quyền như đọc phiếu. Nội dung ảnh chỉ cho chủ phiếu, admin và kỹ thuật viên được phân công; tệp nháp chỉ chủ tệp đọc. UI chi tiết hỗ trợ xem/tải ảnh.
+- Kho vật tư tại `/technician/materials` dùng chung danh mục với ô chọn vật tư nghiệm thu, hỗ trợ tìm mã/tên. Tìm phiếu chấp nhận `SC-ID`; nút Trang sau dựa số phiếu API trả về, độc lập số kết quả lọc trên trang.
