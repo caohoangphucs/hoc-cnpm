@@ -50,7 +50,8 @@ for migration in \
   V20261004__service_runtime_schema.sql \
   V20261005__repair_room_type_utf8.sql \
   V20261006__repair_vietnamese_display_data.sql \
-  V20261007__backfill_demo_community_activities.sql; do
+  V20261007__backfill_demo_community_activities.sql \
+  V20261008__repair_legacy_demo_passwords.sql; do
   echo "Applying database migration $migration"
   docker exec "$database_container" pg_isready -U "$database_user" -d "$database_name"
   docker exec -i -e PGCLIENTENCODING=UTF8 "$database_container" psql -X -v ON_ERROR_STOP=1 --single-transaction \
