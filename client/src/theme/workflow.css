@@ -1097,3 +1097,20 @@
 .evidence-preview figcaption { margin-bottom: 12px; }
 .evidence-preview img { display: block; width: 100%; height: auto; border-radius: 8px; margin-bottom: 12px; }
 
+
+/* Form đăng ký dùng màu và khoảng cách của giao diện hiện có. */
+.booking-registration { display: grid; gap: 20px; }
+.booking-registration h2, .booking-registration h3, .booking-registration p { margin: 0; }
+.booking-bed-picker { display: grid; gap: 16px; }
+.booking-bed-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.booking-bed-grid button { height: auto; min-height: 110px; display: flex; flex-direction: column; gap: 8px; padding: 16px; }
+.booking-bed-grid button[aria-pressed="true"] { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); border: 2px solid var(--md-sys-color-primary); }
+.booking-upload-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.booking-upload-card { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 20px; border: 1px dashed var(--md-sys-color-outline); border-radius: 16px; background: var(--md-sys-color-surface-container-low); }
+.booking-upload-card input { position: absolute; opacity: 0; width: 100%; height: 100%; inset: 0; cursor: pointer; }
+.booking-upload-card:focus-within { outline: 2px solid var(--md-sys-color-primary); outline-offset: 3px; }
+.booking-upload-card:has(input:disabled) { opacity: .6; }
+.booking-upload-button { padding: 8px 20px; border-radius: 24px; background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); font-weight: 600; }
+.evidence-preview img { height: 180px; object-fit: contain; background: var(--md-sys-color-surface-container-low); }
+.evidence-grid { align-items: start; }
+@media (max-width: 640px) { .booking-upload-grid { grid-template-columns: 1fr; } }
