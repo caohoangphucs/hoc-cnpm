@@ -92,3 +92,244 @@
 }
 @media(max-width:1199px) { .wl-layout { grid-template-columns: minmax(0,1fr); } .wl-side { position: static; } }
 @media(max-width:599px) { .wl-preview-controls { display: grid; grid-template-columns: minmax(0,1fr); } .wl-preview-controls select { width: 100%; } .wl-summary { gap: 8px; } .wl-summary > div { padding: 12px; } .wl-summary dt { font-size: .75rem; } .wl-summary dd { font-size: 1.25rem; } .wl-toolbar, .wl-card-heading { padding: 20px 16px; } .wl-facts > div { grid-template-columns: minmax(0,1fr); gap: 4px; } .wl-grid { grid-template-columns: minmax(0,1fr); } .wl-pagination { gap: 8px; padding: 12px; } }
+
+/* ==========================================================================
+   M3 SNACKBAR / SYSTEM FEEDBACK (Theo phong cách demo)
+   ========================================================================== */
+.m3-snackbar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--md-sys-color-on-surface);
+  color: var(--md-sys-color-surface);
+  border-radius: var(--md-sys-shape-corner-small);
+  padding: 12px 20px;
+  font-size: 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 1200;
+  opacity: 0;
+  transition: transform 250ms cubic-bezier(0.2, 0, 0, 1), opacity 250ms ease;
+  pointer-events: none;
+  max-width: min(560px, calc(100vw - 32px));
+}
+
+.m3-snackbar.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.m3-snackbar-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.m3-snackbar-text {
+  flex: 1;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.snackbar-btn {
+  color: var(--md-sys-color-primary-container);
+  background: none;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  text-transform: uppercase;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: var(--md-sys-shape-corner-small);
+  flex-shrink: 0;
+}
+
+.snackbar-btn:hover {
+  background-color: rgba(255, 255, 255, 0.14);
+}
+
+.m3-snackbar--success {
+  border-left: 4px solid var(--app-color-success);
+}
+.m3-snackbar--error {
+  border-left: 4px solid var(--md-sys-color-error);
+}
+.m3-snackbar--warning {
+  border-left: 4px solid var(--app-color-warning);
+}
+.m3-snackbar--info {
+  border-left: 4px solid var(--md-sys-color-primary);
+}
+
+/* ==========================================================================
+   STUDENT PICKER & AUTOCOMPLETE SUGGESTIONS
+   ========================================================================== */
+.student-picker-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.student-selected-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  border-radius: var(--md-sys-shape-corner-small);
+  font-size: 13px;
+}
+
+.student-selected-badge .badge-room,
+.student-selected-badge .badge-faculty {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--md-sys-color-surface-container-lowest);
+  color: var(--md-sys-color-on-surface);
+  font-weight: 500;
+}
+
+.student-quick-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.quick-chips-label {
+  font-size: 12px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-weight: 500;
+}
+
+.m3-assist-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  background: var(--md-sys-color-surface-container-low);
+  color: var(--md-sys-color-on-surface);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--app-duration) var(--app-easing);
+}
+
+.m3-assist-chip:hover {
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  border-color: var(--md-sys-color-primary);
+}
+
+.m3-assist-chip.selected {
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  border-color: var(--md-sys-color-primary);
+}
+
+.student-dropdown-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--md-sys-color-surface-container-lowest);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-medium);
+  box-shadow: var(--app-elevation-2);
+  z-index: 50;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.dropdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface-variant);
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.student-count {
+  font-weight: normal;
+  color: var(--md-sys-color-primary);
+}
+
+.student-list {
+  list-style: none;
+  padding: 4px 0;
+  margin: 0;
+}
+
+.student-item {
+  padding: 8px 14px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: background-color var(--app-duration) var(--app-easing);
+  border-bottom: 1px solid var(--md-sys-color-surface-container);
+}
+
+.student-item:last-child {
+  border-bottom: none;
+}
+
+.student-item:hover,
+.student-item.active {
+  background: color-mix(in srgb, var(--md-sys-color-primary-container) 35%, var(--md-sys-color-surface-container-lowest));
+}
+
+.student-item-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.student-id-pill {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--md-sys-color-primary);
+  background: var(--md-sys-color-primary-container);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.student-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--md-sys-color-on-surface);
+}
+
+.student-item-sub {
+  display: flex;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--md-sys-color-on-surface-variant);
+  padding-left: 2px;
+}
+
+.student-item-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 13px;
+}
+

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { applyTheme, getPreferredTheme, readStoredTheme, saveTheme } from '@/theme/theme'
 import { Icon } from './Icon'
+import { showSystemFeedback } from './feedback'
 
 export function ThemeToggle() {
   const [theme, setTheme] = useState(getPreferredTheme)
@@ -29,6 +30,7 @@ export function ThemeToggle() {
         setTheme(next)
         applyTheme(next)
         saveTheme(next)
+        showSystemFeedback(`Đã chuyển sang giao diện ${next === 'dark' ? 'Tối (Dark)' : 'Sáng (Light)'}`, 'info')
       }}
     >
       <Icon name={theme === 'light' ? 'moon' : 'sun'} />

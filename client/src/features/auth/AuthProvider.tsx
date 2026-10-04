@@ -82,11 +82,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setNotice('')
         accept(next)
       } else {
-        if (current.authenticated) await submitLogout(current.csrfToken)
+        const fallback: Session = { authenticated: false, csrfToken: current.csrfToken || '' }
+        try {
+          if (current.authenticated) await submitLogout(current.csrfToken)
+        } catch {
+          // Ignore server logout failures and continue clearing local auth state
+        }
         sessionRef.current = null
+        accept(fallback)
         setNotice('Bạn đã đăng xuất.')
-        setState({ status: 'loading' })
-        await refresh().catch(() => {})
+        try {
+          const fresh = await fetchSession()
+          accept(fresh)
+        } catch {
+          // Fallback remains accepted
+        }
       }
     } catch (error) {
       const issue = asAuthError(error)

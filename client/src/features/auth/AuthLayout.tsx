@@ -2,6 +2,7 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router'
 import { Icon } from '@/shared/components/Icon'
 import { ThemeToggle } from '@/shared/components/ThemeToggle'
+import { SystemFeedback } from '@/shared/components/SystemFeedback'
 
 export function AuthLayout({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   const heading = useRef<HTMLHeadingElement>(null)
@@ -39,5 +40,6 @@ export function AuthLayout({ title, description, children }: { title: string; de
         {children}
       </section>
     </main>
+    <SystemFeedback />
   </div>
 }
