@@ -135,9 +135,9 @@ class DemoSeedApiIT {
         var guard = login("baove1");
         var visitors = get(guard, "/api/v1/visitors");
         assertEquals(200, visitors.statusCode(), visitors.body());
-        assertTrue(visitors.body().contains("PENDING"));
+        assertFalse(visitors.body().contains("PENDING"));
         assertTrue(visitors.body().contains("APPROVED"));
-        assertTrue(visitors.body().contains("REJECTED"));
+        assertFalse(visitors.body().contains("REJECTED"));
         var entries = get(guard, "/api/v1/entries");
         assertEquals(200, entries.statusCode(), entries.body());
         assertFalse(json.readTree(entries.body()).path("items").isEmpty());
