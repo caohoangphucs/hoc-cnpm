@@ -19,7 +19,13 @@ public record SessionDto(
      String role,
      Boolean twoFactorVerified,
     @NotBlank String csrfToken,
-     OffsetDateTime idleExpiresAt
+     OffsetDateTime idleExpiresAt,
+     String studentId
 ) {
-
+    /** Giữ tương thích các response/test không có thông tin sinh viên. */
+    public SessionDto(Boolean authenticated, String role, Boolean twoFactorVerified,
+            String csrfToken, OffsetDateTime idleExpiresAt) {
+        this(authenticated, role, twoFactorVerified, csrfToken, idleExpiresAt, null);
+    }
 }
+
