@@ -30,6 +30,17 @@ public class CommunityController {
                 api.integerParameter(request, "size", 20)));
     }
 
+    /** Tra cứu lịch tham gia riêng của sinh viên đã đăng nhập. */
+    public ServerResponse registrations(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> community.registrations(actor));
+    }
+
+    /** Cấp mã điểm danh mới sau khi kiểm tra quyền sở hữu phiếu. */
+    public ServerResponse attendanceToken(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> community.attendanceToken(actor, context,
+                Integer.parseInt(request.pathVariable("id"))));
+    }
+
     /** Publishes a new activity for student registration. */
     public ServerResponse createActivity(ServerRequest request) throws Exception {
         return api.handle(request, (actor, context) -> community.createActivity(actor, context,

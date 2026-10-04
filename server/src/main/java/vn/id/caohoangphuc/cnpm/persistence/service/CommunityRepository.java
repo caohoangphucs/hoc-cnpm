@@ -68,6 +68,20 @@ public class CommunityRepository {
         (page - 1) * size);
   }
 
+  /** Đọc toàn bộ phiếu của đúng sinh viên, kể cả hoạt động đã đóng và phiếu đã hủy. */
+  public List<Registration> registrations(String student) {
+    return jdbc.query("SELECT * FROM dang_ky_cong_ich WHERE masinhvien=? ORDER BY madangkycongich DESC",
+        (r, n) -> new Registration(r.getInt("madangkycongich"), r.getString("mahoatdong"),
+            r.getString("masinhvien"), r.getString("trangthai"), r.getString("maqrtoken"),
+            r.getLong("version")), student);
+  }
+
+  /** Thay hash mã điểm danh; token gốc chỉ trả về cho chủ phiếu trong lần cấp mới. */
+  public void attendanceToken(int id, String token) {
+    jdbc.update("UPDATE dang_ky_cong_ich SET maqrtoken=? WHERE madangkycongich=?",
+        "sha256:" + ServiceContext.hash(token), id);
+  }
+
   /** Tìm mã học kỳ nội bộ từ mã công khai hoặc báo không tìm thấy. */
   public String semesterCode(long id) {
     var rows = jdbc.queryForList("SELECT mahocky FROM hoc_ky WHERE public_id=?", String.class, id);
