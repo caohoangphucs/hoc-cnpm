@@ -7,7 +7,7 @@ import { FeatureFrame } from './pages/FeatureFrame'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { featurePages, type FeaturePageModule } from './featurePages'
 const Accounts = lazy(()=>import('@/features/accounts/AccountsPreview').then(module=>({default:module.PreviewAccounts})))
-const liveRoutes = new Set(['technician/repairs', 'student/repairs', 'student/visitors', 'security/gate', 'security/visitors', 'student/community', 'admin/community', 'admin/discipline', 'student/notifications', 'admin/rooms', 'student/stay', 'admin/bookings', 'accountant/invoices', 'student/invoices', 'admin/visitors', 'admin/repairs', 'admin/invoices', 'admin/entries', 'student/entries', 'accountant/payments'])
+const liveRoutes = new Set(['technician/repairs', 'student/repairs', 'student/visitors', 'security/gate', 'security/visitors', 'student/community', 'admin/community', 'admin/discipline', 'student/discipline', 'admin/rooms', 'student/stay', 'admin/bookings', 'accountant/invoices', 'student/invoices', 'admin/visitors', 'admin/repairs', 'admin/invoices', 'admin/entries', 'student/entries', 'accountant/payments'])
 const pages = { 'admin/accounts': Accounts, ...featurePages(import.meta.glob<FeaturePageModule>('../features/*/preview-route.tsx', { eager: true })) }
 export default function WorkspacePreview() {
   const {workspaceId}=useParams(), workspace=workspaces.find(w=>w.id===workspaceId)
