@@ -68,10 +68,10 @@ export function AccountsPage({ initialAccounts = [], preview = false, view = 'er
               <th scope="col">Vai trò</th><th scope="col">Trạng thái</th>
               <th scope="col" aria-sort={sort === 'lastLoginAt' ? descending ? 'descending' : 'ascending' : 'none'}><button onClick={() => changeSort('lastLoginAt')}>Đăng nhập gần nhất<Icon name={sort === 'lastLoginAt' && descending ? 'sortDown' : 'sortUp'} /></button></th>
               <th scope="col"><span className="sr-only">Thao tác</span></th>
-            </tr></thead><tbody>{rows.map((account) => <tr key={account.id}>
+            </tr></thead><tbody>{rows.map((account) => <tr key={account.id} className="clickable-row" onClick={() => setDialog({ id: account.id, mode: 'detail' })} tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setDialog({ id: account.id, mode: 'detail' }) } }} title={`Nhấp vào dòng để xem chi tiết tài khoản ${account.name}`}>
               <td><button className="account-person" aria-label={`Xem tài khoản ${account.name}`} onClick={() => setDialog({ id: account.id, mode: 'detail' })}><AccountAvatar name={account.name} /><span><strong>{account.name}</strong><small>@{account.username}</small></span></button></td>
               <td><span className="account-role-tag">{roleLabel(account.role)}</span></td><td><AccountStatus status={account.status} /></td><td className="account-last-login">{formatAccountDate(account.lastLoginAt)}</td>
-              <td><button className="icon-button state-layer" aria-label={`Chi tiết tài khoản ${account.username}`} onClick={() => setDialog({ id: account.id, mode: 'detail' })}><Icon name="more" /></button></td>
+              <td onClick={e => e.stopPropagation()}><button className="icon-button state-layer" aria-label={`Chi tiết tài khoản ${account.username}`} onClick={() => setDialog({ id: account.id, mode: 'detail' })}><Icon name="more" /></button></td>
             </tr>)}</tbody></table>
           </div></>}
       {available && filtered.length > 0 && <div className="accounts-pagination">
