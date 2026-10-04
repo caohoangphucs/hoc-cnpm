@@ -92,3 +92,14 @@
 }
 @media(max-width:1199px) { .wl-layout { grid-template-columns: minmax(0,1fr); } .wl-side { position: static; } }
 @media(max-width:599px) { .wl-preview-controls { display: grid; grid-template-columns: minmax(0,1fr); } .wl-preview-controls select { width: 100%; } .wl-summary { gap: 8px; } .wl-summary > div { padding: 12px; } .wl-summary dt { font-size: .75rem; } .wl-summary dd { font-size: 1.25rem; } .wl-toolbar, .wl-card-heading { padding: 20px 16px; } .wl-facts > div { grid-template-columns: minmax(0,1fr); gap: 4px; } .wl-grid { grid-template-columns: minmax(0,1fr); } .wl-pagination { gap: 8px; padding: 12px; } }
+
+/* Minh chứng riêng tư: ảnh co theo chiều rộng panel, không ép bảng tràn màn hình. */
+.evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 16px;
+  margin-block: 16px;
+}
+.evidence-preview { margin: 0; padding: 12px; border: 1px solid var(--md-sys-color-outline-variant); border-radius: 12px; }
+.evidence-preview figcaption { margin-bottom: 12px; }
+.evidence-preview img { display: block; width: 100%; height: auto; border-radius: 8px; margin-bottom: 12px; }
