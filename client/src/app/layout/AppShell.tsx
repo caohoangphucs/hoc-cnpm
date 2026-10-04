@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import { Link, Outlet, useLocation } from 'react-router'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router'
 import { type Workspace, workspacePath } from '../navigation'
 import { Icon } from '@/shared/components/Icon'
 import { ThemeToggle } from '@/shared/components/ThemeToggle'
@@ -9,9 +9,12 @@ import { asAuthError, type AuthError } from '@/features/auth/api'
 import { AuthFeedback } from '@/features/auth/AuthFeedback'
 import { Button } from '@/shared/components/Button'
 import { TwoFactorSetupDialog } from '@/features/auth/TwoFactorSetupDialog'
+import { SystemFeedback } from '@/shared/components/SystemFeedback'
+import { showSystemFeedback } from '@/shared/components/feedback'
 
 export function AppShell({ workspace, preview = false }: { workspace: Workspace; preview?: boolean }) {
   const prefix = preview ? '/preview' : ''
+  const navigate = useNavigate()
   const { logout } = useAuth()
   const [signingOut, setSigningOut] = useState(false)
   const [logoutError, setLogoutError] = useState<AuthError | null>(null)
@@ -21,7 +24,8 @@ export function AppShell({ workspace, preview = false }: { workspace: Workspace;
   const drawerRef = useRef<HTMLDialogElement>(null)
   const lastPath = useRef(pathname)
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const current = workspace.navigation.find((item) => `${prefix}${workspacePath(workspace, item)}` === pathname)
+  const normalize = (path: string) => path.replace(/\/+$/, '') || '/'
+  const current = workspace.navigation.find((item) => normalize(`${prefix}${workspacePath(workspace, item)}`) === normalize(pathname))
   const title = current?.label ?? 'Không tìm thấy trang'
 
   useEffect(() => {
@@ -55,8 +59,16 @@ export function AppShell({ workspace, preview = false }: { workspace: Workspace;
     if (signingOut) return
     setSigningOut(true)
     setLogoutError(null)
-    try { await logout() } catch (error) { setLogoutError(asAuthError(error)) }
-    finally { setSigningOut(false) }
+    try {
+      await logout()
+      showSystemFeedback('Đã đăng xuất khỏi tài khoản thành công.', 'info')
+      navigate('/login', { replace: true })
+    } catch (error) {
+      setLogoutError(asAuthError(error))
+      showSystemFeedback('Không thể hoàn tất đăng xuất. Vui lòng thử lại.', 'error')
+    } finally {
+      setSigningOut(false)
+    }
   }
 
   function keepDrawerFocus(event: KeyboardEvent<HTMLDialogElement>) {
@@ -148,6 +160,7 @@ export function AppShell({ workspace, preview = false }: { workspace: Workspace;
         <Navigation workspace={workspace} prefix={prefix} label="Tất cả mục điều hướng" onNavigate={closeDrawer} />
       </dialog>
       {settingUp && <TwoFactorSetupDialog onClose={() => setSettingUp(false)} />}
+      <SystemFeedback />
     </div>
   )
 }
