@@ -419,3 +419,7 @@ Hồ sơ trả về từ `GET /api/v1/bookings` và `GET /api/v1/bookings/{id}` 
 Session/login/2FA response có thêm `studentId` (MSSV của tài khoản SINHVIEN; null với vai trò khác). Form khai báo khách dùng MSSV này, không cho chọn người tiếp đón khác. Backend vẫn kiểm tra quyền sở hữu khi nhận khai báo.
 
 Khóa thông tin khách `KTX_PERSONAL_DATA_KEY` phải là 32 byte được mã hóa Base64 (`openssl rand -base64 32`). Production lưu một lần trong runtime.env, không đổi hoặc sinh lại khi deploy/reset database. Script deploy kiểm tra khóa trước khi thay container. Compose local có khóa demo mặc định chỉ dành cho môi trường phát triển.
+
+`GET /api/v1/entries/{eventId}` bổ sung `violation` (null khi không có vi phạm) với `{id, content, level, status, occurredAt}`. Bảo vệ/admin xem lượt được phép, sinh viên chỉ xem lượt của mình. POST entries cũng trả chi tiết vi phạm mới tạo. Danh sách giữ `violationId`; mở chi tiết để xem nội dung/trạng thái hiện tại.
+
+Mã khai báo khách trên giao diện là `KT-{id}` của phiếu. Bảo vệ chọn phiếu APPROVED để điền mã hoặc nhập số ID/KT-ID, rồi đối chiếu giấy tờ trước khi ghi lượt. Mã điểm danh công ích không dùng cho khách thăm.
