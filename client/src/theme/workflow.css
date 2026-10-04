@@ -1086,3 +1086,14 @@
 }
 
 
+/* Minh chứng riêng tư: ảnh co theo chiều rộng panel, không ép bảng tràn màn hình. */
+.evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 16px;
+  margin-block: 16px;
+}
+.evidence-preview { margin: 0; padding: 12px; border: 1px solid var(--md-sys-color-outline-variant); border-radius: 12px; }
+.evidence-preview figcaption { margin-bottom: 12px; }
+.evidence-preview img { display: block; width: 100%; height: auto; border-radius: 8px; margin-bottom: 12px; }
+

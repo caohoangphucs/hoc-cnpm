@@ -151,6 +151,81 @@ paths:
       responses:
         '200': {$ref: '#/components/responses/Command'}
         '409': {$ref: '#/components/responses/Error'}
+  /api/v1/booking-windows:
+    get:
+      tags: [Rooms and bookings]
+      summary: List currently open registration windows (SINHVIEN, ADMIN)
+      operationId: listBookingWindows
+      responses:
+        '200':
+          description: Open windows according to server time
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [id, name, semesterName]
+                  properties:
+                    id: {type: integer, minimum: 1, example: 900001}
+                    name: {type: string}
+                    semesterName: {type: string}
+                    opensAt: {type: string, format: date-time}
+                    closesAt: {type: string, format: date-time}
+        '401': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+  /api/v1/files:
+    post:
+      tags: [Rooms and bookings]
+      summary: Upload private PNG/JPEG evidence as a draft (maximum 5 MiB)
+      operationId: uploadEvidence
+      security: [{csrfToken: []}]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, kind]
+              properties:
+                file: {type: string, format: binary, description: PNG/JPEG; at most 5242880 bytes and 20 megapixels, each dimension at most 6000 pixels}
+                kind: {type: string, enum: [CCCD_FRONT, CCCD_BACK, STUDENT_CARD, REPAIR, EVIDENCE, POLICY]}
+      responses:
+        '200': {description: Private file metadata, content: {application/json: {schema: {$ref: '#/components/schemas/EvidenceFile'}}}}
+        '401': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+        '413': {description: Maximum file or multipart request size exceeded}
+        '422': {$ref: '#/components/responses/Error'}
+  /api/v1/files/{id}:
+    parameters: [{$ref: '#/components/parameters/Uuid'}]
+    get:
+      tags: [Rooms and bookings]
+      summary: Read private file metadata (owner or ADMIN for attached booking evidence)
+      operationId: getEvidenceMetadata
+      responses:
+        '200': {description: File metadata, content: {application/json: {schema: {$ref: '#/components/schemas/EvidenceFile'}}}}
+        '400': {$ref: '#/components/responses/Error'}
+        '401': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+  /api/v1/files/{id}/content:
+    parameters: [{$ref: '#/components/parameters/Uuid'}]
+    get:
+      tags: [Rooms and bookings]
+      summary: View/download private image content with session and ownership checks
+      operationId: getEvidenceContent
+      parameters:
+        - {name: download, in: query, required: false, schema: {type: boolean, default: false}}
+      responses:
+        '200':
+          description: Validated PNG/JPEG bytes; Cache-Control no-store, Content-Disposition inline or attachment
+          content:
+            image/png: {schema: {type: string, format: binary}}
+            image/jpeg: {schema: {type: string, format: binary}}
+        '400': {$ref: '#/components/responses/Error'}
+        '401': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
   /api/v1/bookings:
     get:
       tags: [Rooms and bookings]
@@ -675,6 +750,16 @@ components:
         application/json:
           schema: {$ref: '#/components/schemas/Error'}
   schemas:
+    EvidenceFile:
+      type: object
+      required: [id, kind, mime, sizeBytes, sha256, contentUrl]
+      properties:
+        id: {type: string, format: uuid}
+        kind: {type: string, enum: [CCCD_FRONT, CCCD_BACK, STUDENT_CARD, REPAIR, EVIDENCE, POLICY]}
+        mime: {type: string, enum: [image/png, image/jpeg]}
+        sizeBytes: {type: integer, minimum: 1, maximum: 5242880}
+        sha256: {type: string, pattern: '^[a-f0-9]{64}$'}
+        contentUrl: {type: string, example: /api/v1/files/00000000-0000-0000-0000-000000000000/content}
     Command:
       type: object
       properties:
