@@ -23,7 +23,8 @@ public record BookingResourceDto(
     @NotBlank String profileState,
     @NotNull @DecimalMin("0") Long version,
     @Valid List<@NotNull UUID> fileIds,
-     String reason
+     String reason,
+    @NotBlank String roomId
 ) {
 
 }
