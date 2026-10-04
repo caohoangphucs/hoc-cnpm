@@ -82,6 +82,8 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f database/tests/vietnamese_encoding.sql
       - name: Verify missing community seed migration preserves existing activities
         run: psql -v ON_ERROR_STOP=1 -f database/tests/community_backfill.sql
+      - name: Verify legacy demo password migration preserves changed passwords
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/demo_password_migration.sql
       - name: Build backend and run Java unit tests
         run: docker build --target build -t "cnpm-server-build:$CI_SHA" server
       - name: Run controller tests with MockMvc (no real HTTP or database)
