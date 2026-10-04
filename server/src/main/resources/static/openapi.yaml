@@ -830,6 +830,7 @@ components:
         profileState: {type: string}
         version: {type: integer, format: int64}
         fileIds: {type: array, items: {type: string, format: uuid}}
+        roomId: {type: string, description: Mã phòng thực của giường đăng ký, example: DEMO-A}
         reason: {type: string, nullable: true}
     BookingPage:
       allOf: [{$ref: '#/components/schemas/Page'}]

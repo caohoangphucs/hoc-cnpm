@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { BookingBedMap } from './BookingBedMap'
 import { EvidenceFiles } from './EvidenceFiles'
 import { Button } from '@/shared/components/Button'
 import { Dialog } from '@/shared/components/Dialog'
@@ -53,39 +54,6 @@ const PREVIEW_DOCS: DocItem[] = [
   },
 ]
 
-const MOCK_OCCUPANTS: Record<number, string> = {
-  1: 'N.V. Hùng',
-  2: 'T.Đ. Anh',
-  4: 'P.G. Huy',
-  5: 'Đ.H. Anh',
-  6: 'V.Đ. Long',
-  7: 'L.T. Tùng',
-}
-
-function parseBedDetails(bedId: string) {
-  const mDash = bedId.match(/^(.*)[-_](\d+)$/)
-  if (mDash) {
-    return {
-      roomName: mDash[1].startsWith('P') || mDash[1].startsWith('Phòng') ? mDash[1] : `Phòng ${mDash[1]}`,
-      bedNum: parseInt(mDash[2], 10),
-    }
-  }
-  const mNum = bedId.match(/^([A-Za-z]*\d{3})(\d{2})$/)
-  if (mNum) {
-    return {
-      roomName: `Phòng ${mNum[1]}`,
-      bedNum: parseInt(mNum[2], 10),
-    }
-  }
-  const trailingNum = bedId.match(/\d+$/)
-  const bedNum = trailingNum ? parseInt(trailingNum[0], 10) : 3
-  const roomPrefix = bedId.replace(/\d+$/, '') || 'A204'
-  return {
-    roomName: roomPrefix.startsWith('P') || roomPrefix.startsWith('Phòng') ? roomPrefix : `Phòng ${roomPrefix}`,
-    bedNum,
-  }
-}
-
 export function BookingRecords({ admin = false }: { admin?: boolean }) {
   const [page, setPage] = useState(1), [search, setSearch] = useState(''), [status, setStatus] = useState(''), [detail, setDetail] = useState<number | null>(null), [deleting, setDeleting] = useState<Booking | null>(null), [notice, setNotice] = useState('')
   const resource = useResource(`bookings?page=${page}&pageSize=8`, parseBookings), rows = resource.data?.items ?? []
@@ -103,11 +71,6 @@ function BookingDetail({ id, admin, onClose, onSave }: { id: number; admin: bool
   const record = resource.data
   const student = record ? findStudent(record.studentId) : undefined
 
-  const bedInfo = record ? parseBedDetails(record.bedId) : { roomName: 'Phòng A204', bedNum: 3 }
-  const requestedBedNum = bedInfo.bedNum
-  const [assignedBedNum, setAssignedBedNum] = useState<number | null>(null)
-  const activeBedNum = assignedBedNum ?? requestedBedNum
-
   async function save() {
     if (!record || !decision || decision === 'DUYET' && !verified || decision === 'TU_CHOI' && !reason.trim()) {
       action.setError('Kiểm tra hồ sơ và nhập lý do khi từ chối.')
@@ -118,54 +81,12 @@ function BookingDetail({ id, admin, onClose, onSave }: { id: number; admin: bool
       onClose()
       showSystemFeedback(
         decision === 'DUYET'
-          ? `Đã phê duyệt hồ sơ ĐK-${id} thành công cho sinh viên ${record.studentId} (Giường ${activeBedNum < 10 ? `0${activeBedNum}` : activeBedNum})!`
+          ? `Đã phê duyệt hồ sơ ĐK-${id} thành công cho sinh viên ${record.studentId} (Giường ${record.bedId})!`
           : `Đã từ chối hồ sơ ĐK-${id}.`,
         decision === 'DUYET' ? 'success' : 'warning'
       )
     }
   }
-
-  const handleSelectBed = (bNum: number) => {
-    setAssignedBedNum(bNum)
-    const bedStr = bNum < 10 ? `0${bNum}` : `${bNum}`
-    showSystemFeedback(`Đã chọn Giường ${bedStr} cho sinh viên ${student ? student.fullName : record?.studentId}`, 'info')
-  }
-
-  const beds = Array.from({ length: 8 }, (_, i) => {
-    const bNum = i + 1
-    const formattedNum = bNum < 10 ? `0${bNum}` : `${bNum}`
-    const isSelected = bNum === activeBedNum
-    const isRequested = bNum === requestedBedNum
-    const isAvailableSlot = bNum === 8 || (isRequested && !isSelected)
-
-    let statusClass: string
-    let statusText: string
-    let clickable = false
-    let tooltip: string
-
-    if (isSelected) {
-      statusClass = isRequested ? 'selected requested' : 'selected'
-      statusText = 'Đang chọn'
-      tooltip = isRequested ? 'Nguyện vọng sinh viên (Đang chọn duyệt)' : 'Đang chọn duyệt cho sinh viên'
-    } else if (isRequested) {
-      statusClass = 'available requested'
-      statusText = 'Nguyện vọng'
-      clickable = true
-      tooltip = 'Nguyện vọng của sinh viên (Nhấp để chọn lại)'
-    } else if (isAvailableSlot) {
-      statusClass = 'available'
-      statusText = 'Còn trống'
-      clickable = true
-      tooltip = 'Còn trống (Nhấp để chọn đổi sang giường này)'
-    } else {
-      statusClass = 'occupied'
-      statusText = MOCK_OCCUPANTS[bNum] || 'Đã có SV'
-      clickable = false
-      tooltip = `Đã có SV (${statusText})`
-    }
-
-    return { bNum, formattedNum, statusClass, statusText, clickable, tooltip }
-  })
 
   return (
     <>
@@ -232,43 +153,7 @@ function BookingDetail({ id, admin, onClose, onSave }: { id: number; admin: bool
                 </div>
               </div>
 
-              {/* Sơ đồ & Chọn giường (Material 3 Bed Selector) */}
-              <div className="bed-selection-section">
-                <div className="bed-section-header">
-                  <div className="bed-section-title">
-                    <Icon name="bed" />
-                    <span>Sơ đồ & Chọn giường ({bedInfo.roomName})</span>
-                  </div>
-                  <span className="bed-selected-badge">
-                    Đang chọn: Giường {activeBedNum < 10 ? `0${activeBedNum}` : activeBedNum}
-                  </span>
-                </div>
-
-                <div className="bed-legend-row">
-                  <span className="legend-item"><span className="legend-dot selected" /><span>Đang chọn duyệt</span></span>
-                  <span className="legend-item"><span className="legend-dot requested" /><span>Nguyện vọng SV</span></span>
-                  <span className="legend-item"><span className="legend-dot available" /><span>Còn trống (Chọn đổi)</span></span>
-                  <span className="legend-item"><span className="legend-dot occupied" /><span>Đã có người ở</span></span>
-                </div>
-
-                <div className="bed-grid">
-                  {beds.map(b => (
-                    <div
-                      key={b.bNum}
-                      className={`bed-card-tile ${b.statusClass}`}
-                      role={b.clickable && admin ? 'button' : undefined}
-                      tabIndex={b.clickable && admin ? 0 : undefined}
-                      onClick={b.clickable && admin ? () => handleSelectBed(b.bNum) : undefined}
-                      onKeyDown={b.clickable && admin ? e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelectBed(b.bNum); } } : undefined}
-                      title={`Giường ${b.formattedNum} - ${b.tooltip}`}
-                    >
-                      <Icon name="bed" />
-                      <span className="bed-number">Giường {b.formattedNum}</span>
-                      <span className="bed-status-text">{b.statusText}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <BookingBedMap roomId={record.roomId} bedId={record.bedId} />
 
               {admin && record.status === 'CHO_DUYET' && (
                 <div className="wl-form" style={{ marginTop: '16px' }}>
