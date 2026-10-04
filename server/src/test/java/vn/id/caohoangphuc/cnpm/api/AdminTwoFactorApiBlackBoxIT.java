@@ -107,10 +107,19 @@ class AdminTwoFactorApiBlackBoxIT {
         assertNull(secretFor("admin"));
     }
 
-    /** The requested policy applies to administrators, leaving student/accounting logins available. */
+    /** Enrolled accountants also need OTP, while students and unenrolled accountants remain available. */
     @Test
-    void studentAndAccountantLoginsDoNotRequireAdminOtp() throws Exception {
+    void enrolledAccountantRequiresOtpButStudentAndUnenrolledAccountantDoNot() throws Exception {
         saveSecret("ketoan1", totp.encrypt(SECRET));
+        var accountant = login("ketoan1");
+        assertFalse(accountant.verified());
+        assertEquals(403, get(accountant, ApiRoutes.INVOICES).statusCode());
+        var verified = post(accountant, ApiRoutes.AUTH_TWO_FACTOR, "{\"code\":\"" + currentCode() + "\"}");
+        assertEquals(200, verified.statusCode(), verified.body());
+        assertTrue(json.readTree(verified.body()).path("twoFactorVerified").asBoolean());
+        assertEquals(200, get(accountant, ApiRoutes.INVOICES).statusCode());
+
+        saveSecret("ketoan1", null);
         for (String username : new String[]{"sv001", "ketoan1"}) {
             var session = login(username);
             assertTrue(session.verified());
