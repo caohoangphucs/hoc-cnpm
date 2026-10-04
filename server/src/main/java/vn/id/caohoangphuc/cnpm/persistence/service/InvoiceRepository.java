@@ -60,6 +60,17 @@ public class InvoiceRepository {
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Lưu số đo, đồng thời ghi tài khoản và thời điểm cập nhật. */
+  public void saveReading(String roomId, String month, Reading reading, int actorId) {
+    jdbc.update("""
+        INSERT INTO chi_so_dien_nuoc(maphong,kythang,diencu,dienmoi,nuoccu,nuocmoi,ngayghi,nguoighi)
+        VALUES(?,?,?,?,?,?,CURRENT_TIMESTAMP,(SELECT tendangnhap FROM tai_khoan WHERE mataikhoan=?))
+        ON CONFLICT(maphong,kythang) DO UPDATE SET diencu=EXCLUDED.diencu,dienmoi=EXCLUDED.dienmoi,
+        nuoccu=EXCLUDED.nuoccu,nuocmoi=EXCLUDED.nuocmoi,ngayghi=EXCLUDED.ngayghi,nguoighi=EXCLUDED.nguoighi
+        """, roomId, month, reading.oldElectricity(), reading.newElectricity(),
+        reading.oldWater(), reading.newWater(), actorId);
+  }
+
   /** Đọc đơn giá điện, nước và phòng đang có hiệu lực trong tháng. */
   public Price prices(String roomId, String month) {
     LocalDate first = LocalDate.parse(month + "-01");

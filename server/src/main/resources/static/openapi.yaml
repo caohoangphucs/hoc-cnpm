@@ -17,6 +17,61 @@ tags:
   - name: Discipline
   - name: Community
 paths:
+  /api/v1/rooms/{id}/meter-readings:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: string}, example: D-102}
+      - {name: month, in: query, required: true, schema: {type: string, pattern: '^[0-9]{4}-(0[1-9]|1[0-2])$'}, example: '2026-11'}
+    get:
+      tags: [Invoices]
+      summary: Đọc số đo điện nước và phiên bản
+      responses:
+        '200':
+          description: KETOAN/KYTHUAT/ADMIN; reading null khi chưa có số đo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exists: {type: boolean}
+                  editable: {type: boolean}
+                  revision: {type: string}
+                  reading:
+                    type: object
+                    nullable: true
+                    properties:
+                      oldElectricity: {type: integer}
+                      newElectricity: {type: integer}
+                      oldWater: {type: integer}
+                      newWater: {type: integer}
+        '403': {description: Không có quyền hoặc chưa hoàn thành 2FA}
+        '404': {description: Không có phòng}
+        '422': {description: Kỳ tháng sai}
+    put:
+      tags: [Invoices]
+      summary: Lưu số đo trước khi phát hành hóa đơn
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+        - {name: X-Request-Id, in: header, required: true, schema: {type: string, format: uuid}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [oldElectricity, newElectricity, oldWater, newWater, revision]
+              properties:
+                oldElectricity: {type: integer, minimum: 0, maximum: 2147483647, example: 100}
+                newElectricity: {type: integer, minimum: 0, maximum: 2147483647, example: 140}
+                oldWater: {type: integer, minimum: 0, maximum: 2147483647, example: 20}
+                newWater: {type: integer, minimum: 0, maximum: 2147483647, example: 25}
+                revision: {type: string, description: Phiên bản lấy từ GET}
+      responses:
+        '200': {description: Đã lưu số đo và audit}
+        '403': {description: Thiếu quyền hoặc CSRF}
+        '404': {description: Không có phòng}
+        '409': {description: Đã phát hành hoặc số đo thay đổi sau GET}
+        '422': {description: Số đo hoặc kỳ tháng sai}
+
   /api/v1/invoices/unbilled-rooms:
     get:
       tags: [Invoices]

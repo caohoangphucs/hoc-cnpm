@@ -393,3 +393,9 @@ Sau khi tải đủ ba ảnh, gửi `POST /bookings` với `bedId`, `windowId` l
 Hồ sơ trả về từ `GET /api/v1/bookings` và `GET /api/v1/bookings/{id}` có thêm `roomId`: mã phòng lấy từ giường đăng ký trong database. Sơ đồ xét duyệt đọc `GET /api/v1/rooms/{roomId}/beds`, không tự tạo giường hoặc tên người ở. Quyết định duyệt giữ nguyên `bedId` của hồ sơ.
 
 `GET /api/v1/invoices/unbilled-rooms?month=2026-11` (KETOAN): trả mảng `{id, buildingId, number}` của phòng chưa có hóa đơn trong tháng. UI dùng danh sách này để tích chọn tối đa 100 phòng thay cho nhập mã. Phòng thiếu chỉ số/giá vẫn hiển thị, bản nháp kiểm tra dữ liệu trước khi phát hành.
+
+### Chỉ số điện nước cho UC-17
+
+- `GET /api/v1/rooms/{id}/meter-readings?month=2026-11`: KETOAN/KYTHUAT/ADMIN; trả `{exists, editable, reading, revision}`. `reading` là null khi chưa nhập; nếu có gồm `oldElectricity`, `newElectricity`, `oldWater`, `newWater`.
+- `PUT` cùng URL: body `{oldElectricity:100,newElectricity:140,oldWater:20,newWater:25,revision:"<revision từ GET>"}`; cần CSRF, Idempotency-Key và X-Request-Id. Trả CommandResult. Mỗi số nguyên trong [0,2147483647], số mới >= cũ. 409 khi đã phát hành hoặc revision cũ; 422 khi nhập sai. Backend ghi người cập nhật và audit, không sửa hóa đơn cũ.
+- UI: tính nháp → Nhập / sửa chỉ số → Lưu & tính lại → đối chiếu → phát hành.

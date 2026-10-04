@@ -84,6 +84,8 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f database/tests/community_backfill.sql
       - name: Verify legacy demo password migration preserves changed passwords
         run: psql -v ON_ERROR_STOP=1 -f database/tests/demo_password_migration.sql
+      - name: Apply unissued invoice demo month
+        run: psql -v ON_ERROR_STOP=1 --single-transaction -f database/migrations/V20261011__seed_unissued_invoice_month.sql
       - name: Apply encrypted evidence storage migration
         run: psql -v ON_ERROR_STOP=1 --single-transaction -f database/migrations/V20261010__evidence_file_content.sql
       - name: Build backend and run Java unit tests
