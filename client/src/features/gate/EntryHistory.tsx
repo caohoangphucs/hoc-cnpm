@@ -4,7 +4,7 @@ import { Dialog } from '@/shared/components/Dialog'
 import { useResource } from '@/shared/api/hooks'
 import { DataTable, Facts, ServerPagination, Status, WorkflowPage } from '@/shared/workflow/Workflow'
 import { dateTime } from '@/shared/workflow/model'
-import { barrierLabels, parseEntries, parseEntry } from './model'
+import { barrierLabels, parseEntries, parseEntry, violationLevelLabels, violationStatusLabels } from './model'
 export function EntryHistory({ revision = 0 }: { revision?: number }) {
   const [page, setPage] = useState(1), [detail, setDetail] = useState<string | null>(null)
   const resource = useResource(`entries?page=${page}&size=8`, parseEntries, revision), rows = resource.data?.items ?? []
@@ -12,5 +12,5 @@ export function EntryHistory({ revision = 0 }: { revision?: number }) {
 }
 function EntryDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const resource = useResource(`entries/${encodeURIComponent(id)}`, parseEntry), e = resource.data
-  return <Dialog title="Chi tiết lượt cổng" onClose={onClose} actions={<Button variant="text" onClick={onClose}>Đóng</Button>}><WorkflowPage title="Thông tin lượt" description="Kết quả từ máy chủ." view={resource.loading ? 'loading' : resource.error ? 'error' : 'data'} error={resource.error} onRetry={resource.reload}>{e && <Facts items={[[ 'MSSV', e.studentId ], ['Thời điểm', dateTime(e.time) ], ['Hướng', e.type === 'VAO' ? 'Vào' : 'Ra' ], ['Thiết bị', barrierLabels[e.barrierStatus] ], ['Vi phạm', e.violationId || 'Không ghi nhận' ]]} />}</WorkflowPage></Dialog>
+  return <Dialog title="Chi tiết lượt cổng" onClose={onClose} actions={<Button variant="text" onClick={onClose}>Đóng</Button>}><WorkflowPage title="Thông tin lượt" description="Kết quả từ máy chủ." view={resource.loading ? 'loading' : resource.error ? 'error' : 'data'} error={resource.error} onRetry={resource.reload}>{e && <><Facts items={[[ 'MSSV', e.studentId ], ['Thời điểm', dateTime(e.time) ], ['Hướng', e.type === 'VAO' ? 'Vào' : 'Ra' ], ['Thiết bị', barrierLabels[e.barrierStatus] ], ['Vi phạm', e.violationId ? `VP-${e.violationId}` : 'Không ghi nhận' ]]} />{e.violation && <section className="wl-card"><h2>Chi tiết vi phạm</h2><p>{e.violation.content}</p><Facts items={[[ 'Mức độ', violationLevelLabels[e.violation.level] || e.violation.level ], ['Trạng thái', violationStatusLabels[e.violation.status] || e.violation.status ], ['Thời điểm vi phạm', dateTime(e.violation.occurredAt) ]]} /></section>}</>}</WorkflowPage></Dialog>
 }
