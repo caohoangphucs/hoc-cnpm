@@ -643,3 +643,446 @@
   transform: scale(1.05);
 }
 
+/* ==========================================================================
+   11. MATERIAL 3 BED SELECTION & BED MAP (SƠ ĐỒ & BỐ TRÍ GIƯỜNG TRỰC QUAN)
+   ========================================================================== */
+.bed-selection-section {
+  background: var(--md-sys-color-surface-container-low);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-large, 16px);
+  padding: 16px;
+  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bed-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bed-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--app-font-brand);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--md-sys-color-on-surface);
+}
+
+.bed-section-title .icon {
+  color: var(--md-sys-color-primary);
+  width: 20px;
+  height: 20px;
+}
+
+.bed-selected-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: var(--md-sys-shape-corner-full, 9999px);
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bed-legend-row,
+.bed-legend-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--md-sys-color-on-surface-variant);
+  padding: 4px 0;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-dot,
+.legend-color-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.legend-dot.selected,
+.legend-color-dot.my-bed {
+  background-color: var(--md-sys-color-primary);
+}
+
+.legend-dot.requested {
+  background-color: var(--md-sys-color-tertiary-container);
+  border: 1.5px solid var(--md-sys-color-tertiary);
+}
+
+.legend-dot.available,
+.legend-color-dot.available {
+  background-color: var(--md-sys-color-surface-container-lowest);
+  border: 1.5px dashed var(--md-sys-color-primary);
+}
+
+.legend-dot.occupied,
+.legend-color-dot.occupied,
+.legend-color-dot.roommate {
+  background-color: var(--md-sys-color-outline-variant);
+}
+
+.legend-dot.locked,
+.legend-color-dot.locked {
+  background-color: var(--md-sys-color-error-container);
+}
+
+/* 11.1 Admin Bed Grid (Lưới ô giường) */
+.bed-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.bed-card-tile {
+  background: var(--md-sys-color-surface-container-lowest);
+  border: 1.5px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-medium, 12px);
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  transition: all 180ms cubic-bezier(0.2, 0, 0, 1);
+  text-align: center;
+  min-height: 96px;
+}
+
+.bed-card-tile .icon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  transition: transform 180ms ease;
+}
+
+.bed-card-tile:focus-visible {
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: 2px;
+}
+
+.bed-number {
+  font-family: var(--app-font-brand);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--md-sys-color-on-surface);
+}
+
+.bed-status-text {
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.bed-card-tile.available {
+  background: var(--md-sys-color-surface-container-lowest);
+  color: var(--md-sys-color-on-surface);
+  border-color: var(--md-sys-color-outline-variant);
+}
+
+.bed-card-tile.available:hover {
+  border-color: var(--md-sys-color-primary);
+  background: var(--md-sys-color-surface-container);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.bed-card-tile.available .icon {
+  color: var(--md-sys-color-primary);
+}
+
+.bed-card-tile.available:hover .icon {
+  transform: scale(1.1);
+}
+
+.bed-card-tile.available .bed-status-text {
+  color: var(--app-color-success, #006e33);
+  font-weight: 600;
+}
+
+.bed-card-tile.requested {
+  border-color: var(--md-sys-color-tertiary);
+  background: var(--md-sys-color-tertiary-container);
+  color: var(--md-sys-color-on-tertiary-container);
+}
+
+.bed-card-tile.requested .bed-status-text {
+  color: var(--md-sys-color-on-tertiary-container);
+  font-weight: 600;
+}
+
+.bed-card-tile.selected {
+  background-color: var(--md-sys-color-primary) !important;
+  color: var(--md-sys-color-on-primary) !important;
+  border-color: var(--md-sys-color-primary) !important;
+  border-width: 2px !important;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--md-sys-color-primary) 40%, transparent);
+  transform: scale(1.04);
+}
+
+.bed-card-tile.selected .icon {
+  color: var(--md-sys-color-on-primary) !important;
+}
+
+.bed-card-tile.selected .bed-number,
+.bed-card-tile.selected .bed-status-text {
+  color: var(--md-sys-color-on-primary) !important;
+  font-weight: 700;
+}
+
+.bed-card-tile.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--md-sys-color-on-primary);
+}
+
+.bed-card-tile.occupied {
+  background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface-variant);
+  border-color: transparent;
+  cursor: default;
+  opacity: 0.72;
+}
+
+.bed-card-tile.occupied .icon {
+  color: var(--md-sys-color-outline);
+}
+
+.bed-card-tile.occupied .bed-status-text {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.bed-card-tile.locked {
+  background: var(--md-sys-color-error-container);
+  color: var(--md-sys-color-on-error-container);
+  border-color: transparent;
+  opacity: 0.75;
+}
+
+/* 11.2 Student Bed Map Container (Thẻ giường chi tiết kiểu sinh viên) */
+.bed-grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 14px;
+  padding: 8px 0;
+}
+
+.bed-slot-card {
+  position: relative;
+  background-color: var(--md-sys-color-surface-container-low);
+  border: 1.5px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-large, 16px);
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  user-select: none;
+}
+
+.bed-slot-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  border-color: var(--md-sys-color-primary);
+}
+
+.bed-slot-card.my-bed {
+  background-color: var(--md-sys-color-primary-container);
+  border-color: var(--md-sys-color-primary);
+  border-width: 2px;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--md-sys-color-primary) 35%, transparent);
+}
+
+.bed-slot-card.my-bed .bed-num-label {
+  color: var(--md-sys-color-on-primary-container);
+  font-weight: 700;
+}
+
+.my-bed-badge {
+  position: absolute;
+  top: -10px;
+  background-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.bed-icon-wrapper {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-outline);
+  flex-shrink: 0;
+  transition: all 180ms ease;
+}
+
+.bed-icon-wrapper .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.bed-slot-card.my-bed .bed-icon-wrapper {
+  background-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+}
+
+.bed-slot-card.roommate .bed-icon-wrapper {
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+.bed-slot-card.available .bed-icon-wrapper {
+  background-color: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-primary);
+}
+
+.bed-slot-card.available {
+  background-color: var(--md-sys-color-surface-container-lowest);
+  border: 1.5px dashed var(--md-sys-color-primary);
+}
+
+.bed-slot-card.available:hover {
+  background-color: var(--md-sys-color-primary-container);
+  border-style: solid;
+}
+
+.bed-num-label {
+  font-family: var(--app-font-brand);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--md-sys-color-on-surface);
+}
+
+.bed-occupant-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.bed-occupant-sub {
+  font-size: 11px;
+  color: var(--md-sys-color-outline);
+}
+
+.bed-swap-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--md-sys-color-primary);
+  background-color: var(--md-sys-color-primary-container);
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+/* 11.3 Document Preview & Chips (Minh chứng hồ sơ) */
+.docs-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.doc-preview-container {
+  background: var(--md-sys-color-surface-container-lowest);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-medium, 12px);
+  padding: 18px;
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.doc-stamp-badge {
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: var(--app-color-success-container, #c4f3d0);
+  color: var(--app-color-on-success-container, #00210b);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.doc-stamp-badge .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.doc-preview-card {
+  background: var(--md-sys-color-surface-container-high);
+  border-radius: var(--md-sys-shape-corner-medium, 12px);
+  padding: 24px;
+  text-align: center;
+  border: 1px dashed var(--md-sys-color-outline-variant);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.doc-preview-card .icon {
+  width: 52px;
+  height: 52px;
+  color: var(--md-sys-color-primary);
+}
+
+.doc-info-meta {
+  font-size: 12px;
+  color: var(--md-sys-color-on-surface-variant);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  border-top: 1px dashed var(--md-sys-color-outline-variant);
+  padding-top: 10px;
+}
+
+
