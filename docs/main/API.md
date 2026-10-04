@@ -4,6 +4,9 @@ Tài liệu này mô tả các HTTP route đang được khai báo trong `ApiRou
 
 ## Đăng nhập, session và CSRF
 
+Admin đã thiết lập Google Authenticator phải xác thực 2FA sau mỗi lần đăng nhập bằng mật khẩu. Response login/session trả `twoFactorVerified: false` cho đến khi `POST /auth/2fa` với body `{"code":"123456"}` xác nhận mã đúng. Trong thời gian chờ, API nghiệp vụ trả `403 TWO_FACTOR_REQUIRED`; session, xác thực mã và đăng xuất vẫn dùng được. Admin chưa thiết lập và các vai trò khác tiếp tục đăng nhập như trước. Khóa thiết lập/QR dùng để thêm ứng dụng; mã cần nhập khi đăng nhập là mã TOTP 6 chữ số trong ứng dụng.
+
+
 Swagger UI được mở tại `/swagger-ui.html` (JSON OpenAPI tĩnh tại `/openapi.yaml`). Mở UI cùng host với API để trình duyệt tự gửi session cookie. Trong Swagger, gọi `GET /api/v1/auth/session`, copy `csrfToken` vào nút **Authorize** (`X-CSRF-TOKEN`), rồi thử `POST /api/v1/auth/login`. Sau khi đăng nhập, gọi lại session và cập nhật token trong **Authorize** vì login thay token CSRF. Các lệnh ghi cần token mới; callback thanh toán không dùng session/CSRF.
 
 Ứng dụng dùng session cookie (`JSESSIONID` mặc định), không dùng bearer token. Trình tự gọi API từ client:
