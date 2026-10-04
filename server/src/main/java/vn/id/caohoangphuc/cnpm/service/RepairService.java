@@ -272,7 +272,7 @@ public class RepairService {
       return reportShortages(actor, request, id, input.version(), shortages);
 
     var fileIds = input.fileIds() == null ? List.<java.util.UUID>of() : input.fileIds();
-    context.files(fileIds, actor.accountId(), "REPAIR");
+    context.files(fileIds, actor.accountId(), 10, "REPAIR");
     repository.attachCompletionFiles(id, context.json(fileIds));
     context.attach(fileIds);
     finishRepair(actor, request, repair, id, input, lines);

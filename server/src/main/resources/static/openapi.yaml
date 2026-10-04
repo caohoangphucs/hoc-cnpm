@@ -17,6 +17,40 @@ tags:
   - name: Discipline
   - name: Community
 paths:
+  /api/v1/entries/manual:
+    post:
+      tags: [Gate and visitors]
+      summary: Bảo vệ ghi lượt thủ công sau đối chiếu giấy tờ
+      security: [{csrfToken: []}]
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [eventId, studentId, type, deviceId, identityVerified]
+              properties:
+                eventId: {type: string, format: uuid}
+                studentId: {type: string, minLength: 1, maxLength: 20}
+                type: {type: string, enum: [VAO, RA]}
+                deviceId: {type: string, minLength: 1, maxLength: 100}
+                note: {type: string, maxLength: 255, nullable: true}
+                identityVerified: {type: boolean, const: true}
+            example: {eventId: '01234567-89ab-4cde-8123-0123456789ab', studentId: '21110001', type: RA, deviceId: GATE-01, identityVerified: true}
+      responses:
+        '200':
+          description: Lượt đã lưu với thời gian server
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Entry'}
+        '403': {description: Chỉ bảo vệ được ghi lượt}
+        '409': {description: Thẻ/lưu trú không hiệu lực hoặc request trùng key khác nội dung}
+        '422': {description: Dữ liệu hoặc xác minh giấy tờ chưa hợp lệ}
   /api/v1/materials:
     get:
       tags:
@@ -1030,7 +1064,7 @@ components:
     Assignment: {required: true, content: {application/json: {schema: {type: object, required: [technicianAccountId, scheduledAt, version], properties: {technicianAccountId: {type: integer, format: int64}, scheduledAt: {type: string, format: date-time}, version: {type: integer, format: int64}}}}}}
     RepairSchedule: {required: true, content: {application/json: {schema: {type: object, required: [version, scheduledAt, note], properties: {version: {type: integer, format: int64, minimum: 1}, scheduledAt: {type: string, format: date-time}, warrantyUntil: {type: string, format: date, nullable: true}, note: {type: string, minLength: 1, maxLength: 1000}}}}}}
     RepairComplete: {required: true, content: {application/json: {schema: {type: object, required: [version, note, supplies], properties: {fileIds: {type: array, maxItems: 10, items: {type: string, format: uuid}}, version: {type: integer, format: int64}, note: {type: string}, supplies: {type: array, items: {type: object, required: [supplyId, quantity], properties: {supplyId: {type: string}, quantity: {type: integer, minimum: 1}}}}, warrantyUntil: {type: string, format: date, nullable: true}}}}}}
-    Entry: {required: true, content: {application/json: {schema: {type: object, required: [eventId, cardToken, type, deviceId], properties: {eventId: {type: string, format: uuid}, cardToken: {type: string, writeOnly: true}, type: {type: string, enum: [VAO, RA]}, deviceId: {type: string}, note: {type: string, nullable: true}}}}}}
+    Entry: {required: true, content: {application/json: {schema: {type: object, required: [eventId, cardToken, type, deviceId], properties: {eventId: {type: string, format: uuid}, cardToken: {type: string, writeOnly: true}, type: {type: string, enum: [VAO, RA]}, deviceId: {type: string, minLength: 1, maxLength: 100}, note: {type: string, minLength: 1, maxLength: 255, nullable: true}}}}}}
     Visitor: {required: true, content: {application/json: {schema: {type: object, required: [hostStudentId, name, identity, validFrom, validTo], properties: {hostStudentId: {type: string}, name: {type: string, minLength: 2, maxLength: 100}, identity: {type: string, minLength: 6, maxLength: 12}, identityType: {type: string, enum: [CCCD, CMND, PASSPORT]}, validFrom: {type: string, format: date-time}, validTo: {type: string, format: date-time}}}}}}
     ViolationCreate: {required: true, content: {application/json: {schema: {type: object, required: [studentId, content, level], properties: {studentId: {type: string}, content: {type: string, maxLength: 2000}, level: {type: string, enum: [LOW, MEDIUM, HIGH, CRITICAL]}, occurredAt: {type: string, format: date-time, nullable: true}}}}}}
     ViolationUpdate: {required: true, content: {application/json: {schema: {type: object, required: [content, level, version], properties: {content: {type: string, maxLength: 2000}, level: {type: string, enum: [LOW, MEDIUM, HIGH, CRITICAL]}, version: {type: integer, format: int64, minimum: 1}}}}}}

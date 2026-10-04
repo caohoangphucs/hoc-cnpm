@@ -340,6 +340,7 @@ class RemainingUseCasesApiBlackBoxIT {
         assertEquals(403,get(student,ApiRoutes.MATERIALS).statusCode());
         assertTrue(get(tech,ApiRoutes.MATERIALS).body().contains(code));
         String fileId=null;
+        var evidenceIds=new java.util.ArrayList<String>();
         int id=0;
         try {
             var created=post(student,ApiRoutes.REPAIRS,"{\"title\":\"API test light\",\"description\":\"Đèn hỏng\",\"fileIds\":[]}");
@@ -355,14 +356,22 @@ class RemainingUseCasesApiBlackBoxIT {
             multipart.write(("--"+boundary+"\r\nContent-Disposition: form-data; name=\"kind\"\r\n\r\nREPAIR\r\n--"+boundary+"\r\nContent-Disposition: form-data; name=\"file\"; filename=\"after.png\"\r\nContent-Type: image/png\r\n\r\n").getBytes(StandardCharsets.UTF_8));
             multipart.write(png.toByteArray());
             multipart.write(("\r\n--"+boundary+"--\r\n").getBytes(StandardCharsets.UTF_8));
-            var upload=send(tech.client(),HttpRequest.newBuilder(uri("/api/v1/files"))
+            var uploadRequest=HttpRequest.newBuilder(uri("/api/v1/files"))
                     .header("X-CSRF-TOKEN",tech.csrfToken()).header("Content-Type","multipart/form-data; boundary="+boundary)
-                    .POST(HttpRequest.BodyPublishers.ofByteArray(multipart.toByteArray())).build());
-            assertEquals(200,upload.statusCode(),upload.body());
-            fileId=json.readTree(upload.body()).path("id").asString();
+                    .POST(HttpRequest.BodyPublishers.ofByteArray(multipart.toByteArray())).build();
+            for (int imageIndex=0; imageIndex<10; imageIndex++) {
+                var upload=send(tech.client(),uploadRequest);
+                assertEquals(200,upload.statusCode(),upload.body());
+                evidenceIds.add(json.readTree(upload.body()).path("id").asString());
+            }
+            fileId=evidenceIds.get(0);
             assertEquals(404,get(student,"/api/v1/files/"+fileId).statusCode());
-            String body=json.writeValueAsString(java.util.Map.of("version",2,"note","Thay đèn", "fileIds",java.util.List.of(fileId),
+            String body=json.writeValueAsString(java.util.Map.of("version",2,"note","Thay đèn", "fileIds",evidenceIds,
                     "supplies",java.util.List.of(java.util.Map.of("supplyId",code,"quantity",1))));
+            var tooMany=new java.util.ArrayList<>(evidenceIds);
+            tooMany.add(UUID.randomUUID().toString());
+            assertEquals(422,post(tech,"/api/v1/repairs/"+id+"/complete",json.writeValueAsString(java.util.Map.of(
+                    "version",2,"note","Quá giới hạn ảnh","fileIds",tooMany,"supplies",java.util.List.of()))).statusCode());
             var completeRequest=mutate(tech,"/api/v1/repairs/"+id+"/complete","POST",body);
             var complete=send(tech.client(),completeRequest);
             assertEquals(200,complete.statusCode(),complete.body());
@@ -376,10 +385,180 @@ class RemainingUseCasesApiBlackBoxIT {
             jdbc.update("DELETE FROM xuat_vat_tu WHERE mavattu=?",code);
             jdbc.update("DELETE FROM vat_tu WHERE mavattu=?",code);
             if(id>0) jdbc.update("DELETE FROM svc_repair_files WHERE repair_id=?",id);
-            if(fileId!=null) {
-                jdbc.update("DELETE FROM svc_file_content WHERE file_id=?",UUID.fromString(fileId));
-                jdbc.update("DELETE FROM svc_file WHERE id=?",UUID.fromString(fileId));
+            for(String evidence:evidenceIds) {
+                jdbc.update("DELETE FROM svc_file_content WHERE file_id=?",UUID.fromString(evidence));
+                jdbc.update("DELETE FROM svc_file WHERE id=?",UUID.fromString(evidence));
             }
+        }
+    }
+
+    /** #59/#61: fingerprint gồm token; ghi chú 255 hợp lệ, 256 trả lỗi trước INSERT. */
+    @Test
+    void gateFingerprintAndNoteBoundaryOverHttp() throws Exception {
+        var guard=login("baove1");
+        UUID cardId=UUID.randomUUID();
+        String token="api-card-"+UUID.randomUUID();
+        jdbc.update("INSERT INTO svc_card(id,student_id,token_hash,valid_from,valid_to,state) VALUES(?,'21110001',?,now()-interval '1 hour',now()+interval '1 hour','ACTIVE')",
+                cardId,vn.id.caohoangphuc.cnpm.service.ServiceContext.hash(token));
+        UUID event=UUID.randomUUID();
+        try {
+            String body=json.writeValueAsString(java.util.Map.of("eventId",event,"cardToken",token,"type","RA","deviceId","API-GATE-REGRESSION","note","A".repeat(255)));
+            String key=UUID.randomUUID().toString();
+            var first=gateRequest(guard,body,key);
+            assertEquals(200,first.statusCode(),first.body());
+            assertEquals(first.body(),gateRequest(guard,body,key).body());
+            var changed=gateRequest(guard,body.replace(token,"invalid-card"),key);
+            assertEquals(409,changed.statusCode(),changed.body());
+            assertEquals(409,gateRequest(guard,body.replace(token,"invalid-card"),UUID.randomUUID().toString()).statusCode());
+            String invalid=body.replace(event.toString(),UUID.randomUUID().toString()).replace("A".repeat(255),"A".repeat(256));
+            var response=gateRequest(guard,invalid,UUID.randomUUID().toString());
+            assertEquals(422,response.statusCode(),response.body());
+            assertTrue(json.readTree(response.body()).path("fieldErrors").has("note"));
+            assertEquals(1,jdbc.queryForObject("SELECT count(*) FROM svc_gate_event WHERE device_id='API-GATE-REGRESSION'",Integer.class));
+        } finally {
+            cleanupGateDevice("API-GATE-REGRESSION");
+            jdbc.update("DELETE FROM svc_card WHERE id=?",cardId);
+        }
+    }
+
+    /** Gửi cùng key qua HTTP thật để kiểm tra replay và xung đột fingerprint. */
+    private HttpResponse<String> gateRequest(ApiSession guard,String body,String key) throws Exception {
+        return send(guard.client(),HttpRequest.newBuilder(uri(ApiRoutes.ENTRIES))
+                .header("X-CSRF-TOKEN",guard.csrfToken()).header("Content-Type","application/json")
+                .header("Idempotency-Key",key).POST(HttpRequest.BodyPublishers.ofString(body)).build());
+    }
+
+    /** Chỉ dọn event do fixture tạo, không đụng dữ liệu seed. */
+    private void cleanupGateDevice(String device) {
+        var ids=jdbc.queryForList("SELECT entry_id FROM svc_gate_event WHERE device_id=?",Integer.class,device);
+        jdbc.update("DELETE FROM vi_pham WHERE maravao IN (SELECT entry_id FROM svc_gate_event WHERE device_id=?)",device);
+        jdbc.update("DELETE FROM svc_gate_event WHERE device_id=?",device);
+        for(int id:ids) jdbc.update("DELETE FROM ra_vao WHERE maravao=?",id);
+    }
+
+    /** #60: MSSV có endpoint riêng, xác minh bắt buộc, vẫn kiểm tra thẻ/lưu trú và quyền. */
+    @Test
+    void manualGateEntryRequiresGuardVerificationOverHttp() throws Exception {
+        var guard=login("baove1");
+        UUID card=UUID.randomUUID();
+        jdbc.update("INSERT INTO svc_card(id,student_id,token_hash,valid_from,valid_to,state) VALUES(?,'21110001',?,now()-interval '1 hour',now()+interval '1 hour','ACTIVE')",
+                card,vn.id.caohoangphuc.cnpm.service.ServiceContext.hash("manual-fixture-"+card));
+        String body=json.writeValueAsString(java.util.Map.of("eventId",UUID.randomUUID(),"studentId","21110001","type","RA","deviceId","API-MANUAL-GATE","identityVerified",true));
+        try {
+            assertEquals(422,post(guard,ApiRoutes.MANUAL_ENTRY,body.replace("true","false")).statusCode());
+            assertEquals(403,post(login(STUDENT),ApiRoutes.MANUAL_ENTRY,body).statusCode());
+            assertEquals(409,post(guard,ApiRoutes.MANUAL_ENTRY,body.replace("21110001","21110091")).statusCode());
+            var response=post(guard,ApiRoutes.MANUAL_ENTRY,body);
+            assertEquals(200,response.statusCode(),response.body());
+            assertEquals("21110001",json.readTree(response.body()).path("studentId").asString());
+            assertFalse(response.body().contains("token"));
+            assertFalse(get(guard,ApiRoutes.STUDENTS).body().contains("token"));
+        } finally {
+            cleanupGateDevice("API-MANUAL-GATE");
+            jdbc.update("DELETE FROM svc_card WHERE id=?",card);
+        }
+    }
+
+    /** #56–#58: lọc quyền trước phân trang, chỉ duyệt mới vào, version thật và dấu vết không bị xóa. */
+    @Test
+    void visitorApprovalScopeAndEntryVersionsOverHttp() throws Exception {
+        var student=login(STUDENT);var guard=login("baove1");
+        var ids=new java.util.ArrayList<Long>();
+        try {
+            for(String state:java.util.List.of("PENDING","REJECTED","APPROVED")) {
+                long id=jdbc.queryForObject("INSERT INTO svc_visitor(host_student_id,name_encrypted,identity_encrypted,valid_from,valid_to,state) VALUES('21110001','fixture','API-VISITOR-SCOPE',now()-interval '1 hour',now()+interval '1 hour',?) RETURNING id",Long.class,state);
+                ids.add(id);
+            }
+            var list=get(guard,ApiRoutes.VISITORS+"?page=1&size=8");
+            assertEquals(200,list.statusCode(),list.body());
+            assertTrue(json.readTree(list.body()).valueStream().allMatch(v->"APPROVED".equals(v.path("state").asString())));
+            assertEquals(404,get(guard,ApiRoutes.VISITORS+"/"+ids.get(0)).statusCode());
+            assertEquals(409,post(guard,ApiRoutes.VISITORS+"/"+ids.get(0)+"/check-in","").statusCode());
+            assertEquals(409,post(guard,ApiRoutes.VISITORS+"/"+ids.get(1)+"/check-in","").statusCode());
+            long approved=ids.get(2);
+            assertEquals(403,post(student,ApiRoutes.VISITORS+"/"+approved+"/check-in","").statusCode());
+            var checkIn=post(guard,ApiRoutes.VISITORS+"/"+approved+"/check-in","");
+            assertEquals(200,checkIn.statusCode(),checkIn.body());
+            assertEquals(2,json.readTree(checkIn.body()).path("version").asInt());
+            assertEquals(2,json.readTree(get(guard,ApiRoutes.VISITORS+"/"+approved).body()).path("version").asInt());
+            assertEquals(409,post(guard,ApiRoutes.VISITORS+"/"+approved+"/check-in","").statusCode());
+            var checkOut=post(guard,ApiRoutes.VISITORS+"/"+approved+"/check-out","");
+            assertEquals(200,checkOut.statusCode(),checkOut.body());
+            assertEquals(3,json.readTree(checkOut.body()).path("version").asInt());
+            assertEquals(3,json.readTree(get(student,ApiRoutes.VISITORS+"/"+approved).body()).path("version").asInt());
+            // Hồ sơ lỗi cũ có lượt nhưng còn PENDING phải giữ lại để đối soát.
+            jdbc.update("UPDATE svc_visitor SET checked_in_at=now() WHERE id=?",ids.get(0));
+            assertEquals(409,send(student.client(),mutate(student,ApiRoutes.VISITORS+"/"+ids.get(0),"DELETE","")).statusCode());
+            assertEquals(1,jdbc.queryForObject("SELECT count(*) FROM svc_visitor WHERE id=?",Integer.class,ids.get(0)));
+            jdbc.update("UPDATE svc_visitor SET valid_to=now()-interval '1 second' WHERE id=?",approved);
+            assertEquals(409,post(guard,ApiRoutes.VISITORS+"/"+approved+"/check-in","").statusCode());
+        } finally {
+            for(long id:ids) jdbc.update("DELETE FROM svc_visitor WHERE id=?",id);
+        }
+    }
+
+    /** #52: contract 1.000 ký tự và tiền tố REVIEW không gây lỗi SQL; vượt contract trả 422. */
+    @Test
+    void disciplineLongDecisionAndAppealReasonsOverHttp() throws Exception {
+        var admin=login("admin");var student=login(STUDENT);
+        for(int length:new int[]{255,256,1000}) {
+            int id=jdbc.queryForObject("INSERT INTO vi_pham(masinhvien,noidungvipham,mucdo,ngayvipham,trangthai) VALUES('21110001','API CRUD violation long decision','LOW','2026-10-01','CHUA_XU_LY') RETURNING mavipham",Integer.class);
+            UUID file=UUID.randomUUID();
+            int owner=jdbc.queryForObject("SELECT mataikhoan FROM tai_khoan WHERE tendangnhap='admin'",Integer.class);
+            jdbc.update("INSERT INTO svc_file(id,owner_id,kind,object_key,mime,size_bytes,sha256,key_id,nonce,tag,state,expires_at) VALUES(?,?,'EVIDENCE',?,'image/png',1,?,'api-fixture',?,?,'DRAFT',now()+interval '1 hour')",file,owner,"test/"+file,"a".repeat(64),new byte[12],new byte[16]);
+            try {
+                String decision="D".repeat(length);
+                String body=json.writeValueAsString(java.util.Map.of("violationIds",java.util.List.of(id),"decision",decision,"reason","Xác minh","evidenceFileId",file,"versions",java.util.Map.of(Integer.toString(id),1)));
+                var invalid=post(admin,"/api/v1/violations/decisions",body.replace(decision,"D".repeat(1001)));
+                assertEquals(422,invalid.statusCode(),invalid.body());
+                var result=post(admin,"/api/v1/violations/decisions",body);
+                assertEquals(200,result.statusCode(),result.body());
+                assertEquals(decision,jdbc.queryForObject("SELECT hinhthucxuly FROM vi_pham WHERE mavipham=?",String.class,id));
+                long decisionId=jdbc.queryForObject("SELECT id FROM svc_discipline_decision WHERE violation_id=?",Long.class,id);
+                for(int reasonLength:new int[]{247,248,1000}) {
+                    var appeal=post(student,"/api/v1/decisions/"+decisionId+"/appeals","{\"content\":\"Đề nghị xem lại\"}");
+                    assertEquals(200,appeal.statusCode(),appeal.body());
+                    long appealId=Long.parseLong(json.readTree(appeal.body()).path("id").asString());
+                    String reason="R".repeat(reasonLength);
+                    var response=post(admin,"/api/v1/appeals/"+appealId+"/response",json.writeValueAsString(java.util.Map.of("accepted",true,"reason",reason,"version",1)));
+                    assertEquals(200,response.statusCode(),response.body());
+                    assertEquals("REVIEW: "+reason,jdbc.queryForObject("SELECT hinhthucxuly FROM vi_pham WHERE mavipham=?",String.class,id));
+                }
+            } finally {
+                jdbc.update("DELETE FROM svc_appeal WHERE decision_id IN (SELECT id FROM svc_discipline_decision WHERE violation_id=?)",id);
+                jdbc.update("DELETE FROM svc_discipline_decision WHERE violation_id=?",id);
+                jdbc.update("DELETE FROM vi_pham WHERE mavipham=?",id);
+                jdbc.update("DELETE FROM svc_file WHERE id=?",file);
+            }
+        }
+    }
+
+    /** #55: chỉ đếm đã xử lý trong học kỳ, kiểm tra biên 2/3 và hồ sơ chưa xác nhận. */
+    @Test
+    void disciplineCountUsesProcessedViolationsInSameSemesterOverHttp() throws Exception {
+        var admin=login("admin");
+        var ids=new java.util.ArrayList<Integer>();
+        try {
+            for(int n=0;n<3;n++) {
+                int id=jdbc.queryForObject("INSERT INTO vi_pham(masinhvien,noidungvipham,mucdo,ngayvipham,trangthai) VALUES('21110091','API CRUD violation count','LOW','2026-10-01','CHUA_XU_LY') RETURNING mavipham",Integer.class);
+                ids.add(id);
+            }
+            String path="/api/v1/violations/"+ids.get(0);
+            assertEquals(0,json.readTree(get(admin,path).body()).path("semesterCount").asInt());
+            jdbc.update("UPDATE vi_pham SET trangthai='DA_XU_LY',hinhthucxuly='Nhắc nhở' WHERE mavipham IN (?,?)",ids.get(0),ids.get(1));
+            assertEquals(2,json.readTree(get(admin,path).body()).path("semesterCount").asInt());
+            jdbc.update("UPDATE vi_pham SET trangthai='DA_XU_LY',hinhthucxuly='Nhắc nhở' WHERE mavipham=?",ids.get(2));
+            assertEquals(3,json.readTree(get(admin,path).body()).path("semesterCount").asInt());
+            jdbc.update("UPDATE vi_pham SET ngayvipham='2026-01-01' WHERE mavipham=?",ids.get(2));
+            assertEquals(2,json.readTree(get(admin,path).body()).path("semesterCount").asInt());
+            int pending=jdbc.queryForObject("INSERT INTO vi_pham(masinhvien,noidungvipham,mucdo,ngayvipham,trangthai) VALUES('21110091','API CRUD violation count','LOW','2026-10-01','CHUA_XU_LY') RETURNING mavipham",Integer.class);
+            ids.add(pending);
+            var queue=json.readTree(get(admin,"/api/v1/violations/pending?page=1&size=100").body());
+            var row=queue.valueStream().filter(v->v.path("id").asInt()==pending).findFirst().orElseThrow();
+            assertEquals(2,row.path("semesterCount").asInt());
+            assertEquals("ACTIVE",jdbc.queryForObject("SELECT trangthai FROM tai_khoan WHERE tendangnhap='sv_new_nam'",String.class));
+        } finally {
+            for(int id:ids) jdbc.update("DELETE FROM vi_pham WHERE mavipham=?",id);
         }
     }
 
