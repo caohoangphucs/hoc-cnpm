@@ -179,6 +179,27 @@ class RemainingUseCasesApiBlackBoxIT {
         assertEquals(404, denied.statusCode(), denied.body());
     }
 
+    /** Vi phạm seed thuộc đúng lượt cổng; chỉ chủ lượt và bảo vệ xem được nội dung. */
+    @Test
+    void gateEntryIncludesOwnedViolationDetailsOverHttp() throws Exception {
+        String eventId = jdbc.queryForObject("""
+                SELECT e.event_id::text FROM svc_gate_event e JOIN ra_vao r ON r.maravao=e.entry_id
+                JOIN vi_pham v ON v.maravao=r.maravao AND v.masinhvien=r.masinhvien
+                WHERE v.mavipham=1
+                """, String.class);
+        String path = "/api/v1/entries/" + eventId;
+        var own = get(login(STUDENT), path);
+        assertEquals(200, own.statusCode(), own.body());
+        var detail = json.readTree(own.body()).path("violation");
+        assertEquals(1, detail.path("id").asInt());
+        assertEquals("Về KTX muộn sau 23h không xin phép", detail.path("content").asString());
+        assertEquals("LOW", detail.path("level").asString());
+        assertEquals("DA_XU_LY", detail.path("status").asString());
+        assertFalse(detail.path("occurredAt").asString().isBlank());
+        assertEquals(404, get(login("sv002"), path).statusCode());
+        assertEquals(200, get(login("baove1"), path).statusCode());
+    }
+
     /** Sends a read-only request through the actual HTTP server. */
     private HttpResponse<String> get(ApiSession session, String path) throws Exception {
         return send(session.client(), HttpRequest.newBuilder(uri(path)).GET().build());

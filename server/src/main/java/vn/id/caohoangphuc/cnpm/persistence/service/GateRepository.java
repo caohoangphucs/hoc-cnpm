@@ -78,7 +78,7 @@ public class GateRepository {
             """
 SELECT e.event_id,r.masinhvien,r.loaisukien,r.thoigian,e.barrier_status,v.mavipham,e.payload_hash
 FROM svc_gate_event e JOIN ra_vao r ON r.maravao=e.entry_id
-LEFT JOIN vi_pham v ON v.maravao=r.maravao WHERE e.event_id=?
+LEFT JOIN vi_pham v ON v.maravao=r.maravao AND v.masinhvien=r.masinhvien WHERE e.event_id=?
 """
                 + (lock ? " FOR UPDATE OF e" : ""),
             (r, n) ->
@@ -99,7 +99,7 @@ LEFT JOIN vi_pham v ON v.maravao=r.maravao WHERE e.event_id=?
     var items = jdbc.query("""
         SELECT e.event_id,r.masinhvien,r.loaisukien,r.thoigian,e.barrier_status,v.mavipham
         FROM svc_gate_event e JOIN ra_vao r ON r.maravao=e.entry_id
-        LEFT JOIN vi_pham v ON v.maravao=r.maravao
+        LEFT JOIN vi_pham v ON v.maravao=r.maravao AND v.masinhvien=r.masinhvien
         WHERE (CAST(? AS varchar) IS NULL OR r.masinhvien=?)
         ORDER BY r.thoigian DESC,e.event_id DESC LIMIT ? OFFSET ?
         """, (r, n) -> new EntryResourceDto(r.getObject(1, UUID.class), r.getString(2), r.getString(3),
