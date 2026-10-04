@@ -101,7 +101,7 @@ class ApiRoutesTest {
         when(community.requestCertificate(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
 
         mvc = MockMvcBuilders.routerFunctions(new ApiRoutes().apiRouter(
-                auth, rooms, bookings, registrations, invoices, payments, repairs, gate, discipline, community)).build();
+                auth, rooms, bookings, registrations, invoices, payments, repairs, gate, discipline, community, mock(FileController.class))).build();
     }
 
     @Test
