@@ -122,8 +122,8 @@ public class AuthController {
         SecurityContextHolder.setContext(context);
         securityContextRepository.saveContext(context, servletRequest, servletResponse);
 
-        // An enrolled administrator must verify an app code on every new password login.
-        boolean verified = !adminHasAuthenticator(account);
+        // An enrolled privileged account must verify an app code on every new password login.
+        boolean verified = !hasRequiredAuthenticator(account);
         servletRequest.getSession(true).setAttribute(TWO_FACTOR_ATTRIBUTE, verified);
         servletRequest.getSession(true).removeAttribute(PENDING_TOTP_ATTRIBUTE);
         csrfTokenRepository.saveToken(null, servletRequest, servletResponse);
@@ -233,14 +233,14 @@ public class AuthController {
         return json(new SessionDto(true, account.role(), twoFactorVerified(request, account), token, expiresAt));
     }
 
-    /** Only enrolled administrators require an app code after password login. */
-    private boolean adminHasAuthenticator(AccountCredentials account) {
-        return "ADMIN".equals(account.role()) && accounts.findTotpSecret(account.accountId()).isPresent();
+    /** Enrolled administrators and accountants require an app code after password login. */
+    private boolean hasRequiredAuthenticator(AccountCredentials account) {
+        return requiresTwoFactor(account.role()) && accounts.findTotpSecret(account.accountId()).isPresent();
     }
 
     /** Report the real verification state so the client stays on the OTP screen until verified. */
     private boolean twoFactorVerified(ServerRequest request, AccountCredentials account) {
-        if (!adminHasAuthenticator(account)) return true;
+        if (!hasRequiredAuthenticator(account)) return true;
         var session = request.servletRequest().getSession(false);
         return session != null && Boolean.TRUE.equals(session.getAttribute(TWO_FACTOR_ATTRIBUTE));
     }

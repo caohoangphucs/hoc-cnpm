@@ -60,7 +60,7 @@ public class ApiSupport {
         }
     }
 
-    /** Blocks business actions until an enrolled administrator verifies the session OTP. */
+    /** Blocks business actions until an enrolled administrator or accountant verifies the session OTP. */
     private Actor actor(ServerRequest request) {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null) throw new ServiceException(401, "UNAUTHENTICATED", "Login required");
@@ -69,7 +69,7 @@ public class ApiSupport {
         var session = request.servletRequest().getSession(false);
         boolean verified = session != null
                 && Boolean.TRUE.equals(session.getAttribute(AuthController.TWO_FACTOR_ATTRIBUTE));
-        boolean needsCode = "ADMIN".equals(account.role())
+        boolean needsCode = ("ADMIN".equals(account.role()) || "KETOAN".equals(account.role()))
                 && accounts.findTotpSecret(account.accountId()).isPresent();
         if (needsCode && !verified) {
             throw new ServiceException(403, "TWO_FACTOR_REQUIRED", "Authenticator verification required");
