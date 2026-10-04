@@ -106,6 +106,7 @@ jobs:
           docker run --rm --network "$CI_NETWORK" \
             -e DB_HOST="$CI_DB_HOST" -e DB_PORT=5432 -e DB_NAME=cnpm_db \
             -e DB_USER=cnpm_user -e DB_PASS="$PGPASSWORD" \
+            -e KTX_PERSONAL_DATA_KEY="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" \
             --entrypoint java "cnpm-server-build:$CI_SHA" \
             -cp '/app/target/classes:/app/target/test-classes:/app/target/test-libs/*' \
             org.junit.platform.console.ConsoleLauncher execute \
@@ -125,6 +126,7 @@ jobs:
           docker run --rm --network "$CI_NETWORK" \
             -e DB_HOST="$CI_DB_HOST" -e DB_PORT=5432 -e DB_NAME=cnpm_db \
             -e DB_USER=cnpm_user -e DB_PASS="$PGPASSWORD" \
+            -e KTX_PERSONAL_DATA_KEY="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" \
             --entrypoint java "cnpm-server-build:$CI_SHA" \
             -cp '/app/target/classes:/app/target/test-classes:/app/target/test-libs/*' \
             org.junit.platform.console.ConsoleLauncher execute \

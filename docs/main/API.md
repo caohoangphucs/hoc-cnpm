@@ -423,3 +423,12 @@ Khóa thông tin khách `KTX_PERSONAL_DATA_KEY` phải là 32 byte được mã 
 `GET /api/v1/entries/{eventId}` bổ sung `violation` (null khi không có vi phạm) với `{id, content, level, status, occurredAt}`. Bảo vệ/admin xem lượt được phép, sinh viên chỉ xem lượt của mình. POST entries cũng trả chi tiết vi phạm mới tạo. Danh sách giữ `violationId`; mở chi tiết để xem nội dung/trạng thái hiện tại.
 
 Mã khai báo khách trên giao diện là `KT-{id}` của phiếu. Bảo vệ chọn phiếu APPROVED để điền mã hoặc nhập số ID/KT-ID, rồi đối chiếu giấy tờ trước khi ghi lượt. Mã điểm danh công ích không dùng cho khách thăm.
+
+## Điều chỉnh theo issue #37–#45
+
+- Phiên SINHVIEN hết hạn sau **8 giờ không hoạt động**. Mỗi request hợp lệ duy trì phiên theo HttpSession; `idleExpiresAt` dùng cùng thời lượng. ADMIN/KETOAN/KYTHUAT/BAOVE giữ 15 phút. Không bổ sung giới hạn tuyệt đối; logout vẫn hủy phiên ngay.
+- `GET /api/v1/students?search=...`: tìm MSSV/họ tên (tối đa 100 ký tự), trả tối đa 30 `{id,name,room}` từ database. ADMIN/BAOVE được tìm danh sách, SINHVIEN chỉ nhận chính mình; các vai trò khác 403.
+- Khách thăm: họ tên 2–100 ký tự, chuẩn hóa khoảng trắng, hỗ trợ chữ Unicode và dấu, dấu cách/chấm/gạch nối/nháy; không nhận tên chỉ gồm số. `identityType`: CCCD (12 số), CMND (9 số), PASSPORT (6–9 chữ/số, phải có cả chữ và số). API cũ bỏ loại giấy tờ được suy luận theo định dạng. Request lỗi trả 422 với `INVALID_VISITOR_NAME`/`INVALID_VISITOR_IDENTITY` và `fieldErrors.name`/`identity`. Mã phiếu KT-ID do server cấp, khác số giấy tờ.
+- POST repairs không dùng ưu tiên do sinh viên gửi: luôn tạo TRUNG_BINH (mức mặc định khi chưa được kỹ thuật viên đánh giá). Bỏ `priority` trên form sinh viên; giá trị trong request cũ không được nâng ưu tiên.
+- `PUT /api/v1/repairs/{id}/priority`, body `{priority: "CAO", version: 2}`: chỉ KYTHUAT đã được phân công và phiếu DANG_XU_LY; trả CommandResultDto, tăng version và ghi lịch sử mức cũ/mới. Sinh viên/admin không đánh giá bằng endpoint này (403); phiếu không thuộc kỹ thuật viên 404, phiên bản cũ 409.
+- GET entries trả chi tiết vi phạm trong từng dòng để UI hiển thị nội dung. Trạng thái lưu sự kiện và barrier được trình bày riêng. BR-12 áp dụng lượt VAO (>23:00 hoặc <05:00); đúng 23:00/05:00 và RA không tự sinh vi phạm về muộn. Đã xác nhận giữ BR-12 cho issue #45: lượt RA không thuộc quy tắc vi phạm về muộn.

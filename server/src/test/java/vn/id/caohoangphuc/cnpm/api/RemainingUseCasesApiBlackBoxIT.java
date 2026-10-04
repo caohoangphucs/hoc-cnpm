@@ -45,6 +45,7 @@ class RemainingUseCasesApiBlackBoxIT {
         jdbc.update("DELETE FROM svc_invoice_snapshot WHERE input_hash='api-legacy-access'");
         jdbc.update("DELETE FROM luu_tru WHERE masinhvien='21110091'");
         jdbc.update("UPDATE sinh_vien SET maphonghientai=NULL,trangthai='CHO_DUYET' WHERE masinhvien='21110091'");
+        jdbc.update("DELETE FROM svc_repair_assignment WHERE repair_id IN (SELECT mayeucau FROM yeu_cau_sua_chua WHERE tieude='API test light')");
         jdbc.update("DELETE FROM svc_repair_files WHERE repair_id IN"
                 + " (SELECT MaYeuCau FROM yeu_cau_sua_chua WHERE TieuDe='API test light')");
         jdbc.update("DELETE FROM svc_repair_history WHERE repair_id IN"
@@ -198,6 +199,84 @@ class RemainingUseCasesApiBlackBoxIT {
         assertFalse(detail.path("occurredAt").asString().isBlank());
         assertEquals(404, get(login("sv002"), path).statusCode());
         assertEquals(200, get(login("baove1"), path).statusCode());
+    }
+
+    /** #42: thông báo hạn phiên và idle timeout theo vai trò; session sau đăng nhập vẫn dùng được. */
+    @Test
+    void studentIdleSessionLastsEightHoursWhileGuardRemainsFifteenMinutes() throws Exception {
+        var student = login(STUDENT);
+        var response = get(student, ApiRoutes.AUTH_SESSION);
+        long seconds = java.time.Duration.between(java.time.Instant.now(),
+                java.time.OffsetDateTime.parse(json.readTree(response.body()).path("idleExpiresAt").asString()).toInstant()).toSeconds();
+        assertTrue(seconds >= 28790 && seconds <= 28801, Long.toString(seconds));
+        response = get(login("baove1"), ApiRoutes.AUTH_SESSION);
+        seconds = java.time.Duration.between(java.time.Instant.now(),
+                java.time.OffsetDateTime.parse(json.readTree(response.body()).path("idleExpiresAt").asString()).toInstant()).toSeconds();
+        assertTrue(seconds >= 890 && seconds <= 901, Long.toString(seconds));
+    }
+
+    /** #41: tìm dữ liệu thật theo MSSV/họ tên và giới hạn sinh viên ở chính mình. */
+    @Test
+    void studentSearchUsesOwnedDatabaseResultsOverHttp() throws Exception {
+        var student = login(STUDENT);
+        var own = get(student, ApiRoutes.STUDENTS);
+        assertEquals(200, own.statusCode(), own.body());
+        assertEquals(1, json.readTree(own.body()).size());
+        assertEquals("21110001", json.readTree(own.body()).get(0).path("id").asString());
+        assertEquals(0, json.readTree(get(student, ApiRoutes.STUDENTS+"?search=21110002").body()).size());
+        var guard = get(login("baove1"), ApiRoutes.STUDENTS+"?search=21110002");
+        assertEquals("21110002",json.readTree(guard.body()).get(0).path("id").asString());
+        assertEquals(403,get(login("kythuat1"),ApiRoutes.STUDENTS).statusCode());
+    }
+
+    /** #39/#40: đầu vào sai báo đúng trường; hợp lệ tạo phiếu, retry cùng key không tạo trùng. */
+    @Test
+    void visitorValidationAndIdempotencyWorkOverHttp() throws Exception {
+        var student = login(STUDENT);
+        String valid = "{\"hostStudentId\":\"21110001\",\"name\":\"  Nguyễn   Văn An  \","
+                + "\"identity\":\"012345678901\",\"identityType\":\"CCCD\","
+                + "\"validFrom\":\"2030-01-01T09:00:00+07:00\",\"validTo\":\"2030-01-01T10:00:00+07:00\"}";
+        var invalid = post(student,ApiRoutes.VISITORS,valid.replace("  Nguyễn   Văn An  ","12345"));
+        assertEquals(422,invalid.statusCode(),invalid.body());
+        assertTrue(json.readTree(invalid.body()).path("fieldErrors").has("name"));
+        invalid = post(student,ApiRoutes.VISITORS,valid.replace("012345678901","123"));
+        assertEquals(422,invalid.statusCode(),invalid.body());
+        assertTrue(json.readTree(invalid.body()).path("fieldErrors").has("identity"));
+        invalid = post(student,ApiRoutes.VISITORS,valid.replace("  Nguyễn   Văn An  ","x"));
+        assertEquals(422,invalid.statusCode());
+        String key = UUID.randomUUID().toString();
+        var request = HttpRequest.newBuilder(uri(ApiRoutes.VISITORS)).header("Content-Type","application/json")
+                .header("X-CSRF-TOKEN",student.csrfToken()).header("Idempotency-Key",key)
+                .POST(HttpRequest.BodyPublishers.ofString(valid)).build();
+        var created = send(student.client(),request);
+        assertEquals(200,created.statusCode(),created.body());
+        long id = Long.parseLong(json.readTree(created.body()).path("id").asString());
+        try {
+            assertEquals(created.body(),send(student.client(),request).body());
+            assertEquals("PENDING",json.readTree(get(student,"/api/v1/visitors/"+id).body()).path("state").asString());
+        } finally {
+            assertEquals(200,send(student.client(),mutate(student,"/api/v1/visitors/"+id,"DELETE","")).statusCode());
+        }
+    }
+
+    /** #38: sinh viên không tự nâng ưu tiên; kỹ thuật viên được phân công cập nhật có version/audit. */
+    @Test
+    void technicianAssessesRepairPriorityOverHttp() throws Exception {
+        var student=login(STUDENT);
+        var create=post(student,ApiRoutes.REPAIRS,"{\"title\":\"API test light\",\"description\":\"Không sáng\",\"priority\":\"KHAN_CAP\",\"fileIds\":[]}");
+        assertEquals(200,create.statusCode(),create.body());
+        int id=Integer.parseInt(json.readTree(create.body()).path("id").asString());
+        var detail=get(student,"/api/v1/repairs/"+id);
+        assertEquals("TRUNG_BINH",json.readTree(detail.body()).path("priority").asString());
+        String path=ApiRoutes.REPAIR_PRIORITY.replace("{id}",Integer.toString(id));
+        assertEquals(403,send(student.client(),mutate(student,path,"PUT","{\"priority\":\"CAO\",\"version\":1}")).statusCode());
+        var assign=post(login("admin"),"/api/v1/repairs/"+id+"/assignment","{\"technicianAccountId\":3,\"scheduledAt\":\"2030-01-01T09:00:00+07:00\",\"version\":1}");
+        assertEquals(200,assign.statusCode(),assign.body());
+        var technician=login("kythuat1");
+        var updated=send(technician.client(),mutate(technician,path,"PUT","{\"priority\":\"CAO\",\"version\":2}"));
+        assertEquals(200,updated.statusCode(),updated.body());
+        assertEquals("CAO",json.readTree(get(student,"/api/v1/repairs/"+id).body()).path("priority").asString());
+        assertEquals(409,send(technician.client(),mutate(technician,path,"PUT","{\"priority\":\"THAP\",\"version\":2}")).statusCode());
     }
 
     /** Sends a read-only request through the actual HTTP server. */

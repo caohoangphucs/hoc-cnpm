@@ -82,9 +82,16 @@ public class AuthController {
             return json(new SessionDto(false, null, false, csrfToken, null));
         }
 
-        var expiresAt = OffsetDateTime.ofInstant(clock.instant().plus(SESSION_TIMEOUT), ZoneOffset.UTC);
+        var expiresAt = sessionExpiry(request, account);
         return json(
                 new SessionDto(true, account.role(), twoFactorVerified(request, account), csrfToken, expiresAt, account.studentId()));
+    }
+
+    /** Đồng bộ thời gian hết hạn hiển thị với idle timeout thật của HttpSession. */
+    private OffsetDateTime sessionExpiry(ServerRequest request, AccountCredentials account) {
+        Duration timeout = "SINHVIEN".equals(account.role()) ? Duration.ofHours(8) : SESSION_TIMEOUT;
+        request.servletRequest().getSession(true).setMaxInactiveInterval(Math.toIntExact(timeout.toSeconds()));
+        return OffsetDateTime.ofInstant(clock.instant().plus(timeout), ZoneOffset.UTC);
     }
 
     /** Authenticates credentials and starts a session with the required 2FA state. */
@@ -128,7 +135,7 @@ public class AuthController {
         servletRequest.getSession(true).removeAttribute(PENDING_TOTP_ATTRIBUTE);
         csrfTokenRepository.saveToken(null, servletRequest, servletResponse);
         String csrfToken = csrfToken(servletRequest, servletResponse);
-        var expiresAt = OffsetDateTime.ofInstant(clock.instant().plus(SESSION_TIMEOUT), ZoneOffset.UTC);
+        var expiresAt = sessionExpiry(request, account);
         return json(
                 new SessionDto(true, account.role(), twoFactorVerified(request, account), csrfToken, expiresAt, account.studentId()));
     }
@@ -229,7 +236,7 @@ public class AuthController {
     private ServerResponse currentSession(ServerRequest request) {
         var account = currentAccount();
         String token = csrfToken(request.servletRequest(), response());
-        var expiresAt = OffsetDateTime.ofInstant(clock.instant().plus(SESSION_TIMEOUT), ZoneOffset.UTC);
+        var expiresAt = sessionExpiry(request, account);
         return json(new SessionDto(true, account.role(), twoFactorVerified(request, account), token, expiresAt, account.studentId()));
     }
 

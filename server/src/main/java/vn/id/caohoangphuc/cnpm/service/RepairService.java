@@ -41,7 +41,7 @@ public class RepairService {
                   account.studentId(),
                   input.title(),
                   input.description(),
-                  input.priority().name(),
+                  "TRUNG_BINH",
                   context.now(),
                   context.json(fileIds));
           context.attach(fileIds);
@@ -56,6 +56,23 @@ public class RepairService {
           return new CommandResultDto(Integer.toString(repairId), "MOI", 1L, request.requestId());
         },
         "SINHVIEN");
+  }
+
+  /** Kỹ thuật viên được phân công đánh giá ưu tiên; sinh viên không gọi được API này. */
+  public CommandResultDto priority(Actor actor, RequestContext request, int id,
+      vn.id.caohoangphuc.cnpm.api.dto.RepairPriorityDto input) {
+    context.validate(input);
+    return context.write(actor, request, "repairs/"+id+"/priority", input, CommandResultDto.class, () -> {
+      context.require(actor, "KYTHUAT");
+      var repair = loadRepair(id, input.version());
+      requireAssignedInProgress(id, repair, actor.accountId());
+      repository.priority(id, input.priority().name());
+      repository.history(id,actor.accountId(),repair.status(),repair.status(),
+          "Ưu tiên: " + repair.priority() + " -> " + input.priority().name(), context.now());
+      context.event(actor,request,"REPAIR_PRIORITY_ASSESSED",Integer.toString(id),
+          Map.of("before",repair.priority(),"after",input.priority().name()));
+      return new CommandResultDto(Integer.toString(id),repair.status(),repair.version()+1,request.requestId());
+    }, "KYTHUAT");
   }
 
   /** Liệt kê phiếu sửa chữa mà vai trò hiện tại được phép xem. */

@@ -27,3 +27,13 @@ test('entry history uses paginated server results and keeps audit event IDs', ()
   const page = parseEntries({ items: [{ eventId: 'audit-uuid', studentId: '21110001', type: 'RA', time: '2026-10-03T08:00:00Z', barrierStatus: 'OPENED', violationId: null }], page: 1, pageSize: 8, total: 18 })
   assert.equal(page.total, 18); assert.equal(page.items[0].eventId, 'audit-uuid')
 })
+
+test('visitor name and document type validation support Vietnamese and reject numeric names', () => {
+  const args = ['21110001', '  Nguyễn   Văn An ', '012345678901', '2030-01-01T09:00', '2030-01-01T10:00']
+  const valid = visitorPayload(...args, 'CCCD')
+  assert.equal(valid.name, 'Nguyễn Văn An')
+  assert.throws(() => visitorPayload(args[0], '12345', ...args.slice(2), 'CCCD'))
+  assert.throws(() => visitorPayload(args[0], 'x', ...args.slice(2), 'CCCD'))
+  assert.throws(() => visitorPayload(args[0], args[1], '123', ...args.slice(3), 'CCCD'))
+  assert.equal(visitorPayload(args[0], args[1], 'A1234567', ...args.slice(3), 'PASSPORT').identityType, 'PASSPORT')
+})

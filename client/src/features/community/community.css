@@ -12,3 +12,9 @@
 .community-card-facts { padding: 12px; border-radius: var(--md-sys-shape-corner-medium); background: var(--app-color-success-container); color: var(--app-color-on-success-container); }
 .community-card-facts strong { color: inherit; }
 .community-guidance > .icon { padding: 10px; width: 48px; height: 48px; border-radius: var(--md-sys-shape-corner-medium); background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
+
+/* Nút tải lại có kích thước nội dung và khoảng đệm đồng nhất ở hai tab. */
+.community-filters { grid-template-columns: minmax(180px,1fr) auto; align-items:end; }
+.community-filters > .m3-button { width:auto; align-self:end; justify-self:start; }
+.community-mine-actions { padding:0 24px 20px; display:flex; gap:16px; }
+@media(max-width:700px) { .community-filters { grid-template-columns:1fr; } .community-mine-actions { padding:0 16px 16px; } }

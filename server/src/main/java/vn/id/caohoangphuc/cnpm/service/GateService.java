@@ -55,6 +55,15 @@ public class GateService {
     return entry;
   }
 
+  /** Sinh viên chỉ tra cứu chính mình; bảo vệ/admin được tìm danh sách để làm nghiệp vụ. */
+  public java.util.List<GateRepository.StudentOption> students(Actor actor, String search) {
+    if (search.length() > 100) throw ServiceException.invalid("Search exceeds 100 characters");
+    return context.transaction(() -> {
+      var account = context.require(actor, "SINHVIEN", "BAOVE", "ADMIN");
+      return repository.students(search.trim(), "SINHVIEN".equals(account.role()) ? account.studentId() : null);
+    });
+  }
+
   /** Lists gate entries for a student or for authorized gate/admin staff. */
   public EntryResourceListDto entries(Actor actor, int page, int size) {
     context.page(page, size);
@@ -155,10 +164,30 @@ public class GateService {
         repository.violation(violation, card.studentId()));
   }
 
+  /** Kiểm tra họ tên Unicode và số giấy tờ theo loại, trước khi mã hóa/lưu dữ liệu. */
+  private void validateVisitorIdentity(VisitorDto input) {
+    String name = input.name().strip().replaceAll("\\s+", " ");
+    if (name.length() < 2 || name.length() > 100
+        || !name.matches("[\\p{L}\\p{M} .’'\\-]+") || !name.matches(".*\\p{L}.*"))
+      throw new ServiceException(422, "INVALID_VISITOR_NAME", "Visitor name must contain letters and have 2-100 characters");
+    String identity = input.identity().strip().toUpperCase(java.util.Locale.ROOT);
+    var type = input.identityType();
+    if (type == null) type = identity.matches("[0-9]{12}") ? VisitorDto.IdentityType.CCCD
+        : identity.matches("[0-9]{9}") ? VisitorDto.IdentityType.CMND : VisitorDto.IdentityType.PASSPORT;
+    String pattern = switch (type) {
+      case CCCD -> "[0-9]{12}";
+      case CMND -> "[0-9]{9}";
+      case PASSPORT -> "(?=.*[A-Z])(?=.*[0-9])[A-Z0-9]{6,9}";
+    };
+    if (!identity.matches(pattern))
+      throw new ServiceException(422, "INVALID_VISITOR_IDENTITY", "Identity number does not match document type");
+  }
+
   /** Sinh viên khai báo khách đến thăm trong một khoảng thời gian. */
   public CommandResultDto declareVisitor(Actor actor, RequestContext request, VisitorDto input) {
     context.validate(input);
     requireValidVisitorPeriod(input);
+    validateVisitorIdentity(input);
     return context.write(
         actor,
         request,
@@ -173,8 +202,8 @@ public class GateService {
           // Thông tin khách được mã hóa trước khi ghi xuống cơ sở dữ liệu.
           int ownerId = repository.studentAccount(input.hostStudentId());
           if (ownerId <= 0) throw ServiceException.notFound("Student");
-          String encryptedName = encrypt(input.name()),
-              encryptedIdentity = encrypt(input.identity());
+          String encryptedName = encrypt(input.name().strip().replaceAll("\\s+", " ")),
+              encryptedIdentity = encrypt(input.identity().strip().toUpperCase(java.util.Locale.ROOT));
           long id =
               repository.visitor(
                   input.hostStudentId(),

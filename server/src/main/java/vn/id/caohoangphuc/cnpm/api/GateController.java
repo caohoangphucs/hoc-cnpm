@@ -20,6 +20,11 @@ public class GateController {
         this.api = api;
     }
 
+    /** Trả gợi ý sinh viên theo phạm vi tài khoản, tìm theo MSSV hoặc họ tên. */
+    public ServerResponse students(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> gate.students(actor, request.param("search").orElse("")));
+    }
+
     /** Records a card event; the service owns duplicate and card-validity checks. */
     public ServerResponse record(ServerRequest request) throws Exception {
         return api.handle(request, (actor, context) -> gate.record(
