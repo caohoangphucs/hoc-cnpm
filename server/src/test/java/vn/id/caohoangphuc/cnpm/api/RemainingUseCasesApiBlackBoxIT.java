@@ -396,9 +396,10 @@ class RemainingUseCasesApiBlackBoxIT {
     @Test
     void gateFingerprintAndNoteBoundaryOverHttp() throws Exception {
         var guard=login("baove1");
+        int residency=createGateResidency();
         UUID cardId=UUID.randomUUID();
         String token="api-card-"+UUID.randomUUID();
-        jdbc.update("INSERT INTO svc_card(id,student_id,token_hash,valid_from,valid_to,state) VALUES(?,'DEMO-AM',?,now()-interval '1 hour',now()+interval '1 hour','ACTIVE')",
+        jdbc.update("INSERT INTO svc_card(id,student_id,token_hash,valid_from,valid_to,state) VALUES(?,'21110001',?,now()-interval '1 hour',now()+interval '1 hour','ACTIVE')",
                 cardId,vn.id.caohoangphuc.cnpm.service.ServiceContext.hash(token));
         UUID event=UUID.randomUUID();
         try {
@@ -418,7 +419,22 @@ class RemainingUseCasesApiBlackBoxIT {
         } finally {
             cleanupGateDevice("API-GATE-REGRESSION");
             jdbc.update("DELETE FROM svc_card WHERE id=?",cardId);
+            if(residency>0) jdbc.update("DELETE FROM luu_tru WHERE maluutru=?",residency);
         }
+    }
+
+    /** Tạo lưu trú tạm khi seed nền chỉ có tham chiếu phòng cũ; không thay dữ liệu demo. */
+    private int createGateResidency() {
+        int active=jdbc.queryForObject("SELECT count(*) FROM luu_tru WHERE masinhvien='21110001' AND trangthai='DANG_O'",Integer.class);
+        if(active>0) return 0;
+        return jdbc.queryForObject("""
+                INSERT INTO luu_tru(masinhvien,magiuong,ngaybatdau,trangthai)
+                SELECT s.masinhvien,g.magiuong,current_date,'DANG_O'
+                FROM sinh_vien s JOIN giuong g ON g.maphong=s.maphonghientai
+                WHERE s.masinhvien='21110001'
+                  AND NOT EXISTS(SELECT 1 FROM luu_tru l WHERE l.magiuong=g.magiuong AND l.trangthai='DANG_O')
+                ORDER BY g.magiuong LIMIT 1 RETURNING maluutru
+                """,Integer.class);
     }
 
     /** Gửi cùng key qua HTTP thật để kiểm tra replay và xung đột fingerprint. */
@@ -440,22 +456,24 @@ class RemainingUseCasesApiBlackBoxIT {
     @Test
     void manualGateEntryRequiresGuardVerificationOverHttp() throws Exception {
         var guard=login("baove1");
+        int residency=createGateResidency();
         UUID card=UUID.randomUUID();
-        jdbc.update("INSERT INTO svc_card(id,student_id,token_hash,valid_from,valid_to,state) VALUES(?,'DEMO-AM',?,now()-interval '1 hour',now()+interval '1 hour','ACTIVE')",
+        jdbc.update("INSERT INTO svc_card(id,student_id,token_hash,valid_from,valid_to,state) VALUES(?,'21110001',?,now()-interval '1 hour',now()+interval '1 hour','ACTIVE')",
                 card,vn.id.caohoangphuc.cnpm.service.ServiceContext.hash("manual-fixture-"+card));
-        String body=json.writeValueAsString(java.util.Map.of("eventId",UUID.randomUUID(),"studentId","DEMO-AM","type","RA","deviceId","API-MANUAL-GATE","identityVerified",true));
+        String body=json.writeValueAsString(java.util.Map.of("eventId",UUID.randomUUID(),"studentId","21110001","type","RA","deviceId","API-MANUAL-GATE","identityVerified",true));
         try {
             assertEquals(422,post(guard,ApiRoutes.MANUAL_ENTRY,body.replace("true","false")).statusCode());
             assertEquals(403,post(login(STUDENT),ApiRoutes.MANUAL_ENTRY,body).statusCode());
-            assertEquals(409,post(guard,ApiRoutes.MANUAL_ENTRY,body.replace("DEMO-AM","21110091")).statusCode());
+            assertEquals(409,post(guard,ApiRoutes.MANUAL_ENTRY,body.replace("21110001","21110091")).statusCode());
             var response=post(guard,ApiRoutes.MANUAL_ENTRY,body);
             assertEquals(200,response.statusCode(),response.body());
-            assertEquals("DEMO-AM",json.readTree(response.body()).path("studentId").asString());
+            assertEquals("21110001",json.readTree(response.body()).path("studentId").asString());
             assertFalse(response.body().contains("token"));
             assertFalse(get(guard,ApiRoutes.STUDENTS).body().contains("token"));
         } finally {
             cleanupGateDevice("API-MANUAL-GATE");
             jdbc.update("DELETE FROM svc_card WHERE id=?",card);
+            if(residency>0) jdbc.update("DELETE FROM luu_tru WHERE maluutru=?",residency);
         }
     }
 
