@@ -23,6 +23,38 @@ public class RepairRepository {
 
   private final JdbcTemplate jdbc;
 
+  public record Material(String id, String name, String unit, int stock, java.math.BigDecimal price) {}
+
+  /** Khóa hồ sơ sinh viên để phòng không thay đổi giữa kiểm tra và tạo phiếu. */
+  public boolean hasCurrentRoom(String studentId) {
+    var rooms = jdbc.query("SELECT maphonghientai FROM sinh_vien WHERE masinhvien=? FOR UPDATE",
+        (r, n) -> r.getString(1), studentId);
+    return !rooms.isEmpty() && rooms.get(0) != null && !rooms.get(0).isBlank();
+  }
+
+  /** Danh mục và tồn thực tế dùng chung cho kho và form nghiệm thu. */
+  public List<Material> materials() {
+    return jdbc.query("SELECT mavattu,tenvattu,donvitinh,soluongton,dongianhap FROM vat_tu ORDER BY tenvattu,mavattu",
+        (r,n) -> new Material(r.getString(1),r.getString(2),r.getString(3),r.getInt(4),r.getBigDecimal(5)));
+  }
+
+  /** Chỉ thêm mã mới; tồn kho được trừ bởi luồng hoàn thành sửa chữa. */
+  public boolean createMaterial(vn.id.caohoangphuc.cnpm.api.dto.MaterialDto input) {
+    return jdbc.update("INSERT INTO vat_tu(mavattu,tenvattu,donvitinh,soluongton,dongianhap) VALUES(?,?,?,?,?) ON CONFLICT DO NOTHING",
+        input.id(),input.name(),input.unit(),input.stock(),input.price()) == 1;
+  }
+
+  /** Gộp ảnh nghiệm thu vào hồ sơ phiếu, không ghi đè ảnh báo sự cố. */
+  public void attachCompletionFiles(int id, String files) {
+    jdbc.update("INSERT INTO svc_repair_files(repair_id,file_ids) VALUES(?,?::jsonb) ON CONFLICT(repair_id) DO UPDATE SET file_ids=svc_repair_files.file_ids || EXCLUDED.file_ids", id, files);
+  }
+
+  /** Đọc các UUID ảnh đã gắn vào phiếu. */
+  public List<java.util.UUID> files(int id) {
+    return jdbc.query("SELECT jsonb_array_elements_text(file_ids) FROM svc_repair_files WHERE repair_id=?",
+        (r,n) -> java.util.UUID.fromString(r.getString(1)), id);
+  }
+
   /** Lưu mức ưu tiên mới và tăng phiên bản, lịch sử do service ghi cùng transaction. */
   public void priority(int id, String priority) {
     jdbc.update("UPDATE yeu_cau_sua_chua SET mucdouutien=?,version=version+1 WHERE mayeucau=?", priority,id);

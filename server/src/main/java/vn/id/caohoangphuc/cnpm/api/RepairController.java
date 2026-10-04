@@ -21,6 +21,23 @@ public class RepairController {
         this.api = api;
     }
 
+    /** Trả danh mục vật tư thực tế cho quản lý/kỹ thuật. */
+    public ServerResponse materials(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> repairs.materials(actor));
+    }
+
+    /** Thêm vật tư mới qua service, không cho client cập nhật trực tiếp tồn đã xuất. */
+    public ServerResponse createMaterial(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> repairs.createMaterial(actor, context,
+                request.body(vn.id.caohoangphuc.cnpm.api.dto.MaterialDto.class)));
+    }
+
+    /** Danh sách minh chứng sau khi service kiểm tra quyền đọc phiếu. */
+    public ServerResponse files(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> repairs.files(actor,
+                Integer.parseInt(request.pathVariable("id"))));
+    }
+
     /** Records a repair request for the authenticated student. */
     public ServerResponse create(ServerRequest request) throws Exception {
         return api.handle(request, (actor, context) -> repairs.create(
@@ -64,7 +81,7 @@ public class RepairController {
         return api.handle(request, (actor, context) -> {
             var input = request.body(RepairScheduleDto.class);
             return repairs.reschedule(actor, context, Integer.parseInt(request.pathVariable("id")),
-                    input.version(), input.scheduledAt(), input.warrantyUntil(), input.note());
+                    input);
         });
     }
 

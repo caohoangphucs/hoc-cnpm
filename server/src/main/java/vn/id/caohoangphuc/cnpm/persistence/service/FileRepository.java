@@ -51,6 +51,20 @@ public class FileRepository {
             """, Boolean.class, id, id.toString()));
     }
 
+    /** Quyền đọc ảnh sửa chữa theo chủ phiếu, admin hoặc kỹ thuật viên được giao. */
+    public boolean readableRepair(UUID id, int accountId, String role) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+            SELECT EXISTS (
+                SELECT 1 FROM svc_repair_files p JOIN yeu_cau_sua_chua r ON r.mayeucau=p.repair_id
+                JOIN sinh_vien s ON s.masinhvien=r.masinhvien
+                JOIN svc_file f ON f.id=? AND f.state='ATTACHED'
+                LEFT JOIN svc_repair_assignment a ON a.repair_id=r.mayeucau
+                WHERE p.file_ids @> jsonb_build_array(CAST(? AS text))
+                  AND (?='ADMIN' OR s.mataikhoan=? OR (?='KYTHUAT' AND a.technician_id=?))
+            )
+            """, Boolean.class, id,id.toString(),role,accountId,role,accountId));
+    }
+
     public record RegistrationWindow(int id, String name, String semesterName,
                                      java.time.OffsetDateTime opensAt, java.time.OffsetDateTime closesAt) {}
 

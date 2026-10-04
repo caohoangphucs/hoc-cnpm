@@ -15,7 +15,7 @@ import vn.id.caohoangphuc.cnpm.api.validation.UniqueElements;
 
 /** Target API contract; not proof that the associated endpoint is implemented. */
 public record RepairDto(
-    @NotBlank @Size(min = 1, max = 1000) String title,
+    @NotBlank @Size(min = 1, max = 255) String title,
     @NotBlank @Size(min = 1, max = 1000) String description,
     Priority priority,
     @Valid @Size(max = 5) List<@NotNull UUID> fileIds

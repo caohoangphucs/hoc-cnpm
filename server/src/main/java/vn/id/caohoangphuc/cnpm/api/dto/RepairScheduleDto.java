@@ -8,7 +8,7 @@ import java.time.OffsetDateTime;
 
 /** New repair schedule and warranty information submitted by a technician. */
 public record RepairScheduleDto(
-        @NotNull Long version,
+        @NotNull @jakarta.validation.constraints.Min(1) Long version,
         @NotNull OffsetDateTime scheduledAt,
         LocalDate warrantyUntil,
         @NotBlank @Size(max = 1000) String note) {}

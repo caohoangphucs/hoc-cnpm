@@ -79,7 +79,8 @@ public class FileService {
         var account = context.require(actor,"SINHVIEN","ADMIN","KETOAN","KYTHUAT","BAOVE");
         var file = repository.find(id);
         if (file == null || (file.ownerId()!=account.id()
-                && !(account.role().equals("ADMIN") && repository.attachedToBooking(id))))
+                && !(account.role().equals("ADMIN") && repository.attachedToBooking(id))
+                && !repository.readableRepair(id, account.id(), account.role())))
             throw ServiceException.notFound("File");
         return file;
     }

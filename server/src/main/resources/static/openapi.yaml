@@ -17,6 +17,111 @@ tags:
   - name: Discipline
   - name: Community
 paths:
+  /api/v1/materials:
+    get:
+      tags:
+      - Repairs
+      summary: Danh mục kho (ADMIN/KYTHUAT)
+      responses:
+        '200':
+          description: Danh mục và tồn kho thực tế
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                    unit:
+                      type: string
+                    stock:
+                      type: integer
+                      minimum: 0
+                    price:
+                      type: number
+                      minimum: 0
+    post:
+      tags:
+      - Repairs
+      summary: Thêm mã vật tư mới (ADMIN/KYTHUAT)
+      security:
+      - csrfToken: []
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - id
+              - name
+              - unit
+              - price
+              properties:
+                id:
+                  type: string
+                  maxLength: 20
+                  pattern: ^[A-Za-z0-9_-]+$
+                name:
+                  type: string
+                  maxLength: 100
+                unit:
+                  type: string
+                  maxLength: 20
+                stock:
+                  type: integer
+                  minimum: 0
+                price:
+                  type: integer
+                  minimum: 0
+                  maximum: 999999999999999
+              example:
+                id: VT-NEW
+                name: Bóng đèn
+                unit: cái
+                stock: 10
+                price: 25000
+      responses:
+        '200':
+          $ref: '#/components/responses/Command'
+        '409':
+          description: Mã vật tư đã tồn tại
+        '422':
+          description: Dữ liệu không hợp lệ
+  /api/v1/repairs/{id}/files:
+    get:
+      tags:
+      - Repairs
+      summary: Ảnh đã gắn vào phiếu theo quyền đọc
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      responses:
+        '200':
+          description: UUID ảnh
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+        '404':
+          description: Không tồn tại hoặc không được xem
   /api/v1/students:
     get:
       tags: [Gate]
@@ -921,10 +1026,10 @@ components:
     IssueInvoices: {required: true, content: {application/json: {schema: {type: object, required: [draftId, version], properties: {draftId: {type: string, format: uuid}, version: {type: integer, format: int64, minimum: 1}}}}}}
     InvoiceUpdate: {required: true, content: {application/json: {schema: {type: object, required: [dueDate], properties: {dueDate: {type: string, format: date}}}}}}
     Payment: {required: true, content: {application/json: {schema: {type: object, required: [invoiceIds, gateway], properties: {invoiceIds: {type: array, minItems: 1, uniqueItems: true, items: {type: integer, format: int64, minimum: 1}}, gateway: {type: string, enum: [VNPAY, MOMO]}}}}}}
-    Repair: {required: true, content: {application/json: {schema: {type: object, required: [title, description], properties: {title: {type: string}, description: {type: string}, priority: {type: string, enum: [THAP, TRUNG_BINH, CAO, KHAN_CAP]}, fileIds: {type: array, maxItems: 5, items: {type: string, format: uuid}}}}}}}
+    Repair: {required: true, content: {application/json: {schema: {type: object, required: [title, description], properties: {title: {type: string, minLength: 1, maxLength: 255}, description: {type: string, minLength: 1, maxLength: 1000}, priority: {type: string, enum: [THAP, TRUNG_BINH, CAO, KHAN_CAP]}, fileIds: {type: array, maxItems: 5, items: {type: string, format: uuid}}}}}}}
     Assignment: {required: true, content: {application/json: {schema: {type: object, required: [technicianAccountId, scheduledAt, version], properties: {technicianAccountId: {type: integer, format: int64}, scheduledAt: {type: string, format: date-time}, version: {type: integer, format: int64}}}}}}
-    RepairSchedule: {required: true, content: {application/json: {schema: {type: object, required: [version, scheduledAt, note], properties: {version: {type: integer, format: int64}, scheduledAt: {type: string, format: date-time}, warrantyUntil: {type: string, format: date, nullable: true}, note: {type: string}}}}}}
-    RepairComplete: {required: true, content: {application/json: {schema: {type: object, required: [version, note, supplies], properties: {version: {type: integer, format: int64}, note: {type: string}, supplies: {type: array, items: {type: object, required: [supplyId, quantity], properties: {supplyId: {type: string}, quantity: {type: integer, minimum: 1}}}}, warrantyUntil: {type: string, format: date, nullable: true}}}}}}
+    RepairSchedule: {required: true, content: {application/json: {schema: {type: object, required: [version, scheduledAt, note], properties: {version: {type: integer, format: int64, minimum: 1}, scheduledAt: {type: string, format: date-time}, warrantyUntil: {type: string, format: date, nullable: true}, note: {type: string, minLength: 1, maxLength: 1000}}}}}}
+    RepairComplete: {required: true, content: {application/json: {schema: {type: object, required: [version, note, supplies], properties: {fileIds: {type: array, maxItems: 10, items: {type: string, format: uuid}}, version: {type: integer, format: int64}, note: {type: string}, supplies: {type: array, items: {type: object, required: [supplyId, quantity], properties: {supplyId: {type: string}, quantity: {type: integer, minimum: 1}}}}, warrantyUntil: {type: string, format: date, nullable: true}}}}}}
     Entry: {required: true, content: {application/json: {schema: {type: object, required: [eventId, cardToken, type, deviceId], properties: {eventId: {type: string, format: uuid}, cardToken: {type: string, writeOnly: true}, type: {type: string, enum: [VAO, RA]}, deviceId: {type: string}, note: {type: string, nullable: true}}}}}}
     Visitor: {required: true, content: {application/json: {schema: {type: object, required: [hostStudentId, name, identity, validFrom, validTo], properties: {hostStudentId: {type: string}, name: {type: string, minLength: 2, maxLength: 100}, identity: {type: string, minLength: 6, maxLength: 12}, identityType: {type: string, enum: [CCCD, CMND, PASSPORT]}, validFrom: {type: string, format: date-time}, validTo: {type: string, format: date-time}}}}}}
     ViolationCreate: {required: true, content: {application/json: {schema: {type: object, required: [studentId, content, level], properties: {studentId: {type: string}, content: {type: string, maxLength: 2000}, level: {type: string, enum: [LOW, MEDIUM, HIGH, CRITICAL]}, occurredAt: {type: string, format: date-time, nullable: true}}}}}}

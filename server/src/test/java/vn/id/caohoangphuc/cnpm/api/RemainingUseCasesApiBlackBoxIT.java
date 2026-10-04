@@ -279,6 +279,110 @@ class RemainingUseCasesApiBlackBoxIT {
         assertEquals(409,send(technician.client(),mutate(technician,path,"PUT","{\"priority\":\"THAP\",\"version\":2}")).statusCode());
     }
 
+    /** #47/#48: biên tiêu đề 254/255/256 và sinh viên chưa có phòng không sinh dữ liệu dở dang. */
+    @Test
+    void repairInputBoundariesAndRoomEligibilityOverHttp() throws Exception {
+        var student = login(STUDENT);
+        for (int length : new int[]{254, 255, 256}) {
+            String title = "A".repeat(length);
+            var response = post(student, ApiRoutes.REPAIRS,
+                    json.writeValueAsString(java.util.Map.of("title",title,"description","Biên tiêu đề","fileIds",java.util.List.of())));
+            assertEquals(length <= 255 ? 200 : 422, response.statusCode(),response.body());
+            if (length <= 255) {
+                String id = json.readTree(response.body()).path("id").asString();
+                assertEquals(200,send(student.client(),mutate(student,"/api/v1/repairs/"+id,"DELETE","")).statusCode());
+            } else {
+                assertTrue(json.readTree(response.body()).path("fieldErrors").has("title"));
+            }
+        }
+        var waiting = post(login("sv_new_nam"),ApiRoutes.REPAIRS,
+                "{\"title\":\"API test no room\",\"description\":\"Chưa lưu trú\",\"fileIds\":[]}");
+        assertEquals(422,waiting.statusCode(),waiting.body());
+        assertEquals("NO_CURRENT_ROOM",json.readTree(waiting.body()).path("code").asString());
+        assertEquals(0,jdbc.queryForObject("SELECT count(*) FROM yeu_cau_sua_chua WHERE tieude='API test no room'",Integer.class));
+    }
+
+    /** #49: thiếu/null/version sai trả lỗi trường, không cập nhật phiếu trước request hợp lệ. */
+    @Test
+    void repairScheduleRejectsMissingFieldsBeforeMutationOverHttp() throws Exception {
+        var created = post(login(STUDENT),ApiRoutes.REPAIRS,
+                "{\"title\":\"API test light\",\"description\":\"Đổi lịch\",\"fileIds\":[]}");
+        assertEquals(200,created.statusCode(),created.body());
+        int id = Integer.parseInt(json.readTree(created.body()).path("id").asString());
+        assertEquals(200,post(login("admin"),"/api/v1/repairs/"+id+"/assignment",
+                "{\"technicianAccountId\":3,\"scheduledAt\":\"2030-01-01T09:00:00+07:00\",\"version\":1}").statusCode());
+        var tech = login("kythuat1");
+        String path="/api/v1/repairs/"+id+"/schedule";
+        String valid="{\"version\":2,\"scheduledAt\":\"2030-01-02T09:00:00+07:00\",\"note\":\"Đổi lịch\"}";
+        for (String body : new String[]{valid.replace("\"version\":2,",""),
+                valid.replace("\"version\":2","\"version\":null"),
+                valid.replace("\"version\":2","\"version\":0"),
+                valid.replace("\"scheduledAt\":\"2030-01-02T09:00:00+07:00\",",""),
+                valid.replace("\"2030-01-02T09:00:00+07:00\"","null"),
+                valid.replace("Đổi lịch", "")}) {
+            var response=send(tech.client(),mutate(tech,path,"PUT",body));
+            assertEquals(422,response.statusCode(),response.body());
+            assertTrue(json.readTree(response.body()).path("fieldErrors").size()>0);
+            assertEquals(2,json.readTree(get(tech,"/api/v1/repairs/"+id).body()).path("version").asInt());
+        }
+        assertEquals(200,send(tech.client(),mutate(tech,path,"PUT",valid)).statusCode());
+    }
+
+    /** #46: danh mục thật, upload multipart, hoàn thành với ảnh và xuất kho đúng một lần. */
+    @Test
+    void completionUsesMaterialCatalogAndPrivateImageOverHttp() throws Exception {
+        var student=login(STUDENT);
+        var tech=login("kythuat1");
+        String code="TEST-"+UUID.randomUUID().toString().substring(0,8);
+        var material=post(tech,ApiRoutes.MATERIALS,json.writeValueAsString(java.util.Map.of(
+                "id",code,"name","Bóng đèn kiểm thử","unit","cái","stock",3,"price",1000)));
+        assertEquals(200,material.statusCode(),material.body());
+        assertEquals(403,get(student,ApiRoutes.MATERIALS).statusCode());
+        assertTrue(get(tech,ApiRoutes.MATERIALS).body().contains(code));
+        String fileId=null;
+        int id=0;
+        try {
+            var created=post(student,ApiRoutes.REPAIRS,"{\"title\":\"API test light\",\"description\":\"Đèn hỏng\",\"fileIds\":[]}");
+            assertEquals(200,created.statusCode(),created.body());
+            id=Integer.parseInt(json.readTree(created.body()).path("id").asString());
+            assertEquals(200,post(login("admin"),"/api/v1/repairs/"+id+"/assignment",
+                    "{\"technicianAccountId\":3,\"scheduledAt\":\"2030-01-01T09:00:00+07:00\",\"version\":1}").statusCode());
+            var image=new java.awt.image.BufferedImage(2,2,java.awt.image.BufferedImage.TYPE_INT_RGB);
+            var png=new java.io.ByteArrayOutputStream();
+            javax.imageio.ImageIO.write(image,"png",png);
+            String boundary="test-"+UUID.randomUUID();
+            var multipart=new java.io.ByteArrayOutputStream();
+            multipart.write(("--"+boundary+"\r\nContent-Disposition: form-data; name=\"kind\"\r\n\r\nREPAIR\r\n--"+boundary+"\r\nContent-Disposition: form-data; name=\"file\"; filename=\"after.png\"\r\nContent-Type: image/png\r\n\r\n").getBytes(StandardCharsets.UTF_8));
+            multipart.write(png.toByteArray());
+            multipart.write(("\r\n--"+boundary+"--\r\n").getBytes(StandardCharsets.UTF_8));
+            var upload=send(tech.client(),HttpRequest.newBuilder(uri("/api/v1/files"))
+                    .header("X-CSRF-TOKEN",tech.csrfToken()).header("Content-Type","multipart/form-data; boundary="+boundary)
+                    .POST(HttpRequest.BodyPublishers.ofByteArray(multipart.toByteArray())).build());
+            assertEquals(200,upload.statusCode(),upload.body());
+            fileId=json.readTree(upload.body()).path("id").asString();
+            assertEquals(404,get(student,"/api/v1/files/"+fileId).statusCode());
+            String body=json.writeValueAsString(java.util.Map.of("version",2,"note","Thay đèn", "fileIds",java.util.List.of(fileId),
+                    "supplies",java.util.List.of(java.util.Map.of("supplyId",code,"quantity",1))));
+            var completeRequest=mutate(tech,"/api/v1/repairs/"+id+"/complete","POST",body);
+            var complete=send(tech.client(),completeRequest);
+            assertEquals(200,complete.statusCode(),complete.body());
+            assertEquals("HOAN_THANH",json.readTree(complete.body()).path("status").asString());
+            assertEquals(complete.body(),send(tech.client(),completeRequest).body());
+            assertEquals(2,jdbc.queryForObject("SELECT soluongton FROM vat_tu WHERE mavattu=?",Integer.class,code));
+            assertTrue(get(student,"/api/v1/repairs/"+id+"/files").body().contains(fileId));
+            assertEquals(200,get(student,"/api/v1/files/"+fileId).statusCode());
+            assertEquals(404,get(login("sv002"),"/api/v1/files/"+fileId).statusCode());
+        } finally {
+            jdbc.update("DELETE FROM xuat_vat_tu WHERE mavattu=?",code);
+            jdbc.update("DELETE FROM vat_tu WHERE mavattu=?",code);
+            if(id>0) jdbc.update("DELETE FROM svc_repair_files WHERE repair_id=?",id);
+            if(fileId!=null) {
+                jdbc.update("DELETE FROM svc_file_content WHERE file_id=?",UUID.fromString(fileId));
+                jdbc.update("DELETE FROM svc_file WHERE id=?",UUID.fromString(fileId));
+            }
+        }
+    }
+
     /** Sends a read-only request through the actual HTTP server. */
     private HttpResponse<String> get(ApiSession session, String path) throws Exception {
         return send(session.client(), HttpRequest.newBuilder(uri(path)).GET().build());

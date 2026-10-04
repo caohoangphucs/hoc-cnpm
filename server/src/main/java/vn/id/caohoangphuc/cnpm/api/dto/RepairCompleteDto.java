@@ -18,7 +18,11 @@ public record RepairCompleteDto(
     @NotNull @DecimalMin("1") Long version,
     @NotBlank @Size(min = 1, max = 1000) String note,
     @NotNull @Valid @Size(max = 100) List<@NotNull @Valid SupplyLineDto> supplies,
-     LocalDate warrantyUntil
+     LocalDate warrantyUntil,
+    @Size(max = 10) List<@NotNull UUID> fileIds
 ) {
-
+    /** Giữ tương thích request cũ không có ảnh nghiệm thu. */
+    public RepairCompleteDto(Long version, String note, List<SupplyLineDto> supplies, LocalDate warrantyUntil) {
+        this(version, note, supplies, warrantyUntil, List.of());
+    }
 }
