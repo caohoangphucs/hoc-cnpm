@@ -40,6 +40,7 @@ export async function readJson<T>(response: Response, decode: (value: unknown) =
       : response.status === 404 ? 'Không tìm thấy bản ghi. Vui lòng kiểm tra lại.'
       : response.status === 409 ? 'Dữ liệu đã thay đổi hoặc yêu cầu không còn phù hợp. Tải lại và kiểm tra trước khi thử lại.'
       : response.status === 400 || response.status === 422 ? 'Thông tin gửi chưa hợp lệ. Kiểm tra các trường nhập và điều kiện của yêu cầu.'
+      : response.status === 413 ? 'Ảnh vượt quá giới hạn 5 MiB. Chọn ảnh nhỏ hơn rồi thử lại.'
       : response.status === 429 ? 'Có quá nhiều yêu cầu. Vui lòng chờ một lát rồi thử lại.'
       : 'Dịch vụ đang gián đoạn. Kết quả chưa được xác nhận; hãy thử lại cùng yêu cầu.'
     throw new ApiError(message, response.status, typeof data.code === 'string' ? data.code : 'HTTP_ERROR', typeof data.requestId === 'string' ? data.requestId : undefined)

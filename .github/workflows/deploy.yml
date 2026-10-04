@@ -82,6 +82,10 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f database/tests/vietnamese_encoding.sql
       - name: Verify missing community seed migration preserves existing activities
         run: psql -v ON_ERROR_STOP=1 -f database/tests/community_backfill.sql
+      - name: Verify legacy demo password migration preserves changed passwords
+        run: psql -v ON_ERROR_STOP=1 -f database/tests/demo_password_migration.sql
+      - name: Apply encrypted evidence storage migration
+        run: psql -v ON_ERROR_STOP=1 --single-transaction -f database/migrations/V20261010__evidence_file_content.sql
       - name: Build backend and run Java unit tests
         run: docker build --target build -t "cnpm-server-build:$CI_SHA" server
       - name: Run controller tests with MockMvc (no real HTTP or database)
@@ -106,6 +110,22 @@ jobs:
             --select-class vn.id.caohoangphuc.cnpm.api.BookingApiBlackBoxIT \
             --select-class vn.id.caohoangphuc.cnpm.api.RoomCatalogApiBlackBoxIT \
             --select-class vn.id.caohoangphuc.cnpm.api.RemainingUseCasesApiBlackBoxIT \
+            --select-class vn.id.caohoangphuc.cnpm.api.AdminTwoFactorApiBlackBoxIT \
+            --fail-if-no-tests --details=summary
+      - name: Verify complete demo seed and preserved user changes
+        run: |
+          psql -v ON_ERROR_STOP=1 -f database/tests/demo_usecases_migration.sql
+          psql -v ON_ERROR_STOP=1 --single-transaction -f database/migrations/V20261009__complete_demo_usecases.sql
+      - name: Verify seeded demo cases through real HTTP and PostgreSQL
+        run: |
+          docker run --rm --network "$CI_NETWORK" \
+            -e DB_HOST="$CI_DB_HOST" -e DB_PORT=5432 -e DB_NAME=cnpm_db \
+            -e DB_USER=cnpm_user -e DB_PASS="$PGPASSWORD" \
+            --entrypoint java "cnpm-server-build:$CI_SHA" \
+            -cp '/app/target/classes:/app/target/test-classes:/app/target/test-libs/*' \
+            org.junit.platform.console.ConsoleLauncher execute \
+            --select-class vn.id.caohoangphuc.cnpm.api.DemoSeedApiIT \
+            --select-class vn.id.caohoangphuc.cnpm.api.EvidenceFileApiIT \
             --fail-if-no-tests --details=summary
       - name: Build immutable backend and frontend images locally
         run: |
