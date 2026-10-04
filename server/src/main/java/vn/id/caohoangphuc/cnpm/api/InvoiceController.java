@@ -20,6 +20,12 @@ public class InvoiceController {
         this.api = api;
     }
 
+    /** Trả phòng chưa phát hành hóa đơn để kế toán tích chọn. */
+    public ServerResponse unbilledRooms(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> invoices.unbilledRooms(actor,
+                request.param("month").orElse(null)));
+    }
+
     /** Calculates a draft snapshot without publishing invoices. */
     public ServerResponse preview(ServerRequest request) throws Exception {
         return api.handle(request, (actor, context) -> invoices.preview(

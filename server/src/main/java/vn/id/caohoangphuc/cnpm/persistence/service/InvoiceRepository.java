@@ -31,6 +31,17 @@ public class InvoiceRepository {
     this.jdbc = jdbc;
   }
 
+  public record UnbilledRoom(String id, String buildingId, String number) {}
+
+  /** Đọc các phòng chưa có hóa đơn trong tháng, không loại phòng thiếu chỉ số. */
+  public List<UnbilledRoom> unbilledRooms(String month) {
+    return jdbc.query("""
+        SELECT p.maphong,p.matoanha,p.sophong FROM phong p
+        WHERE NOT EXISTS (SELECT 1 FROM hoa_don h WHERE h.maphong=p.maphong AND h.kythang=?)
+        ORDER BY p.matoanha,p.tang,p.sophong,p.maphong
+        """, (rs, row) -> new UnbilledRoom(rs.getString(1), rs.getString(2), rs.getString(3)), month);
+  }
+
   /** Kiểm tra phòng còn tồn tại trước khi tạo bản nháp hoặc phát hành hóa đơn. */
   public boolean roomExists(String roomId) {
     return !jdbc.queryForList("SELECT maphong FROM phong WHERE maphong=?", String.class, roomId)
