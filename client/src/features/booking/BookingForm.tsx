@@ -1,3 +1,4 @@
+import { BookingBedPicker } from './BookingBedPicker'
 import { useState } from 'react'
 import { Button } from '@/shared/components/Button'
 import { Feedback, SelectField } from '@/shared/workflow/Workflow'
@@ -9,7 +10,7 @@ import { EvidenceFiles } from './EvidenceFiles'
 import { evidenceKinds, evidenceLabels, parseEvidence, parseWindows, uploadProblem, type EvidenceFile, type EvidenceKind } from './evidence'
 
 /** Gửi hồ sơ với đợt đang mở, giường đã chọn và ba ảnh thực sự tải lên. */
-export function BookingForm({ bedId, onComplete }: { bedId: string | null; onComplete: () => void }) {
+export function BookingForm({ bedId, onSelectBed, onComplete }: { onSelectBed: (id: string | null) => void; bedId: string | null; onComplete: () => void }) {
   const windows = useResource('booking-windows', parseWindows), action = useApiAction(), auth = useAuth()
   const [selectedWindow, setSelectedWindow] = useState(''), [accepted, setAccepted] = useState(false)
   const [files, setFiles] = useState<Partial<Record<EvidenceKind, EvidenceFile>>>({})
@@ -43,15 +44,19 @@ export function BookingForm({ bedId, onComplete }: { bedId: string | null; onCom
     if (result) onComplete()
   }
 
-  return <section className="wl-card wl-panel" id="booking-form">
+  return <section className="wl-card wl-panel booking-registration" id="booking-form">
     <h2>Đăng ký phòng</h2>
-    <p>Chọn giường trống trong bảng phòng, tải đủ ba ảnh PNG/JPEG (mỗi ảnh tối đa 5 MiB), rồi gửi hồ sơ.</p>
+    <p>Hoàn thành ba bước để gửi hồ sơ. Mỗi ảnh PNG/JPEG có dung lượng tối đa 5 MiB.</p>
     <Feedback error={windows.error || uploadError || action.error} />
-    <p><strong>Giường đã chọn:</strong> {bedId || 'Chưa chọn giường'}</p>
+    <h3>1. Chọn phòng & giường</h3>
+    <BookingBedPicker bedId={bedId} onSelect={onSelectBed} disabled={uploading || action.busy} />
+    <h3>2. Đợt đăng ký & minh chứng</h3>
     {windows.loading ? <p role="status">Đang tải đợt đăng ký…</p> : windows.data?.length ? <SelectField label="Đợt đăng ký" value={windowId} onChange={event => setSelectedWindow(event.target.value)} disabled={uploading || action.busy}>{windows.data.map(window => <option key={window.id} value={window.id}>{window.name} — {window.semesterName}</option>)}</SelectField> : <p>Hiện chưa có đợt đăng ký đang mở.</p>}
-    <div className="wl-form">{evidenceKinds.map(kind => <label key={kind}>{evidenceLabels[kind]}<input type="file" accept="image/png,image/jpeg" disabled={uploading || action.busy} onChange={event => void upload(kind, event.target.files?.[0])} /><small>{files[kind] ? 'Đã tải lên' : 'Chưa tải ảnh'}</small></label>)}</div>
+    <div className="booking-upload-grid">{evidenceKinds.map(kind => <label className="booking-upload-card" key={kind}>{evidenceLabels[kind]}<input type="file" accept="image/png,image/jpeg" disabled={uploading || action.busy} onChange={event => void upload(kind, event.target.files?.[0])} /><span className="booking-upload-button">{files[kind] ? 'Thay ảnh' : 'Chọn ảnh'}</span><small>{files[kind] ? 'Đã tải lên' : 'Chưa tải ảnh'}</small></label>)}</div>
     {uploading && <p role="status">Đang tải ảnh…</p>}
     <EvidenceFiles ids={fileIds} />
+    <h3>3. Xác nhận & gửi hồ sơ</h3>
+    {!bedId && <p className="wl-note">Chọn một giường trống ở bước 1 để tiếp tục.</p>}
     <label className="wl-check"><input type="checkbox" checked={accepted} onChange={event => setAccepted(event.target.checked)} disabled={uploading || action.busy} />Tôi xác nhận thông tin hồ sơ và đồng ý nội quy ký túc xá.</label>
     <Button pending={action.busy} disabled={!ready} onClick={() => void submit()}>Gửi hồ sơ đăng ký</Button>
   </section>
