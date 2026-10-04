@@ -35,7 +35,7 @@ export const workspaces: readonly Workspace[] = [
       { path: 'repairs', label: 'Yêu cầu sửa chữa', shortLabel: 'Sửa chữa', icon: 'tool', description: 'Gửi yêu cầu sửa chữa thiết bị trong phòng kèm ảnh.' },
       { path: 'visitors', label: 'Khách thăm', shortLabel: 'Khách thăm', icon: 'people', description: 'Khai báo thông tin khách đến thăm phòng.' },
       { path: 'community', label: 'Hoạt động công ích', shortLabel: 'Công ích', icon: 'community', description: 'Đăng ký hoạt động, quy đổi điểm và tải giấy xác nhận.' },
-      { path: 'notifications', label: 'Thông báo', shortLabel: 'Thông báo', icon: 'bell', description: 'Xem thông báo quan trọng từ Ban quản lý.' },
+      { path: 'discipline', label: 'Quyết định & khiếu nại', shortLabel: 'Kỷ luật', icon: 'shield', description: 'Theo dõi quyết định xử lý kỷ luật và gửi khiếu nại.' },
       { path: 'entries', label: 'Lịch sử vào / ra', shortLabel: 'Vào / ra', icon: 'gate', description: 'Tra cứu nhật ký vào và ra ký túc xá của bạn.' },
     ],
   },

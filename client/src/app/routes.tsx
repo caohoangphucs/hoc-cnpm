@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router'
+import { Navigate, Route, Routes } from 'react-router'
 import { workspaces, workspacePath } from './navigation'
 import { AppShell } from './layout/AppShell'
 import { OverviewPage } from './pages/OverviewPage'
@@ -38,6 +38,7 @@ export default function AppRoutes() {
         <Route key={workspace.id} element={<RequireSession workspace={workspace.id} />}>
           <Route path={workspacePath(workspace)} element={<AppShell workspace={workspace} />}>
             <Route index element={<OverviewPage workspace={workspace} />} />
+            {workspace.id === 'student' && <Route path="notifications" element={<Navigate to="../discipline" replace />} />}
             {workspace.navigation.filter((item) => item.path).map((item) => {
               const Page = pages[`${workspace.id}/${item.path}` as keyof typeof pages]
               return <Route key={item.path} path={item.path} element={Page ? <Page /> : <FeatureFrame workspace={workspace} item={item} />} />
