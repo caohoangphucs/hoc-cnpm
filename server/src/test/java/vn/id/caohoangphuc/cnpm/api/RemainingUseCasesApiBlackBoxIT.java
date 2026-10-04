@@ -513,6 +513,8 @@ class RemainingUseCasesApiBlackBoxIT {
                 assertEquals(422,invalid.statusCode(),invalid.body());
                 var result=post(admin,"/api/v1/violations/decisions",body);
                 assertEquals(200,result.statusCode(),result.body());
+                assertEquals(json.readTree(get(admin,"/api/v1/violations/"+id).body()).path("semesterCount").asInt(),
+                        json.readTree(result.body()).get(0).path("semesterCount").asInt());
                 assertEquals(decision,jdbc.queryForObject("SELECT hinhthucxuly FROM vi_pham WHERE mavipham=?",String.class,id));
                 long decisionId=jdbc.queryForObject("SELECT id FROM svc_discipline_decision WHERE violation_id=?",Long.class,id);
                 for(int reasonLength:new int[]{247,248,1000}) {
