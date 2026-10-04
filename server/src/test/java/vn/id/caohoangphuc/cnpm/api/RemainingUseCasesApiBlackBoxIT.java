@@ -42,6 +42,9 @@ class RemainingUseCasesApiBlackBoxIT {
     @AfterEach
     void clearSeededAuthenticatorSecretsAfterTest() {
         jdbc.update("UPDATE tai_khoan SET BiMatTOTP=NULL WHERE TenDangNhap IN ('admin', 'ketoan1')");
+        jdbc.update("DELETE FROM svc_invoice_snapshot WHERE input_hash='api-legacy-access'");
+        jdbc.update("DELETE FROM luu_tru WHERE masinhvien='21110091'");
+        jdbc.update("UPDATE sinh_vien SET maphonghientai=NULL,trangthai='CHO_DUYET' WHERE masinhvien='21110091'");
         jdbc.update("DELETE FROM svc_repair_files WHERE repair_id IN"
                 + " (SELECT MaYeuCau FROM yeu_cau_sua_chua WHERE TieuDe='API test light')");
         jdbc.update("DELETE FROM svc_repair_history WHERE repair_id IN"
@@ -61,6 +64,96 @@ class RemainingUseCasesApiBlackBoxIT {
         jdbc.update("DELETE FROM svc_gate_event WHERE device_id='API-GET-READ'");
         jdbc.update("DELETE FROM ra_vao WHERE ghichu='API GET read test entry'");
         jdbc.update("DELETE FROM svc_payment_session WHERE provider_ref LIKE 'api-crud-test-%'");
+    }
+
+    /** Regression #27: legacy residents see only their current room, with matching totals. */
+    @Test
+    void legacyResidentCanReadOwnRoomInvoicesOverHttp() throws Exception {
+        var student = login(STUDENT);
+        var response = assertGetSucceeds(student.client(), ApiRoutes.INVOICES + "?page=1&pageSize=100");
+        var page = json.readTree(response.body());
+        assertEquals(3, page.path("total").asInt(), response.body());
+        assertEquals(3, page.path("items").size(), response.body());
+        for (var invoice : page.path("items")) {
+            assertEquals("A-102", invoice.path("roomId").asString());
+            assertGetSucceeds(student.client(), "/api/v1/invoices/" + invoice.path("id").asInt());
+        }
+        assertEquals(404, get(student, "/api/v1/invoices/1").statusCode());
+    }
+
+    /** Negative flow: a waiting student with a stale room reference receives no invoices. */
+    @Test
+    void waitingStudentCannotUseLegacyRoomReferenceOverHttp() throws Exception {
+        jdbc.update("UPDATE sinh_vien SET maphonghientai='A-102' WHERE masinhvien='21110091'");
+        var student = login("sv_new_nam");
+        var response = assertGetSucceeds(student.client(), ApiRoutes.INVOICES);
+        assertEquals(0, json.readTree(response.body()).path("total").asInt());
+        assertEquals(404, get(student, "/api/v1/invoices/2").statusCode());
+    }
+
+    /** Boundary flow: a one-day stay on August 31 includes August but excludes September. */
+    @Test
+    void datedResidencyOverridesLegacyCurrentRoomOverHttp() throws Exception {
+        jdbc.update("UPDATE sinh_vien SET maphonghientai='A-102',trangthai='DANG_O' WHERE masinhvien='21110091'");
+        jdbc.update("INSERT INTO luu_tru(masinhvien,magiuong,ngaybatdau,ngayketthuc,trangthai)"
+                + " SELECT '21110091',magiuong,'2026-08-31','2026-08-31','DA_TRA_PHONG'"
+                + " FROM giuong WHERE maphong='A-101' ORDER BY magiuong LIMIT 1");
+        var student = login("sv_new_nam");
+        assertEquals(200, get(student, "/api/v1/invoices/1").statusCode());
+        assertEquals(404, get(student, "/api/v1/invoices/21").statusCode());
+        assertEquals(404, get(student, "/api/v1/invoices/2").statusCode());
+        var response = assertGetSucceeds(student.client(), ApiRoutes.INVOICES);
+        assertEquals(1, json.readTree(response.body()).path("total").asInt());
+    }
+
+    /** Alternative flow: the issued snapshot grants access across moves and excludes non-occupants. */
+    @Test
+    void issuedSnapshotControlsInvoiceAccessOverHttp() throws Exception {
+        jdbc.update("UPDATE sinh_vien SET maphonghientai='A-101',trangthai='DANG_O' WHERE masinhvien='21110091'");
+        jdbc.update("INSERT INTO svc_invoice_snapshot(invoice_id,input_hash,inputs)"
+                + " VALUES(2,'api-legacy-access','{\"occupants\":[{\"studentId\":\"21110091\"}]}')");
+        var student = login("sv_new_nam");
+        assertEquals(200, get(student, "/api/v1/invoices/2").statusCode());
+        jdbc.update("UPDATE svc_invoice_snapshot SET inputs='{\"occupants\":[]}'"
+                + " WHERE input_hash='api-legacy-access'");
+        jdbc.update("UPDATE sinh_vien SET maphonghientai='A-102' WHERE masinhvien='21110091'");
+        assertEquals(404, get(student, "/api/v1/invoices/2").statusCode());
+    }
+
+    /** Regression #25: seeded open activities are visible through the student HTTP endpoint. */
+    @Test
+    void studentCanReadSeededCommunityActivitiesOverHttp() throws Exception {
+        var student = login(STUDENT);
+        var response = assertGetSucceeds(student.client(), ApiRoutes.ACTIVITIES + "?page=1&size=100");
+        var activities = json.readTree(response.body());
+        assertTrue(activities.isArray(), response.body());
+        assertTrue(activities.size() >= 3, response.body());
+        var firstPage = assertGetSucceeds(student.client(), ApiRoutes.ACTIVITIES + "?page=1&size=1");
+        assertEquals(1, json.readTree(firstPage.body()).size());
+        var beyondLastPage = assertGetSucceeds(student.client(), ApiRoutes.ACTIVITIES + "?page=10000&size=1");
+        assertEquals(0, json.readTree(beyondLastPage.body()).size());
+        assertEquals(422, get(student, ApiRoutes.ACTIVITIES + "?page=0&size=10").statusCode());
+    }
+
+    /** Alternative flow: a closed activity disappears without deleting its registration history. */
+    @Test
+    void closedCommunityActivityIsNotAdvertisedOverHttp() throws Exception {
+        long id = jdbc.queryForObject("SELECT public_id FROM hoat_dong WHERE mahoatdong='ACT-03'", Long.class);
+        jdbc.update("UPDATE hoat_dong SET trangthai='DONG_DANG_KY' WHERE mahoatdong='ACT-03'");
+        try {
+            var student = login(STUDENT);
+            var response = assertGetSucceeds(student.client(), ApiRoutes.ACTIVITIES + "?page=1&size=100");
+            for (var activity : json.readTree(response.body())) {
+                assertFalse(activity.path("id").asLong() == id, response.body());
+            }
+        } finally {
+            jdbc.update("UPDATE hoat_dong SET trangthai='MO_DANG_KY' WHERE mahoatdong='ACT-03'");
+        }
+    }
+
+    /** Sends a read-only request through the actual HTTP server. */
+    private HttpResponse<String> get(ApiSession session, String path) throws Exception {
+        return send(session.client(), HttpRequest.newBuilder(uri(path)).GET().build());
     }
 
     @Test
