@@ -15,6 +15,10 @@ public class ApiRoutes {
     public static final String AUTH_TWO_FACTOR_SETUP = "/api/v1/auth/2fa/setup";
     public static final String AUTH_TWO_FACTOR_CONFIRM = "/api/v1/auth/2fa/setup/confirm";
     public static final String AUTH_LOGOUT = "/api/v1/auth/logout";
+    public static final String FILES = "/api/v1/files";
+    public static final String FILE = "/api/v1/files/{id}";
+    public static final String FILE_CONTENT = "/api/v1/files/{id}/content";
+    public static final String BOOKING_WINDOWS = "/api/v1/booking-windows";
     public static final String ROOMS = "/api/v1/rooms";
     public static final String ROOM = "/api/v1/rooms/{id}";
     public static final String ROOM_BEDS = "/api/v1/rooms/{id}/beds";
@@ -69,7 +73,8 @@ public class ApiRoutes {
             RepairController repairs,
             GateController gate,
             DisciplineController discipline,
-            CommunityController community) {
+            CommunityController community,
+            FileController files) {
         return RouterFunctions.route()
                 .GET(AUTH_SESSION, auth::session)
                 .POST(AUTH_LOGIN, auth::login)
@@ -77,6 +82,10 @@ public class ApiRoutes {
                 .POST(AUTH_TWO_FACTOR_SETUP, auth::beginTwoFactorSetup)
                 .POST(AUTH_TWO_FACTOR_CONFIRM, auth::confirmTwoFactorSetup)
                 .POST(AUTH_LOGOUT, auth::logout)
+                .POST(FILES, files::upload)
+                .GET(FILE, files::metadata)
+                .GET(FILE_CONTENT, files::content)
+                .GET(BOOKING_WINDOWS, files::windows)
                 .GET(ROOMS, rooms::list)
                 .GET(ROOM, rooms::get)
                 .POST(ROOMS, rooms::createRoom)

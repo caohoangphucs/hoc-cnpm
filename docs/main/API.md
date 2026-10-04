@@ -30,7 +30,7 @@ curl -sS -b cookies.txt -c cookies.txt \
   "$BASE_URL/api/v1/auth/login"
 ```
 
-Trong cấu hình hiện tại, đăng nhập không yêu cầu 2FA cho bất kỳ role nào. `twoFactorVerified` trong session response hiện trả `true` sau khi đăng nhập thành công; điều này phản ánh chế độ tạm tắt kiểm tra 2FA, không khẳng định authenticator đã được đăng ký. Các endpoint cài đặt/xác minh authenticator vẫn tồn tại cho Admin/Kế toán.
+Admin/Kế toán đã thiết lập authenticator nhận `twoFactorVerified: false` sau bước mật khẩu. Xác minh TOTP thành công mới được đọc API nghiệp vụ, bao gồm minh chứng. Các role khác và tài khoản chưa thiết lập authenticator đăng nhập theo điều kiện hiện tại mà không có bước OTP.
 
 ## Endpoint xác thực
 
@@ -368,3 +368,24 @@ Các status thường gặp: `400` JSON/header/ID không hợp lệ; `401` chưa
 - Khai báo khách cần cấu hình `KTX_PERSONAL_DATA_KEY` để mã hóa dữ liệu cá nhân; yêu cầu chứng nhận cần `KTX_CERTIFICATE_TOKEN_KEY` để ký token. Nếu thiếu cấu hình, service trả lỗi `503` tương ứng.
 - Một số tích hợp ngoài như cổng thanh toán, barrier, worker thông báo và tạo/chứng thực PDF chưa cấu hình đầy đủ; endpoint có trong bảng không khẳng định tích hợp ngoài đã hoạt động.
 - Route nguồn chuẩn: `server/src/main/java/vn/id/caohoangphuc/cnpm/api/ApiRoutes.java`; DTO request nằm trong `server/src/main/java/vn/id/caohoangphuc/cnpm/api/dto/`.
+
+## Tải lên và xem minh chứng UC-04/UC-12
+
+Các URL dưới đây có tiền tố `/api/v1`. Dùng session cookie như các API khác; upload bắt buộc có `X-CSRF-TOKEN`. Admin đã bật 2FA phải xác thực OTP trước khi xem tệp.
+
+| Endpoint | Param/body | Response |
+|---|---|---|
+| `GET /booking-windows` | SINHVIEN hoặc ADMIN, không có body | Mảng `{id,name,semesterName,opensAt,closesAt}`; chỉ đợt đang mở và học kỳ ACTIVE/chưa kết thúc. |
+| `POST /files` | `multipart/form-data`: `file` ảnh PNG/JPEG, `kind` = CCCD_FRONT/CCCD_BACK/STUDENT_CARD/REPAIR/EVIDENCE/POLICY. CCCD/thẻ chỉ SINHVIEN tải lên. | `{id,kind,mime,sizeBytes,sha256,contentUrl}`. Tệp DRAFT dùng để gửi hồ sơ trong 24 giờ. |
+| `GET /files/{id}` | `id` UUID | Metadata cùng cấu trúc upload. Owner được đọc; ADMIN được đọc tệp ATTACHED gắn vào hồ sơ đăng ký. |
+| `GET /files/{id}/content` | `id` UUID; `download=true` để tải thay vì xem inline | Byte ảnh, MIME PNG/JPEG, `Content-Disposition`, `Cache-Control: no-store, private`, `X-Content-Type-Options: nosniff`. |
+
+Ví dụ upload (để curl tự tạo multipart boundary):
+
+```sh
+curl -b cookies.txt -H 'X-CSRF-TOKEN: TOKEN_SAU_DANG_NHAP'   -F 'kind=CCCD_FRONT' -F 'file=@front.png;type=image/png'   https://cnpm.caohoangphuc.id.vn/api/v1/files
+```
+
+Ảnh tối đa 5 MiB (5242880 byte), mỗi chiều tối đa 6000 pixel, tổng tối đa 20 megapixel. Backend đối chiếu MIME với nội dung, kiểm tra decoder và ghi lại ảnh bỏ metadata; không tin tên file. Quá kích thước trả 413; rỗng/sai loại/ảnh giả/kind sai trả 422; UUID sai trả 400; tệp không tồn tại hoặc không có quyền trả 404; chưa đăng nhập GET trả 401, thiếu CSRF upload trả 403. Nội dung được mã hóa AES-GCM trong database, không có URL ảnh công khai.
+
+Sau khi tải đủ ba ảnh, gửi `POST /bookings` với `bedId`, `windowId` lấy từ `/booking-windows`, ba `fileIds` nhận từ upload và `acceptedTerms: true`; kèm `Idempotency-Key` UUID. Backend kiểm tra owner/kind/DRAFT/expiry và chuyển tệp sang ATTACHED trong cùng transaction tạo đơn. Tệp seed giữ nguyên ID nhưng được bổ sung PNG tổng hợp khi app khởi động. Quyền admin xem tệp dựa trên hồ sơ đã gắn; tệp nháp của người khác vẫn trả 404.
