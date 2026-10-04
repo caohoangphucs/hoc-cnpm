@@ -3,6 +3,7 @@ package vn.id.caohoangphuc.cnpm.api;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.function.ServerRequest;
 import org.springframework.web.servlet.function.ServerResponse;
+import vn.id.caohoangphuc.cnpm.api.dto.MeterReadingWriteDto;
 import vn.id.caohoangphuc.cnpm.api.dto.InvoiceDraftDto;
 import vn.id.caohoangphuc.cnpm.api.dto.IssueDto;
 import vn.id.caohoangphuc.cnpm.api.dto.InvoiceUpdateDto;
@@ -18,6 +19,19 @@ public class InvoiceController {
     public InvoiceController(InvoiceService invoices, ApiSupport api) {
         this.invoices = invoices;
         this.api = api;
+    }
+
+    /** Đọc số đo của phòng/tháng để điền form chỉnh sửa. */
+    public ServerResponse meter(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> invoices.meter(actor,
+                request.pathVariable("id"), request.param("month").orElse(null)));
+    }
+
+    /** Lưu số đo có kiểm tra quyền, CSRF và phiên bản dữ liệu. */
+    public ServerResponse saveMeter(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> invoices.saveMeter(actor, context,
+                request.pathVariable("id"), request.param("month").orElse(null),
+                request.body(MeterReadingWriteDto.class)));
     }
 
     /** Trả phòng chưa phát hành hóa đơn để kế toán tích chọn. */

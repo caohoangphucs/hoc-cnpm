@@ -1,0 +1,1 @@
+\ir migrations/V20261011__seed_unissued_invoice_month.sql

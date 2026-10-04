@@ -42,3 +42,7 @@ CI chạy các test nghiệp vụ/API gốc trước, sau đó kiểm tra migrat
 5. Tài khoản sinh viên khác không xem được hồ sơ/tệp này; API trả 404. Admin không đọc được tệp nháp chưa gắn vào hồ sơ.
 
 Nội dung mã hóa nằm trong `svc_file_content`, metadata trong `svc_file`. Khóa `FILE_ENCRYPTION_KEY` mặc định lấy từ `TOTP_ENCRYPTION_KEY`; giữ khóa ổn định giữa các deployment để đọc lại ảnh. Không thay khóa mà không có kế hoạch chuyển mã dữ liệu. Kiểm tra ảnh gồm MIME thực, giải mã raster, giới hạn kích thước và ghi lại ảnh để bỏ metadata; không phải tích hợp dịch vụ antivirus bên ngoài.
+
+## UC-17: tháng chưa phát hành
+
+Migration V20261011 bổ sung chỉ số tháng **11/2026** cho các phòng hiện có, không ghi đè số đo hoặc hóa đơn đã được người dùng tạo. Kế toán chọn tháng 11/2026, tích DEMO-A/DEMO-B và tính bản nháp để thử phát hành. D-102 cố ý thiếu số đo: mở Nhập / sửa chỉ số, điền bốn số thực tế rồi Lưu & tính lại. Các tháng ngoài seed cần nhập số đo trước phát hành. Reset local nạp thêm 06_invoice_meter_demo.sql. Deploy tiếp theo không xóa hóa đơn vừa phát hành.
