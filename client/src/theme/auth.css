@@ -102,3 +102,5 @@
 /* Preserve a white quiet zone so the authenticator can scan in either theme. */
 .auth-setup-qr { display: flex; justify-content: center; }
 .auth-setup-qr svg { display: block; max-width: 100%; height: auto; background: #fff; }
+
+.auth-form + .auth-submit { margin-top:20px; }

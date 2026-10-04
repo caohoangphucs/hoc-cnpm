@@ -43,6 +43,19 @@ public class GateRepository {
     this.jdbc = jdbc;
   }
 
+  public record StudentOption(String id, String name, String room) {}
+
+  /** Tìm MSSV/họ tên bằng truy vấn tham số, không sử dụng danh sách hardcode. */
+  public java.util.List<StudentOption> students(String search, String owner) {
+    return jdbc.query("""
+        SELECT s.masinhvien,t.hoten,s.maphonghientai FROM sinh_vien s JOIN tai_khoan t USING(mataikhoan)
+        WHERE (CAST(? AS varchar) IS NULL OR s.masinhvien=?)
+        AND (s.masinhvien ILIKE ? OR t.hoten ILIKE ?)
+        ORDER BY s.masinhvien LIMIT 30
+        """, (r,n) -> new StudentOption(r.getString(1),r.getString(2),r.getString(3)),
+        owner,owner,"%"+search+"%","%"+search+"%");
+  }
+
   /** Băm token thẻ trước khi tra cứu để không lưu token thô trong cơ sở dữ liệu. */
   public String hashCard(String token) {
     return vn.id.caohoangphuc.cnpm.service.ServiceContext.hash(token);
@@ -97,14 +110,16 @@ LEFT JOIN vi_pham v ON v.maravao=r.maravao AND v.masinhvien=r.masinhvien WHERE e
   /** Lists gate events, optionally restricted to a student's own events. */
   public EntryPage entries(String studentId, int page, int size) {
     var items = jdbc.query("""
-        SELECT e.event_id,r.masinhvien,r.loaisukien,r.thoigian,e.barrier_status,v.mavipham
+        SELECT e.event_id,r.masinhvien,r.loaisukien,r.thoigian,e.barrier_status,v.mavipham,v.noidungvipham,v.mucdo,v.trangthai,v.ngayvipham
         FROM svc_gate_event e JOIN ra_vao r ON r.maravao=e.entry_id
         LEFT JOIN vi_pham v ON v.maravao=r.maravao AND v.masinhvien=r.masinhvien
         WHERE (CAST(? AS varchar) IS NULL OR r.masinhvien=?)
         ORDER BY r.thoigian DESC,e.event_id DESC LIMIT ? OFFSET ?
         """, (r, n) -> new EntryResourceDto(r.getObject(1, UUID.class), r.getString(2), r.getString(3),
         r.getObject(4, LocalDateTime.class).atZone(ServiceContext.ZONE).toOffsetDateTime(),
-        r.getString(5), (Integer) r.getObject(6)), studentId, studentId, size, (page - 1) * size);
+        r.getString(5), (Integer) r.getObject(6), r.getObject(6) == null ? null : new EntryResourceDto.GateViolation(
+            r.getInt(6),r.getString(7),r.getString(8),r.getString(9),
+            r.getObject(10, LocalDateTime.class).atZone(ServiceContext.ZONE).toOffsetDateTime())), studentId, studentId, size, (page - 1) * size);
     Long total = jdbc.queryForObject("""
         SELECT count(*) FROM svc_gate_event e JOIN ra_vao r ON r.maravao=e.entry_id
         WHERE (CAST(? AS varchar) IS NULL OR r.masinhvien=?)
