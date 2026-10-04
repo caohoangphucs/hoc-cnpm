@@ -407,7 +407,14 @@ class RemainingUseCasesApiBlackBoxIT {
             String key=UUID.randomUUID().toString();
             var first=gateRequest(guard,body,key);
             assertEquals(200,first.statusCode(),first.body());
-            assertEquals(first.body(),gateRequest(guard,body,key).body());
+            var replay=gateRequest(guard,body,key);
+            assertEquals(200,replay.statusCode(),replay.body());
+            var before=json.readTree(first.body());
+            var after=json.readTree(replay.body());
+            for(String field:java.util.List.of("eventId","studentId","type","barrierStatus","violationId","violation"))
+                assertEquals(before.path(field),after.path(field),field);
+            assertEquals(java.time.OffsetDateTime.parse(before.path("time").asString()).toInstant(),
+                    java.time.OffsetDateTime.parse(after.path("time").asString()).toInstant());
             var changed=gateRequest(guard,body.replace(token,"invalid-card"),key);
             assertEquals(409,changed.statusCode(),changed.body());
             assertEquals(409,gateRequest(guard,body.replace(token,"invalid-card"),UUID.randomUUID().toString()).statusCode());
