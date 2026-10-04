@@ -24,7 +24,7 @@ paths:
       security: []
       parameters:
         - {name: vnp_TmnCode, in: query, required: true, schema: {type: string}}
-        - {name: vnp_TxnRef, in: query, required: true, schema: {type: string, format: uuid}}
+        - {name: vnp_TxnRef, in: query, required: true, schema: {type: string}, description: UUID phiên bỏ dấu gạch nối}
         - {name: vnp_Amount, in: query, required: true, schema: {type: string}, description: Số tiền VND nhân 100}
         - {name: vnp_ResponseCode, in: query, required: true, schema: {type: string}}
         - {name: vnp_TransactionStatus, in: query, required: true, schema: {type: string}}

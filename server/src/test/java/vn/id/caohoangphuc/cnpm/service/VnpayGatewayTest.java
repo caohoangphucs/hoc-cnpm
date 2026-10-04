@@ -47,6 +47,7 @@ class VnpayGatewayTest {
     var created = gateway.create(id.toString(), new BigDecimal("500000"), id, expiry, "203.0.113.1");
     String url = created.payUrl().toString();
     assertTrue(url.contains("vnp_Amount=50000000"));
+    assertTrue(url.contains("vnp_TxnRef=12345678123412341234123456789012"));
     assertTrue(url.contains("vnp_CreateDate=20261004170000"));
     assertTrue(url.contains("vnp_ExpireDate=20261004171500"));
     assertEquals(created, gateway.create(id.toString(), new BigDecimal("500000"), id, expiry, "203.0.113.1"));
