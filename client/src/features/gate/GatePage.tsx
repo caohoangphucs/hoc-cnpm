@@ -9,7 +9,7 @@ import { command, requestIdentity, type CommandResult, type RequestIdentity } fr
 import { dateTime } from '@/shared/workflow/model'
 import { StudentPicker } from '@/shared/components/StudentPicker'
 import { showSystemFeedback } from '@/shared/components/feedback'
-import { barrierLabels, entryPayload, parseEntry, visitorPayload, visitorFieldErrors, type IdentityType, type Entry, type EntryType } from './model'
+import { barrierLabels, entryPayload, manualEntryPayload, parseEntry, visitorPayload, visitorFieldErrors, type IdentityType, type Entry, type EntryType } from './model'
 import { violationLevelLabels } from './model'
 import './gate.css'
 import { EntryHistory } from './EntryHistory'
@@ -18,21 +18,23 @@ const visitorStateLabels: Record<string, string> = { PENDING: 'Chờ xét duyệ
 
 export function GatePage({ initialSection = 'student' }: { initialSection?: 'student' | 'visitor' }) {
   const [section, setSection] = useState(initialSection), [card, setCard] = useState(''), [device, setDevice] = useState('GATE-01'), [visitor, setVisitor] = useState('')
+  const [studentMode, setStudentMode] = useState<'manual' | 'scan'>('manual'), [studentVerified, setStudentVerified] = useState(false)
   const [type, setType] = useState<EntryType>('VAO'), [note, setNote] = useState(''), [verified, setVerified] = useState(false)
   const [entries, setEntries] = useState<Entry[]>([]), [guests, setGuests] = useState<CommandResult[]>([]), [receipt, setReceipt] = useState<CommandResult | null>(null)
   const event = useRef<RequestIdentity | null>(null), action = useApiAction()
   const [revision, setRevision] = useState(0)
   async function record() {
-    let body: ReturnType<typeof entryPayload>
+    let body: ReturnType<typeof entryPayload> | ReturnType<typeof manualEntryPayload>
     try {
-      event.current = requestIdentity(event.current, JSON.stringify([card.trim(), type, device.trim(), note.trim()]), () => crypto.randomUUID())
-      body = entryPayload(event.current.key, card, type, device, note)
+      event.current = requestIdentity(event.current, JSON.stringify([studentMode, card.trim(), type, device.trim(), note.trim(), studentVerified]), () => crypto.randomUUID())
+      body = studentMode === 'scan' ? entryPayload(event.current.key, card, type, device, note) : manualEntryPayload(event.current.key, card, type, device, note, studentVerified)
     } catch (error) { action.setError((error as Error).message); return }
-    const saved = await action.run('entries', body, parseEntry)
+    const saved = await action.run(studentMode === 'scan' ? 'entries' : 'entries/manual', body, parseEntry)
     if (saved) {
       setEntries(rows => [saved, ...rows.filter(e => e.eventId !== saved.eventId)])
       event.current = null
       setCard('')
+      setStudentVerified(false)
       setNote('')
       setRevision(v => v + 1)
       showSystemFeedback({
@@ -67,16 +69,17 @@ export function GatePage({ initialSection = 'student' }: { initialSection?: 'stu
     <div className="wl-layout gate-layout"><section className="wl-card gate-station"><div className="gate-station-heading"><Icon name="gate" /><h2>{section === 'student' ? 'Ghi lượt sinh viên' : 'Ghi lượt khách thăm'}</h2></div>
       <form className="wl-form gate-form" noValidate onSubmit={e => { e.preventDefault(); void (section === 'student' ? record() : recordVisitor()) }}><fieldset className="gate-fieldset" disabled={action.busy}>
         {section === 'student' ? <>
-          <TextField label="Mã thiết bị tại cổng" value={device} onChange={e => setDevice(e.target.value)} maxLength={1000} required />
-          <StudentPicker label="Mã thẻ / MSSV từ máy quét" value={card} onChange={setCard} supportingText="Quét thẻ dạng bàn phím hoặc chọn nhanh sinh viên từ danh sách gợi ý." required autoFocus />
+          <TextField label="Mã thiết bị tại cổng" value={device} onChange={e => setDevice(e.target.value)} maxLength={100} required />
+          <SelectField label="Cách xác minh sinh viên" value={studentMode} onChange={e => { setStudentMode(e.target.value as 'manual' | 'scan'); setCard(''); setStudentVerified(false) }}><option value="manual">Chọn MSSV và đối chiếu giấy tờ</option><option value="scan">Quét token thẻ</option></SelectField>
+          {studentMode === 'manual' ? <><StudentPicker label="Sinh viên qua cổng" value={card} onChange={value => { setCard(value); setStudentVerified(false) }} supportingText="Chọn sinh viên rồi đối chiếu thẻ/giấy tờ gốc tại cổng." required /><label className="wl-check"><input type="checkbox" checked={studentVerified} onChange={e => setStudentVerified(e.target.checked)} />Đã đối chiếu thẻ sinh viên/giấy tờ gốc</label></> : <TextField label="Token thẻ từ máy quét" value={card} onChange={e => setCard(e.target.value)} maxLength={1000} required />}
         </> : <>
           <TextField label="Mã khai báo khách" placeholder="KT-123" value={visitor} onChange={e => { setVisitor(e.target.value); setVerified(false) }} inputMode="numeric" required />
           <p className="wl-note">Chọn phiếu đã duyệt từ danh sách bên dưới, hoặc nhập mã trên phiếu khai báo.</p>
           <label className="wl-check"><input type="checkbox" checked={verified} onChange={e => setVerified(e.target.checked)} />Đã đối chiếu giấy tờ gốc và phiếu khai báo</label>
         </>}
         <SelectField label="Hướng di chuyển" value={type} onChange={e => setType(e.target.value as EntryType)}><option value="VAO">Vào KTX</option><option value="RA">Ra khỏi KTX</option></SelectField>
-        {section === 'student' && <NotesField label="Ghi chú (tùy chọn)" value={note} onChange={e => setNote(e.target.value)} />}
-        <Button type="submit" pending={action.busy} disabled={section === 'visitor' && !verified}>Ghi nhận {type === 'VAO' ? 'vào' : 'ra'} cổng</Button>
+        {section === 'student' && <NotesField label="Ghi chú (tùy chọn, tối đa 255 ký tự)" maxLength={255} value={note} onChange={e => setNote(e.target.value)} />}
+        <Button type="submit" pending={action.busy} disabled={section === 'visitor' ? !verified : studentMode === 'manual' && !studentVerified}>Ghi nhận {type === 'VAO' ? 'vào' : 'ra'} cổng</Button>
       </fieldset></form></section>
       <aside className="wl-card wl-side gate-guidance"><h2>Kết quả vừa ghi</h2>{section === 'student' && last ? <section className="gate-last"><Facts items={[[ 'MSSV', last.studentId ], ['Thời điểm', dateTime(last.time)], ['Hướng', last.type === 'VAO' ? 'Vào' : 'Ra']]} /><Status tone={last.violationId ? 'warning' : 'success'}>{last.violationId ? last.violation?.content || 'Có vi phạm' : 'Đã lưu lượt'}</Status>{last.violation && <><p>{last.violation.content}</p><p>Mức độ: {violationLevelLabels[last.violation.level] || last.violation.level}</p></>}<Status tone={last.barrierStatus === 'FAILED' ? 'danger' : 'neutral'}>{barrierLabels[last.barrierStatus]}</Status><p className="wl-note">Chờ thiết bị không đồng nghĩa cổng đã mở. Kiểm tra thiết bị tại chỗ; không ghi lại lượt để thử mở cổng.</p></section> : section === 'visitor' && receipt ? <><Status tone="success">Đã lưu lượt khách</Status><Facts items={[[ 'Mã khai báo', receipt.id ], ['Trạng thái', visitorStateLabels[receipt.status] || receipt.status]]} /></> : <p className="wl-note">Kết quả chỉ hiển thị sau khi hệ thống xác nhận lưu thành công.</p>}</aside></div>
     <section className="wl-card gate-history"><div className="wl-card-heading"><h2>Lượt ghi trong phiên này</h2><p>Đóng hoặc tải lại trang sẽ xóa danh sách tạm; lịch sử trên máy chủ vẫn được giữ.</p></div>{section === 'student' ? <DataTable label="Lượt sinh viên trong phiên" head={<tr><th>MSSV</th><th>Thời điểm</th><th>Hướng</th><th>Kết quả</th></tr>} rows={entries.map(e => <tr key={e.eventId}><td>{e.studentId}</td><td>{dateTime(e.time)}</td><td>{e.type === 'VAO' ? 'Vào' : 'Ra'}</td><td><Status tone={e.violationId ? 'warning' : 'success'}>{e.violationId ? e.violation?.content || 'Có vi phạm' : 'Đã lưu'}</Status><small>{barrierLabels[e.barrierStatus]}</small></td></tr>)} /> : <DataTable label="Lượt khách trong phiên" head={<tr><th>Mã khai báo</th><th>Trạng thái</th></tr>} rows={guests.map(r => <tr key={r.requestId}><td>{r.id}</td><td>{visitorStateLabels[r.status] || r.status}</td></tr>)} />}</section>

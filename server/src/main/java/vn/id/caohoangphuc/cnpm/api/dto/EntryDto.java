@@ -18,8 +18,8 @@ public record EntryDto(
     @NotNull UUID eventId,
     @NotBlank @Size(min = 1, max = 1000) @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) String cardToken,
     @NotNull Type type,
-    @NotBlank @Size(min = 1, max = 1000) String deviceId,
-    @Size(min = 1, max = 1000) String note
+    @NotBlank @Size(min = 1, max = 100) String deviceId,
+    @Size(min = 1, max = 255) String note
 ) {
     public enum Type { VAO, RA }
     @Override public String toString() { return "EntryDto[eventId=" + eventId + ", cardToken=REDACTED]"; }

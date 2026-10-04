@@ -15,9 +15,17 @@ export function parseEntry(value: unknown): Entry {
 }
 export function entryPayload(eventId: string, cardToken: string, type: EntryType, deviceId: string, note: string) {
   if (!cardToken.trim() || !deviceId.trim()) throw new Error('Nhập mã thẻ và mã thiết bị tại cổng.')
-  if ([cardToken, deviceId, note].some(s => s.trim().length > 1000)) throw new Error('Mỗi trường tối đa 1.000 ký tự.')
+  if (cardToken.trim().length > 1000 || deviceId.trim().length > 100 || note.trim().length > 255) throw new Error('Mã thẻ tối đa 1.000, mã thiết bị 100 và ghi chú 255 ký tự.')
   return { eventId, cardToken: cardToken.trim(), type, deviceId: deviceId.trim(), note: note.trim() || null }
 }
+/** Luồng thủ công dùng MSSV và xác minh giấy tờ, không gửi MSSV như token thẻ. */
+export function manualEntryPayload(eventId: string, studentId: string, type: EntryType, deviceId: string, note: string, identityVerified: boolean) {
+  if (!identityVerified) throw new Error('Đối chiếu thẻ sinh viên/giấy tờ gốc trước khi ghi thủ công.')
+  if (!studentId.trim() || studentId.trim().length > 20) throw new Error('Chọn MSSV hợp lệ.')
+  const common = entryPayload(eventId, studentId, type, deviceId, note)
+  return { eventId: common.eventId, studentId: studentId.trim(), type, deviceId: common.deviceId, note: common.note, identityVerified }
+}
+
 export type IdentityType = 'CCCD' | 'CMND' | 'PASSPORT'
 export function visitorFieldErrors(name: string, identity: string, type: IdentityType) {
   const errors: Record<string,string> = {}, normalized = name.trim().replace(/\s+/g,' ')

@@ -132,16 +132,17 @@ public class DisciplineService {
     context.files(List.of(input.evidenceFileId()), actor.accountId(), "EVIDENCE");
     validateDecisionBatch(ids, violations, input.versions());
 
-    var results = new ArrayList<ViolationResourceDto>();
-    for (var violation : violations) results.add(applyDecision(actor, request, input, violation));
+    for (var violation : violations) applyDecision(actor, request, input, violation);
 
     // Gắn chứng cứ sau khi mọi quyết định trong batch đã được ghi.
     context.attach(List.of(input.evidenceFileId()));
-    return results.toArray(ViolationResourceDto[]::new);
+    // Trả thống kê sau khi toàn bộ batch đã cập nhật, cùng trạng thái với GET.
+    return repository.violations(ids, false).stream().map(this::resource)
+        .toArray(ViolationResourceDto[]::new);
   }
 
   /** Ghi một quyết định mới, giữ lại các revision trước và phát sự kiện audit. */
-  private ViolationResourceDto applyDecision(
+  private void applyDecision(
       Actor actor,
       RequestContext request,
       DisciplineDto input,
@@ -156,18 +157,6 @@ public class DisciplineService {
         input.reason(),
         input.evidenceFileId(),
         context.now());
-    var decided =
-        new DisciplineRepository.Violation(
-            violation.id(),
-            violation.studentId(),
-            violation.content(),
-            violation.level(),
-            "DA_XU_LY",
-            violation.version() + 1,
-            violation.semesterId(),
-            violation.count(),
-            violation.evidenceRequired());
-    var resource = resource(decided);
     context.event(
         actor,
         request,
@@ -179,8 +168,7 @@ public class DisciplineService {
             "revision",
             revision,
             "repeated",
-            violation.count() >= 3));
-    return resource;
+            repository.violations(List.of((long) violation.id()), false).get(0).count() >= 3));
   }
 
   /** Đọc lịch sử revision và tạo response cho một vi phạm. */

@@ -84,6 +84,25 @@ public class GateRepository {
     return rows.isEmpty() ? null : rows.get(0);
   }
 
+  /** Kiểm tra thẻ và lưu trú theo MSSV mà không trả token/hash thẻ cho frontend. */
+  public Card cardForStudent(String studentId, Instant now) {
+    var rows = jdbc.query("""
+        SELECT c.student_id,s.hoten,s.maphonghientai,l.trangthai,c.valid_from,c.valid_to,c.state
+        FROM svc_card c JOIN sinh_vien s ON s.masinhvien=c.student_id
+        LEFT JOIN luu_tru l ON l.masinhvien=s.masinhvien AND l.trangthai='DANG_O'
+        WHERE c.student_id=? AND c.state='ACTIVE' AND c.valid_from<=? AND c.valid_to>?
+        ORDER BY c.valid_to DESC LIMIT 1 FOR UPDATE OF c
+        """, (r,n) -> new Card(r.getString(1),r.getString(2),r.getString(3),r.getString(4),
+            r.getTimestamp(5).toInstant(),r.getTimestamp(6).toInstant(),r.getString(7)),
+        studentId,java.sql.Timestamp.from(now),java.sql.Timestamp.from(now));
+    return rows.isEmpty() ? null : rows.get(0);
+  }
+
+  /** Giữ dấu vết cả lượt cũ từng bị ghi khi phiếu còn chờ duyệt. */
+  public boolean hasVisitorEntries(long id) {
+    return Boolean.TRUE.equals(jdbc.queryForObject("SELECT checked_in_at IS NOT NULL OR checked_out_at IS NOT NULL FROM svc_visitor WHERE id=?", Boolean.class,id));
+  }
+
   /** Đọc sự kiện cổng theo UUID; có thể khóa trước khi hoàn tất xử lý. */
   public Entry event(UUID id, boolean lock) {
     var rows =
@@ -204,18 +223,18 @@ LEFT JOIN vi_pham v ON v.maravao=r.maravao AND v.masinhvien=r.masinhvien WHERE e
   }
 
   /** Returns visitor requests for a student, or all requests when no owner is supplied. */
-  public java.util.List<Visitor> visitors(String hostStudentId, int page, int size) {
+  public java.util.List<Visitor> visitors(String hostStudentId, boolean approvedOnly, int page, int size) {
     return jdbc.query("""
         SELECT id,host_student_id,state,valid_from,valid_to,version FROM svc_visitor
-        WHERE (CAST(? AS varchar) IS NULL OR host_student_id=?) ORDER BY id DESC LIMIT ? OFFSET ?
+        WHERE (CAST(? AS varchar) IS NULL OR host_student_id=?) AND (?=false OR state='APPROVED') ORDER BY id DESC LIMIT ? OFFSET ?
         """, (r, n) -> new Visitor(r.getLong(1), r.getString(2), r.getString(3),
         r.getTimestamp(4).toInstant(), r.getTimestamp(5).toInstant(), r.getLong(6)),
-        hostStudentId, hostStudentId, size, (page - 1) * size);
+        hostStudentId, hostStudentId, approvedOnly, size, (page - 1) * size);
   }
 
   /** Deletes a visitor request that has not yet been approved. */
   public boolean deletePendingVisitor(long id) {
-    return jdbc.update("DELETE FROM svc_visitor WHERE id=? AND state='PENDING'", id) == 1;
+    return jdbc.update("DELETE FROM svc_visitor WHERE id=? AND state='PENDING' AND checked_in_at IS NULL AND checked_out_at IS NULL", id) == 1;
   }
 
   /** Kiểm tra tài khoản hiện tại có sở hữu hồ sơ sinh viên được nêu hay không. */
@@ -263,9 +282,9 @@ LEFT JOIN vi_pham v ON v.maravao=r.maravao AND v.masinhvien=r.masinhvien WHERE e
   public void visitorEntry(long id, boolean entering, Instant at) {
     String sql =
         entering
-            ? "UPDATE svc_visitor SET checked_in_at=? WHERE id=? AND checked_in_at IS NULL AND"
+            ? "UPDATE svc_visitor SET checked_in_at=?,version=version+1 WHERE id=? AND checked_in_at IS NULL AND"
                 + " checked_out_at IS NULL"
-            : "UPDATE svc_visitor SET checked_out_at=? WHERE id=? AND checked_in_at IS NOT NULL AND"
+            : "UPDATE svc_visitor SET checked_out_at=?,version=version+1 WHERE id=? AND checked_in_at IS NOT NULL AND"
                 + " checked_out_at IS NULL";
     if (jdbc.update(sql, java.sql.Timestamp.from(at), id) != 1)
       throw new vn.id.caohoangphuc.cnpm.service.ServiceException(

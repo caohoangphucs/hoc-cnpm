@@ -32,27 +32,43 @@ public class GateService {
   public EntryResourceDto record(Actor actor, RequestContext request, EntryDto input) {
     context.validate(input);
     context.text(input.deviceId(), 100, "deviceId");
-    String hash =
-        ServiceContext.hash(
-            input.eventId()
-                + ":"
-                + input.type()
-                + ":"
-                + input.deviceId()
-                + ":"
-                + ServiceContext.hash(input.cardToken())
-                + ":"
-                + input.note());
+    String hash = entryFingerprint(input.eventId(), ServiceContext.hash(input.cardToken()),
+        input.type(), input.deviceId(), input.note());
     EntryResourceDto entry =
         context.write(
             actor,
             request,
             "entries",
-            input,
+            hash,
             EntryResourceDto.class,
             () -> recordEntry(actor, request, input, hash),
             "BAOVE");
     return entry;
+  }
+
+  /** Ghi thủ công theo MSSV chỉ dành cho bảo vệ đã đối chiếu giấy tờ tại cổng. */
+  public EntryResourceDto recordManual(Actor actor, RequestContext request,
+      vn.id.caohoangphuc.cnpm.api.dto.ManualEntryDto input) {
+    context.validate(input);
+    String hash = entryFingerprint(input.eventId(), ServiceContext.hash("manual:" + input.studentId()),
+        input.type(), input.deviceId(), input.note());
+    return context.write(actor, request, "entries/manual", hash, EntryResourceDto.class, () -> {
+      context.require(actor, "BAOVE");
+      var previous = findPreviousEntry(input.eventId(), hash);
+      if (previous != null) return previous;
+      var now = context.now();
+      var card = repository.cardForStudent(input.studentId(), now);
+      requireActiveCard(card, now);
+      var event = new EntryDto(input.eventId(), "manual:" + input.studentId(), input.type(), input.deviceId(), input.note());
+      return saveEntry(actor, request, event, card, now, hash);
+    }, "BAOVE");
+  }
+
+  /** Fingerprint chứa hash token và mọi trường, không serialize token thô WRITE_ONLY. */
+  private String entryFingerprint(java.util.UUID eventId, String identityHash,
+      EntryDto.Type type, String deviceId, String note) {
+    record Fingerprint(java.util.UUID eventId, String identityHash, EntryDto.Type type, String deviceId, String note) {}
+    return ServiceContext.hash(context.json(new Fingerprint(eventId, identityHash, type, deviceId, note)));
   }
 
   /** Sinh viên chỉ tra cứu chính mình; bảo vệ/admin được tìm danh sách để làm nghiệp vụ. */
@@ -228,7 +244,7 @@ public class GateService {
     return context.transaction(() -> {
       var account = context.require(actor, "SINHVIEN", "ADMIN", "BAOVE");
       String host = "SINHVIEN".equals(account.role()) ? account.studentId() : null;
-      return repository.visitors(host, page, size);
+      return repository.visitors(host, "BAOVE".equals(account.role()), page, size);
     });
   }
 
@@ -259,7 +275,7 @@ public class GateService {
           if ("SINHVIEN".equals(account.role())
               && !repository.ownsStudent(account.id(), visitor.hostStudentId()))
             throw ServiceException.notFound("Visitor");
-          if (!"PENDING".equals(visitor.state()))
+          if (!"PENDING".equals(visitor.state()) || repository.hasVisitorEntries(id))
             throw ServiceException.conflict("Only pending visitor requests can be deleted");
           if (!repository.deletePendingVisitor(id)) throw ServiceException.notFound("Visitor");
           context.event(actor, request, "VISITOR_DELETED", Long.toString(id),
@@ -371,7 +387,7 @@ public class GateService {
   /** Xác nhận khách đã được duyệt và đang trong khung giờ thăm. */
   private void requireVisitorAllowed(GateRepository.Visitor visitor, Instant now) {
     if (visitor == null
-        || !(visitor.state().equals("PENDING") || visitor.state().equals("APPROVED"))
+        || !visitor.state().equals("APPROVED")
         || now.isBefore(visitor.validFrom())
         || !now.isBefore(visitor.validTo()))
       throw ServiceException.conflict("Visitor is not allowed at this time");
