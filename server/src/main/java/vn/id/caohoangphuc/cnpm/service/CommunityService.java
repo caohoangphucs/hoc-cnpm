@@ -50,6 +50,37 @@ public class CommunityService {
         });
   }
 
+  /** Phiếu tra cứu có thông tin hoạt động, không tiết lộ hash mã điểm danh. */
+  public record RegistrationResource(ActivityResourceDto activity, RegistrationReceipt receipt,
+      boolean cancelled) {}
+
+  /** Lấy lịch sử từ database theo tài khoản hiện tại, không nhận mã sinh viên từ client. */
+  public List<RegistrationResource> registrations(Actor actor) {
+    return context.transaction(() -> {
+      String student = context.require(actor, "SINHVIEN").studentId();
+      return repository.registrations(student).stream().map(r -> new RegistrationResource(
+          resource(repository.activityByCode(r.activityId(), false)),
+          new RegistrationReceipt(r.id(), r.activityId(), r.status(), "", r.version()),
+          r.status().equals("CANCELLED"))).toList();
+    });
+  }
+
+  /** Cấp lại mã cho chủ phiếu đang đăng ký; mã cũ sẽ hết hiệu lực. */
+  public RegistrationReceipt attendanceToken(Actor actor, RequestContext request, int id) {
+    context.positive(id, "registrationId");
+    return context.write(actor, request, "activity-registrations/" + id + "/token", id,
+        RegistrationReceipt.class, () -> {
+          String student = context.require(actor, "SINHVIEN").studentId();
+          repository.lockStudent(student);
+          var r = repository.registration(id, true);
+          if (r == null || !r.studentId().equals(student)) throw ServiceException.notFound("Registration");
+          if (!r.status().equals("REGISTERED")) throw ServiceException.conflict("Registration is not active");
+          String token = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(random(32));
+          repository.attendanceToken(id, token);
+          return new RegistrationReceipt(id, r.activityId(), r.status(), token, r.version());
+        }, "SINHVIEN");
+  }
+
   /** Creates an activity and writes its audit event in the same transaction. */
   public ActivityResourceDto createActivity(
       Actor actor, RequestContext request, ActivityDto input) {
@@ -410,16 +441,16 @@ public class CommunityService {
   /** Rejects registration if the activity is closed, full, duplicated or overlapping. */
   private void requireCanRegister(CommunityRepository.Activity activity, String studentId) {
     if (!activity.status().equals("MO_DANG_KY") || !activity.start().isAfter(context.now()))
-      throw ServiceException.conflict("Activity registration is closed");
+      throw new ServiceException(409, "ACTIVITY_CLOSED", "Activity registration is closed");
 
     if (activity.registered() >= activity.capacity())
-      throw ServiceException.conflict("Activity is full");
+      throw new ServiceException(409, "ACTIVITY_FULL", "Activity is full");
 
     if (repository.registered(studentId, activity.id()))
-      throw ServiceException.conflict("Already registered");
+      throw new ServiceException(409, "ALREADY_REGISTERED", "Already registered");
 
     if (repository.overlaps(studentId, activity.start(), activity.end()) > 0)
-      throw ServiceException.conflict("Activity time conflicts with another registration");
+      throw new ServiceException(409, "ACTIVITY_TIME_CONFLICT", "Activity time conflicts with another registration");
   }
 
   /** Requires an activity to start in the future and have a positive time range. */

@@ -56,6 +56,8 @@ public class ApiRoutes {
     public static final String VIOLATION_DECISIONS = "/api/v1/violations/decisions";
     public static final String DISCIPLINE_APPEALS = "/api/v1/decisions/{id}/appeals";
     public static final String APPEAL_RESPONSE = "/api/v1/appeals/{id}/response";
+    public static final String MY_ACTIVITY_REGISTRATIONS = "/api/v1/activity-registrations";
+    public static final String REGISTRATION_TOKEN = "/api/v1/activity-registrations/{id}/token";
     public static final String ACTIVITIES = "/api/v1/activities";
     public static final String ACTIVITY = "/api/v1/activities/{id}";
     public static final String ACTIVITY_REGISTRATION = "/api/v1/activities/{id}/registrations";
@@ -146,6 +148,8 @@ public class ApiRoutes {
                 .POST(VIOLATION_DECISIONS, discipline::decide)
                 .POST(DISCIPLINE_APPEALS, discipline::appeal)
                 .POST(APPEAL_RESPONSE, discipline::respond)
+                .GET(MY_ACTIVITY_REGISTRATIONS, community::registrations)
+                .POST(REGISTRATION_TOKEN, community::attendanceToken)
                 .GET(ACTIVITIES, community::activities)
                 .POST(ACTIVITIES, community::createActivity)
                 .PUT(ACTIVITY, community::updateActivity)

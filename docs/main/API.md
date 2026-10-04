@@ -409,3 +409,11 @@ Hồ sơ trả về từ `GET /api/v1/bookings` và `GET /api/v1/bookings/{id}` 
 - Đăng ký IPN URL `https://cnpm.caohoangphuc.id.vn/api/v1/payments/vnpay/ipn` với VNPAY. Return URL: `https://cnpm.caohoangphuc.id.vn/api/v1/payments/vnpay/return`. Localhost không nhận IPN Internet; dùng domain HTTPS cho luồng đầy đủ.
 - Test tay: demo_resident_m → Hóa đơn 900001 → VNPAY → Tạo phiên → Mở VNPAY; dùng thẻ test của VNPAY; quay về kiểm tra trạng thái và công nợ. Chỉ `SUCCESS` từ IPN mới xác nhận đã trả. `NEEDS_REVIEW` cần kế toán đối soát.
 - Tài liệu giao thức: https://sandbox.vnpayment.vn/apis/docs/thanh-toan-pay/pay.html . Không tự động thực hiện giao dịch ngân hàng thật.
+
+## Tra cứu đăng ký công ích
+
+- `GET /api/v1/activity-registrations`: chỉ sinh viên, trả mảng lịch sử của tài khoản hiện tại; gồm cả hoạt động đã đóng và đăng ký đã hủy. Không cần body/param. Mỗi phần tử có `activity` (cùng cấu trúc GET activities), `receipt: {id, activityId, status, qrToken: "", version}`, `cancelled`. Status gồm REGISTERED, ATTENDED, COMPLETED, CANCELLED. Hash mã điểm danh không được trả ra ngoài.
+- `POST /api/v1/activity-registrations/{id}/token`: cấp lại mã cho phiếu REGISTERED thuộc sinh viên hiện tại. Không có body; cần session, CSRF và Idempotency-Key. Trả `{id, activityId, status: "REGISTERED", qrToken, version}`. Mã cũ hết hiệu lực; phiên bản hủy phiếu không thay đổi. Phiếu của người khác trả 404, phiếu không còn REGISTERED trả 409.
+- Lỗi đăng ký công ích trả 409 với code ALREADY_REGISTERED, ACTIVITY_TIME_CONFLICT, ACTIVITY_FULL hoặc ACTIVITY_CLOSED để client giải thích đúng điều kiện chặn. Đăng ký hoạt động khác không trùng giờ vẫn được phép.
+
+Session/login/2FA response có thêm `studentId` (MSSV của tài khoản SINHVIEN; null với vai trò khác). Form khai báo khách dùng MSSV này, không cho chọn người tiếp đón khác. Backend vẫn kiểm tra quyền sở hữu khi nhận khai báo.

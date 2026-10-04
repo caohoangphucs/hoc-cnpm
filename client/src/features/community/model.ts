@@ -6,8 +6,8 @@ export function parseActivity(value: unknown): Activity {
   return { id: integer(v.id, 1), semesterId: integer(v.semesterId, 1), title: text(v.title), startAt, endAt, capacity, remaining, points: integer(v.points, 1), status: text(v.status), version: integer(v.version, 1) }
 }
 export const parseActivities = (v: unknown) => list(v, parseActivity)
-export type Registration = { id: number; activityId: string; status: 'REGISTERED'; qrToken: string; version: number }
-export function parseRegistration(value: unknown): Registration { const v = object(value); return { id: integer(v.id, 1), activityId: text(v.activityId), status: enumValue(v.status, ['REGISTERED']), qrToken: text(v.qrToken), version: integer(v.version, 1) } }
+export type Registration = { id: number; activityId: string; status: 'REGISTERED' | 'ATTENDED' | 'COMPLETED' | 'CANCELLED'; qrToken: string; version: number }
+export function parseRegistration(value: unknown): Registration { const v = object(value); return { id: integer(v.id, 1), activityId: text(v.activityId), status: enumValue(v.status, ['REGISTERED', 'ATTENDED', 'COMPLETED', 'CANCELLED']), qrToken: typeof v.qrToken === 'string' ? v.qrToken : text(v.qrToken), version: integer(v.version, 1) } }
 export function cancellationRequest(registration: Pick<Registration, 'id' | 'version'>) { return { path: `activities/${registration.id}/registrations`, body: { version: registration.version }, method: 'DELETE' } }
 export function parsePoints(value: unknown) {
   const v = object(value)
@@ -31,3 +31,9 @@ export function conversionPayload(semesterId: number, drl: string, points: Pick<
   if (!/^[1-5]$/.test(drl) || amount > max) throw new Error(`Có thể quy đổi thêm tối đa ${max} điểm rèn luyện.`)
   return { semesterId, drl: amount }
 }
+
+export type Ticket = { activity: Activity; receipt: Registration; cancelled: boolean }
+export const parseTickets = (value: unknown): Ticket[] => list(value, item => {
+  const v = object(item), receipt = parseRegistration(v.receipt)
+  return { activity: parseActivity(v.activity), receipt, cancelled: receipt.status === 'CANCELLED' }
+})

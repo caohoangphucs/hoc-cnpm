@@ -151,6 +151,34 @@ class RemainingUseCasesApiBlackBoxIT {
         }
     }
 
+    /** Regression: history survives login again and never includes another student's registrations. */
+    @Test
+    void communityHistoryIsPersistentAndOwnedOverHttp() throws Exception {
+        var student = login(STUDENT);
+        var sessionResponse = get(student, ApiRoutes.AUTH_SESSION);
+        assertEquals("21110001", json.readTree(sessionResponse.body()).path("studentId").asString());
+        var response = get(student, ApiRoutes.MY_ACTIVITY_REGISTRATIONS);
+        assertEquals(200, response.statusCode(), response.body());
+        var tickets = json.readTree(response.body());
+        int expected = jdbc.queryForObject(
+                "SELECT count(*) FROM dang_ky_cong_ich WHERE masinhvien='21110001'", Integer.class);
+        assertTrue(expected > 0);
+        assertEquals(expected, tickets.size());
+        for (var ticket : tickets) {
+            int id = ticket.path("receipt").path("id").asInt();
+            assertEquals("21110001", jdbc.queryForObject(
+                    "SELECT masinhvien FROM dang_ky_cong_ich WHERE madangkycongich=?", String.class, id));
+            assertEquals("", ticket.path("receipt").path("qrToken").asString());
+            assertFalse(ticket.path("activity").path("title").asString().isBlank());
+        }
+        var loggedInAgain = get(login(STUDENT), ApiRoutes.MY_ACTIVITY_REGISTRATIONS);
+        assertEquals(tickets, json.readTree(loggedInAgain.body()));
+        int otherId = jdbc.queryForObject(
+                "SELECT min(madangkycongich) FROM dang_ky_cong_ich WHERE masinhvien<>'21110001'", Integer.class);
+        var denied = post(student, ApiRoutes.REGISTRATION_TOKEN.replace("{id}", Integer.toString(otherId)), "");
+        assertEquals(404, denied.statusCode(), denied.body());
+    }
+
     /** Sends a read-only request through the actual HTTP server. */
     private HttpResponse<String> get(ApiSession session, String path) throws Exception {
         return send(session.client(), HttpRequest.newBuilder(uri(path)).GET().build());
