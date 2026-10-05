@@ -10,6 +10,7 @@ import { dateTime } from '@/shared/workflow/model'
 import { StudentPicker } from '@/shared/components/StudentPicker'
 import { showSystemFeedback } from '@/shared/components/feedback'
 import { barrierLabels, entryPayload, parseEntry, visitorPayload, type Entry, type EntryType } from './model'
+import { violationLevelLabels } from './model'
 import './gate.css'
 import { EntryHistory } from './EntryHistory'
 import { VisitorList } from './VisitorList'
@@ -43,16 +44,17 @@ export function GatePage({ initialSection = 'student' }: { initialSection?: 'stu
     }
   }
   async function recordVisitor() {
-    if (!/^[1-9]\d*$/.test(visitor) || !Number.isSafeInteger(Number(visitor))) { action.setError('Nhập mã khai báo khách hợp lệ.'); return }
+    const visitorId = visitor.trim().replace(/^KT-/i, '')
+    if (!/^[1-9]\d*$/.test(visitorId) || !Number.isSafeInteger(Number(visitorId))) { action.setError('Nhập mã phiếu dạng KT-123 hoặc chọn phiếu đã duyệt bên dưới.'); return }
     if (!verified) { action.setError('Đối chiếu giấy tờ gốc trước khi ghi nhận.'); return }
-    const saved = await action.run(`visitors/${visitor}/${type === 'VAO' ? 'check-in' : 'check-out'}`, undefined, command)
+    const saved = await action.run(`visitors/${visitorId}/${type === 'VAO' ? 'check-in' : 'check-out'}`, undefined, command)
     if (saved) {
       setReceipt(saved)
       setGuests(rows => [saved, ...rows.filter(r => r.requestId !== saved.requestId)])
       setVerified(false)
       setRevision(v => v + 1)
       showSystemFeedback({
-        message: `Đã ghi nhận khách vào/ra cho phiếu KT-${visitor} thành công!`,
+        message: `Đã ghi nhận khách vào/ra cho phiếu KT-${visitorId} thành công!`,
         tone: 'success'
       })
     }
@@ -68,7 +70,7 @@ export function GatePage({ initialSection = 'student' }: { initialSection?: 'stu
           <TextField label="Mã thiết bị tại cổng" value={device} onChange={e => setDevice(e.target.value)} maxLength={1000} required />
           <StudentPicker label="Mã thẻ / MSSV từ máy quét" value={card} onChange={setCard} supportingText="Quét thẻ dạng bàn phím hoặc chọn nhanh sinh viên từ danh sách gợi ý." required autoFocus />
         </> : <>
-          <TextField label="Mã khai báo khách" value={visitor} onChange={e => { setVisitor(e.target.value); setVerified(false) }} inputMode="numeric" required />
+          <TextField label="Mã khai báo khách" placeholder="KT-123" value={visitor} onChange={e => { setVisitor(e.target.value); setVerified(false) }} inputMode="numeric" required />
           <p className="wl-note">Chọn phiếu đã duyệt từ danh sách bên dưới, hoặc nhập mã trên phiếu khai báo.</p>
           <label className="wl-check"><input type="checkbox" checked={verified} onChange={e => setVerified(e.target.checked)} />Đã đối chiếu giấy tờ gốc và phiếu khai báo</label>
         </>}
@@ -76,9 +78,9 @@ export function GatePage({ initialSection = 'student' }: { initialSection?: 'stu
         {section === 'student' && <NotesField label="Ghi chú (tùy chọn)" value={note} onChange={e => setNote(e.target.value)} />}
         <Button type="submit" pending={action.busy} disabled={section === 'visitor' && !verified}>Ghi nhận {type === 'VAO' ? 'vào' : 'ra'} cổng</Button>
       </fieldset></form></section>
-      <aside className="wl-card wl-side gate-guidance"><h2>Kết quả vừa ghi</h2>{section === 'student' && last ? <section className="gate-last"><Facts items={[[ 'MSSV', last.studentId ], ['Thời điểm', dateTime(last.time)], ['Hướng', last.type === 'VAO' ? 'Vào' : 'Ra']]} /><Status tone={last.violationId ? 'warning' : 'success'}>{last.violationId ? `Đã ghi vi phạm ${last.violationId}` : 'Đã lưu lượt'}</Status><Status tone={last.barrierStatus === 'FAILED' ? 'danger' : 'neutral'}>{barrierLabels[last.barrierStatus]}</Status><p className="wl-note">Chờ thiết bị không đồng nghĩa cổng đã mở. Kiểm tra thiết bị tại chỗ; không ghi lại lượt để thử mở cổng.</p></section> : section === 'visitor' && receipt ? <><Status tone="success">Đã lưu lượt khách</Status><Facts items={[[ 'Mã khai báo', receipt.id ], ['Trạng thái', visitorStateLabels[receipt.status] || receipt.status]]} /></> : <p className="wl-note">Kết quả chỉ hiển thị sau khi hệ thống xác nhận lưu thành công.</p>}</aside></div>
+      <aside className="wl-card wl-side gate-guidance"><h2>Kết quả vừa ghi</h2>{section === 'student' && last ? <section className="gate-last"><Facts items={[[ 'MSSV', last.studentId ], ['Thời điểm', dateTime(last.time)], ['Hướng', last.type === 'VAO' ? 'Vào' : 'Ra']]} /><Status tone={last.violationId ? 'warning' : 'success'}>{last.violationId ? `Đã ghi vi phạm ${last.violationId}` : 'Đã lưu lượt'}</Status>{last.violation && <><p>{last.violation.content}</p><p>Mức độ: {violationLevelLabels[last.violation.level] || last.violation.level}</p></>}<Status tone={last.barrierStatus === 'FAILED' ? 'danger' : 'neutral'}>{barrierLabels[last.barrierStatus]}</Status><p className="wl-note">Chờ thiết bị không đồng nghĩa cổng đã mở. Kiểm tra thiết bị tại chỗ; không ghi lại lượt để thử mở cổng.</p></section> : section === 'visitor' && receipt ? <><Status tone="success">Đã lưu lượt khách</Status><Facts items={[[ 'Mã khai báo', receipt.id ], ['Trạng thái', visitorStateLabels[receipt.status] || receipt.status]]} /></> : <p className="wl-note">Kết quả chỉ hiển thị sau khi hệ thống xác nhận lưu thành công.</p>}</aside></div>
     <section className="wl-card gate-history"><div className="wl-card-heading"><h2>Lượt ghi trong phiên này</h2><p>Đóng hoặc tải lại trang sẽ xóa danh sách tạm; lịch sử trên máy chủ vẫn được giữ.</p></div>{section === 'student' ? <DataTable label="Lượt sinh viên trong phiên" head={<tr><th>MSSV</th><th>Thời điểm</th><th>Hướng</th><th>Kết quả</th></tr>} rows={entries.map(e => <tr key={e.eventId}><td>{e.studentId}</td><td>{dateTime(e.time)}</td><td>{e.type === 'VAO' ? 'Vào' : 'Ra'}</td><td><Status tone={e.violationId ? 'warning' : 'success'}>{e.violationId ? `Vi phạm ${e.violationId}` : 'Đã lưu'}</Status><small>{barrierLabels[e.barrierStatus]}</small></td></tr>)} /> : <DataTable label="Lượt khách trong phiên" head={<tr><th>Mã khai báo</th><th>Trạng thái</th></tr>} rows={guests.map(r => <tr key={r.requestId}><td>{r.id}</td><td>{visitorStateLabels[r.status] || r.status}</td></tr>)} />}</section>
-    {section === 'student' ? <EntryHistory revision={revision} /> : <VisitorList security revision={revision} />}
+    {section === 'student' ? <EntryHistory revision={revision} /> : <VisitorList security revision={revision} onSelect={id => { setVisitor(`KT-${id}`); setVerified(false); action.setError('') }} />}
   </WorkflowPage>
 }
 export function VisitorGatePage() { return <GatePage initialSection="visitor" /> }
