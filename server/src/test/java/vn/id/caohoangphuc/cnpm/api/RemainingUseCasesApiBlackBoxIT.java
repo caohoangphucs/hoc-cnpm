@@ -498,7 +498,9 @@ class RemainingUseCasesApiBlackBoxIT {
             assertEquals(200,list.statusCode(),list.body());
             assertTrue(json.readTree(list.body()).valueStream().allMatch(v->"APPROVED".equals(v.path("state").asString())));
             assertEquals(404,get(guard,ApiRoutes.VISITORS+"/"+ids.get(0)).statusCode());
-            assertEquals(409,post(guard,ApiRoutes.VISITORS+"/"+ids.get(0)+"/check-in","").statusCode());
+            var pending = post(guard,ApiRoutes.VISITORS+"/"+ids.get(0)+"/check-in","");
+            assertEquals(409,pending.statusCode());
+            assertEquals("VISITOR_NOT_APPROVED",json.readTree(pending.body()).path("code").asString());
             assertEquals(409,post(guard,ApiRoutes.VISITORS+"/"+ids.get(1)+"/check-in","").statusCode());
             long approved=ids.get(2);
             assertEquals(403,post(student,ApiRoutes.VISITORS+"/"+approved+"/check-in","").statusCode());
@@ -516,7 +518,13 @@ class RemainingUseCasesApiBlackBoxIT {
             assertEquals(409,send(student.client(),mutate(student,ApiRoutes.VISITORS+"/"+ids.get(0),"DELETE","")).statusCode());
             assertEquals(1,jdbc.queryForObject("SELECT count(*) FROM svc_visitor WHERE id=?",Integer.class,ids.get(0)));
             jdbc.update("UPDATE svc_visitor SET valid_to=now()-interval '1 second' WHERE id=?",approved);
-            assertEquals(409,post(guard,ApiRoutes.VISITORS+"/"+approved+"/check-in","").statusCode());
+            var expired = post(guard,ApiRoutes.VISITORS+"/"+approved+"/check-in","");
+            assertEquals(409,expired.statusCode());
+            assertEquals("VISITOR_EXPIRED",json.readTree(expired.body()).path("code").asString());
+            jdbc.update("UPDATE svc_visitor SET valid_from=now()+interval '1 hour',valid_to=now()+interval '2 hours' WHERE id=?",approved);
+            var future = post(guard,ApiRoutes.VISITORS+"/"+approved+"/check-in","");
+            assertEquals(409,future.statusCode());
+            assertEquals("VISITOR_NOT_STARTED",json.readTree(future.body()).path("code").asString());
         } finally {
             for(long id:ids) jdbc.update("DELETE FROM svc_visitor WHERE id=?",id);
         }

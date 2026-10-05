@@ -34,6 +34,9 @@ export async function readJson<T>(response: Response, decode: (value: unknown) =
   if (!response.ok) {
     const data = body && typeof body === 'object' ? body as Record<string, unknown> : {}
     const message = data.code === 'INVALID_VISITOR_NAME' ? 'Họ tên khách phải có chữ, dài 2–100 ký tự.'
+      : data.code === 'VISITOR_NOT_APPROVED' ? 'Phiếu khách chưa được duyệt hoặc đã bị từ chối. Chỉ phiếu đã duyệt mới được vào cổng.'
+      : data.code === 'VISITOR_NOT_STARTED' ? 'Chưa đến thời gian thăm trên phiếu. Kiểm tra giờ bắt đầu trước khi ghi lượt.'
+      : data.code === 'VISITOR_EXPIRED' ? 'Phiếu khách đã hết hạn thăm. Sinh viên cần khai báo phiếu mới và chờ xét duyệt.'
       : data.code === 'INVALID_VISITOR_IDENTITY' ? 'Số giấy tờ không đúng định dạng loại đã chọn.'
       : data.code === 'NO_CURRENT_ROOM' ? 'Bạn chưa có phòng lưu trú nên chưa thể gửi yêu cầu sửa chữa.'
       : data.code === 'ENCRYPTION_UNAVAILABLE' ? 'Máy chủ chưa cấu hình mã hóa thông tin khách. Liên hệ Ban quản lý và thử lại sau.'
