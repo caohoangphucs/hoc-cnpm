@@ -17,6 +17,28 @@ tags:
   - name: Discipline
   - name: Community
 paths:
+  /api/v1/invoices/unbilled-rooms:
+    get:
+      tags: [Invoices]
+      summary: Danh sách phòng chưa có hóa đơn trong tháng
+      parameters:
+        - {name: month, in: query, required: true, schema: {type: string, pattern: '^[0-9]{4}-(0[1-9]|1[0-2])$'}, example: '2026-11'}
+      responses:
+        '200':
+          description: Phòng chưa phát hành, chỉ dành cho kế toán
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: {type: string, example: DEMO-A}
+                    buildingId: {type: string, example: TOA-A}
+                    number: {type: string, example: DEMO-A}
+        '422': {description: Tháng không hợp lệ}
+        '403': {description: Không có quyền kế toán hoặc chưa hoàn thành 2FA}
+
   /api/v1/auth/session:
     get:
       tags: [Auth]

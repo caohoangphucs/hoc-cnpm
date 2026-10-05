@@ -27,6 +27,7 @@ public class ApiRoutes {
     public static final String BOOKINGS = "/api/v1/bookings";
     public static final String BOOKING = "/api/v1/bookings/{id}";
     public static final String BOOKING_DECISION = "/api/v1/bookings/{id}/decision";
+    public static final String UNBILLED_ROOMS = "/api/v1/invoices/unbilled-rooms";
     public static final String INVOICE_DRAFTS = "/api/v1/invoice-drafts";
     public static final String INVOICES = "/api/v1/invoices";
     public static final String INVOICE = "/api/v1/invoices/{id}";
@@ -102,6 +103,7 @@ public class ApiRoutes {
                 .POST(BOOKING_DECISION, registrations::decide)
                 .POST(INVOICE_DRAFTS, invoices::preview)
                 .GET(INVOICES, invoices::list)
+                .GET(UNBILLED_ROOMS, invoices::unbilledRooms)
                 .POST(INVOICES_ISSUE, invoices::issue)
                 .GET(INVOICE, invoices::get)
                 .PUT(INVOICE, invoices::update)

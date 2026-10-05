@@ -42,6 +42,16 @@ public class InvoiceService {
     this.context = context;
   }
 
+  /** Danh sách chọn phòng của kế toán theo kỳ tháng hợp lệ. */
+  public List<InvoiceRepository.UnbilledRoom> unbilledRooms(Actor actor, String month) {
+    if (month == null || !month.matches("[0-9]{4}-(0[1-9]|1[0-2])") || month.startsWith("0000"))
+      throw ServiceException.invalid("Month must use YYYY-MM format");
+    return context.transaction(() -> {
+      context.require(actor, "KETOAN");
+      return repository.unbilledRooms(month);
+    });
+  }
+
   /** Lists invoices visible to the student or to accounting and administrators. */
   public InvoiceResourceListDto list(Actor actor, int page, int size) {
     context.page(page, size);
