@@ -3,6 +3,7 @@ import { Button } from '@/shared/components/Button'
 import { TextField } from '@/shared/components/TextField'
 import { Icon } from '@/shared/components/Icon'
 import { DataTable, Facts, Feedback, NotesField, SelectField, Status, Summary, WorkflowPage } from '@/shared/workflow/Workflow'
+import { useAuth } from '@/features/auth/context'
 import { useApiAction } from '@/shared/api/hooks'
 import { command, requestIdentity, type CommandResult, type RequestIdentity } from '@/shared/api/protocol'
 import { dateTime } from '@/shared/workflow/model'
@@ -83,7 +84,10 @@ export function GatePage({ initialSection = 'student' }: { initialSection?: 'stu
 export function VisitorGatePage() { return <GatePage initialSection="visitor" /> }
 
 export function StudentVisitorDeclarationPage() {
-  const [host, setHost] = useState(''), [name, setName] = useState(''), [identity, setIdentity] = useState(''), [from, setFrom] = useState(''), [to, setTo] = useState('')
+  const { state } = useAuth()
+  // MSSV do server xác nhận theo phiên đăng nhập, không chọn sinh viên khác.
+  const host = state.status === 'ready' && state.session.authenticated ? state.session.studentId ?? '' : ''
+  const [name, setName] = useState(''), [identity, setIdentity] = useState(''), [from, setFrom] = useState(''), [to, setTo] = useState('')
   const [receipt, setReceipt] = useState<CommandResult | null>(null), action = useApiAction()
   const [revision, setRevision] = useState(0)
   async function submit() {
@@ -106,12 +110,12 @@ export function StudentVisitorDeclarationPage() {
   return <WorkflowPage title="Khai báo khách thăm" description="Gửi thông tin khách và khoảng thời gian thăm để Ban quản lý xét duyệt." view="data">
     <Feedback error={action.error} />
     <div className="wl-layout gate-layout"><section className="wl-card gate-station"><form className="wl-form gate-form" noValidate onSubmit={e => { e.preventDefault(); void submit() }}><fieldset className="gate-fieldset" disabled={action.busy}>
-      <StudentPicker label="MSSV của bạn" value={host} onChange={setHost} supportingText="Chọn hoặc nhập MSSV thuộc tài khoản đang đăng nhập." required />
+      <TextField label="MSSV của bạn" value={host} readOnly supportingText="Tự điền theo tài khoản sinh viên đang đăng nhập." required />
       <TextField label="Họ tên khách" value={name} onChange={e => setName(e.target.value)} maxLength={1000} required />
       <TextField label="Số giấy tờ khách" value={identity} onChange={e => setIdentity(e.target.value)} maxLength={1000} required autoComplete="off" />
       <TextField label="Bắt đầu thăm (giờ Việt Nam)" type="datetime-local" value={from} onChange={e => setFrom(e.target.value)} required />
       <TextField label="Kết thúc thăm (giờ Việt Nam)" type="datetime-local" value={to} onChange={e => setTo(e.target.value)} required />
-      <Button type="submit" pending={action.busy}>Gửi khai báo</Button>
+      <Button type="submit" pending={action.busy} disabled={!host}>Gửi khai báo</Button>
     </fieldset></form></section><aside className="wl-card wl-side gate-guidance"><h2>Phiếu vừa gửi</h2>{receipt ? <><Status tone="warning">Chờ xét duyệt</Status><Facts items={[[ 'Mã khai báo', receipt.id ], ['Trạng thái', visitorStateLabels[receipt.status] || receipt.status]]} /><p className="wl-note">Theo dõi trạng thái xét duyệt trong danh sách bên dưới.</p></> : <p>Thông tin phiếu sẽ xuất hiện sau khi gửi thành công.</p>}</aside></div>
     <VisitorList revision={revision} />
   </WorkflowPage>

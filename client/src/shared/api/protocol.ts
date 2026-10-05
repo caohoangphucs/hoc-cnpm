@@ -33,7 +33,11 @@ export async function readJson<T>(response: Response, decode: (value: unknown) =
   const body: unknown = await response.json().catch(() => undefined)
   if (!response.ok) {
     const data = body && typeof body === 'object' ? body as Record<string, unknown> : {}
-    const message = data.code === 'INVALID_OTP' ? 'Mã xác thực không đúng hoặc đã hết hạn. Nhập mã mới từ ứng dụng xác thực.'
+    const message = data.code === 'ALREADY_REGISTERED' ? 'Bạn đã đăng ký hoạt động này. Xem phiếu tại Đăng ký của tôi.'
+      : data.code === 'ACTIVITY_TIME_CONFLICT' ? 'Hoạt động trùng giờ với lịch bạn đã đăng ký. Xem Đăng ký của tôi để kiểm tra hoặc hủy lịch cũ.'
+      : data.code === 'ACTIVITY_FULL' ? 'Hoạt động đã hết chỗ. Chọn hoạt động khác hoặc tải lại danh sách.'
+      : data.code === 'ACTIVITY_CLOSED' ? 'Hoạt động đã đóng đăng ký hoặc đã bắt đầu.'
+      : data.code === 'INVALID_OTP' ? 'Mã xác thực không đúng hoặc đã hết hạn. Nhập mã mới từ ứng dụng xác thực.'
       : data.code === 'TWO_FACTOR_ALREADY_CONFIGURED' ? 'Tài khoản đã có ứng dụng xác thực. Liên hệ Ban quản lý nếu cần thay đổi thiết lập.'
       : response.status === 401 ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
       : response.status === 403 ? 'Bạn chưa có quyền thực hiện thao tác hoặc phiên xác thực đã thay đổi. Tải lại trang trước khi thử lại.'

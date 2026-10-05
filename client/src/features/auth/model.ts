@@ -10,6 +10,7 @@ export type Session = { authenticated: false; csrfToken: string } | {
   role: Role
   twoFactorVerified: boolean
   idleExpiresAt: string
+  studentId?: string
 }
 
 export function parseSession(value: unknown): Session {
@@ -26,6 +27,7 @@ export function parseSession(value: unknown): Session {
   return {
     authenticated: true, csrfToken: data.csrfToken, role: data.role as Role,
     twoFactorVerified: data.twoFactorVerified, idleExpiresAt: data.idleExpiresAt,
+    ...(typeof data.studentId === 'string' && data.studentId.trim() ? { studentId: data.studentId } : {}),
   }
 }
 

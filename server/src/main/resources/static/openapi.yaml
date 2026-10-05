@@ -17,6 +17,46 @@ tags:
   - name: Discipline
   - name: Community
 paths:
+  /api/v1/activity-registrations:
+    get:
+      tags: [Community]
+      summary: Lịch sử đăng ký công ích của tôi
+      responses:
+        '200':
+          description: Mảng activity, receipt và cancelled; receipt.qrToken rỗng
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    activity:
+                      type: object
+                    receipt:
+                      type: object
+                    cancelled:
+                      type: boolean
+  /api/v1/activity-registrations/{id}/token:
+    post:
+      tags: [Community]
+      summary: Cấp lại mã điểm danh cho phiếu của tôi
+      security:
+        - csrfToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Phiếu với qrToken mới; mã cũ hết hiệu lực
+        '404':
+          description: Không tìm thấy phiếu thuộc tài khoản
+        '409':
+          description: Phiếu đã hủy, điểm danh hoặc hoàn thành
   /api/v1/payments/vnpay/ipn:
     get:
       tags: [Payments]
@@ -891,6 +931,7 @@ components:
         twoFactorVerified: {type: boolean}
         csrfToken: {type: string}
         idleExpiresAt: {type: string, format: date-time, nullable: true}
+        studentId: {type: string, nullable: true, description: MSSV của sinh viên đang đăng nhập}
     TwoFactorSetup:
       type: object
       properties:
