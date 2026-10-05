@@ -15,3 +15,14 @@ export const parseIssue = (value: unknown) => list(value, item => { const v = ob
 
 /** Phòng chưa phát hành trong tháng đã chọn. */
 export const parseUnbilledRooms = (value: unknown) => list(value, item => { const room = object(item); return { id: text(room.id), buildingId: text(room.buildingId), number: text(room.number) } })
+
+/** Nguồn số đo có thể chưa tồn tại; không coi giá trị 0 là số đo đã nhập. */
+export function parseMeter(value: unknown) {
+  const v = object(value), reading = v.reading == null ? null : object(v.reading)
+  if (typeof v.exists !== 'boolean' || typeof v.editable !== 'boolean') throw invalidResponse()
+  return { exists: v.exists, editable: v.editable, revision: text(v.revision),
+    oldElectricity: reading ? integer(reading.oldElectricity) : 0,
+    newElectricity: reading ? integer(reading.newElectricity) : 0,
+    oldWater: reading ? integer(reading.oldWater) : 0,
+    newWater: reading ? integer(reading.newWater) : 0 }
+}
