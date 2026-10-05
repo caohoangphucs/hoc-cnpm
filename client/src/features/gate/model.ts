@@ -18,11 +18,22 @@ export function entryPayload(eventId: string, cardToken: string, type: EntryType
   if ([cardToken, deviceId, note].some(s => s.trim().length > 1000)) throw new Error('Mỗi trường tối đa 1.000 ký tự.')
   return { eventId, cardToken: cardToken.trim(), type, deviceId: deviceId.trim(), note: note.trim() || null }
 }
-export function visitorPayload(hostStudentId: string, name: string, identity: string, from: string, to: string) {
+export type IdentityType = 'CCCD' | 'CMND' | 'PASSPORT'
+export function visitorFieldErrors(name: string, identity: string, type: IdentityType) {
+  const errors: Record<string,string> = {}, normalized = name.trim().replace(/\s+/g,' ')
+  if (normalized.length < 2 || normalized.length > 100 || !/^[\p{L}\p{M} .’'-]+$/u.test(normalized) || !/\p{L}/u.test(normalized)) errors.name = 'Nhập họ tên 2–100 ký tự có chữ; không dùng tên chỉ gồm số.'
+  const pattern = type === 'CCCD' ? /^[0-9]{12}$/ : type === 'CMND' ? /^[0-9]{9}$/ : /^(?=.*[A-Z])(?=.*[0-9])[A-Z0-9]{6,9}$/
+  if (!pattern.test(identity.trim().toUpperCase())) errors.identity = type === 'CCCD' ? 'CCCD gồm 12 chữ số.' : type === 'CMND' ? 'CMND gồm 9 chữ số.' : 'Hộ chiếu gồm 6–9 ký tự chữ và số.'
+  return errors
+}
+export function visitorPayload(hostStudentId: string, name: string, identity: string, from: string, to: string, identityType?: IdentityType) {
+  const type = identityType ?? (/^[0-9]{12}$/.test(identity.trim()) ? 'CCCD' : /^[0-9]{9}$/.test(identity.trim()) ? 'CMND' : 'PASSPORT')
+  const errors = visitorFieldErrors(name, identity, type)
+  if (Object.keys(errors).length) throw new Error(Object.values(errors)[0])
   if ([hostStudentId, name, identity].some(s => !s.trim() || s.trim().length > 1000)) throw new Error('Điền đầy đủ thông tin khách và MSSV tiếp đón, tối đa 1.000 ký tự mỗi trường.')
   const validFrom = vietnamTime(from), validTo = vietnamTime(to)
   if (!validFrom || !validTo || Date.parse(validTo) <= Date.parse(validFrom)) throw new Error('Chọn khoảng thời gian thăm hợp lệ theo giờ Việt Nam.')
-  return { hostStudentId: hostStudentId.trim(), name: name.trim(), identity: identity.trim(), validFrom, validTo }
+  return { hostStudentId: hostStudentId.trim(), name: name.trim().replace(/\s+/g,' '), identity: identity.trim().toUpperCase(), identityType: type, validFrom, validTo }
 }
 
 export const violationLevelLabels: Record<string, string> = { LOW: 'Nhẹ', MEDIUM: 'Trung bình', HIGH: 'Nặng', CRITICAL: 'Rất nghiêm trọng' }
