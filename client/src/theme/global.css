@@ -75,6 +75,23 @@ p { font: var(--app-type-body); }
   transform: translateY(-200%);
 }
 .skip-link:focus { transform: translateY(0); }
+
+/* Theme reveal only; leave future navigation transitions unaffected. */
+html.theme-reveal::view-transition,
+html.theme-reveal::view-transition-image-pair(root),
+html.theme-reveal::view-transition-group(root),
+html.theme-reveal::view-transition-old(root),
+html.theme-reveal::view-transition-new(root) { pointer-events: none; }
+html.theme-reveal::view-transition-group(root),
+html.theme-reveal::view-transition-old(root),
+html.theme-reveal::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+html.theme-reveal::view-transition-image-pair(root) { isolation: auto; }
+html.theme-reveal::view-transition-old(root) { z-index: 1; }
+html.theme-reveal::view-transition-new(root) { z-index: 2; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
   .destination-card:hover, .destination-card:active,
