@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import vn.id.caohoangphuc.cnpm.api.dto.MeterReadingWriteDto;
 import vn.id.caohoangphuc.cnpm.api.dto.DraftResourceDto;
 import vn.id.caohoangphuc.cnpm.api.dto.InvoiceDraftDto;
 import vn.id.caohoangphuc.cnpm.api.dto.IssueDto;
@@ -42,10 +43,55 @@ public class InvoiceService {
     this.context = context;
   }
 
-  /** Danh sách chọn phòng của kế toán theo kỳ tháng hợp lệ. */
-  public List<InvoiceRepository.UnbilledRoom> unbilledRooms(Actor actor, String month) {
+  public record MeterResource(boolean exists, boolean editable, InvoiceRepository.Reading reading, String revision) {}
+
+  /** Kiểm tra định dạng kỳ để truy vấn số đo và phòng chưa phát hành. */
+  private void requireMonth(String month) {
     if (month == null || !month.matches("[0-9]{4}-(0[1-9]|1[0-2])") || month.startsWith("0000"))
       throw ServiceException.invalid("Month must use YYYY-MM format");
+  }
+
+  /** Đọc số đo kèm phiên bản để tránh ghi đè thay đổi từ cửa sổ khác. */
+  public MeterResource meter(Actor actor, String roomId, String month) {
+    requireMonth(month);
+    context.text(roomId, 20, "roomId");
+    return context.transaction(() -> {
+      context.require(actor, "KETOAN", "KYTHUAT", "ADMIN");
+      if (!repository.roomExists(roomId)) throw ServiceException.notFound("Room");
+      var reading = repository.reading(roomId, month);
+      return new MeterResource(reading != null, !repository.issued(roomId, month),
+          reading, ServiceContext.hash(context.json(reading)));
+    });
+  }
+
+  /** Lưu số đo trước phát hành; khóa cùng phòng với luồng phát hành hóa đơn. */
+  public CommandResultDto saveMeter(Actor actor, RequestContext request, String roomId,
+      String month, MeterReadingWriteDto input) {
+    requireMonth(month);
+    context.text(roomId, 20, "roomId");
+    context.validate(input);
+    var reading = new InvoiceRepository.Reading(input.oldElectricity(), input.newElectricity(),
+        input.oldWater(), input.newWater());
+    requireValidReading(reading);
+    return context.write(actor, request, "meter/" + roomId + "/" + month, input,
+        CommandResultDto.class, () -> {
+          context.require(actor, "KETOAN", "KYTHUAT", "ADMIN");
+          if (!repository.roomExists(roomId)) throw ServiceException.notFound("Room");
+          repository.lockRoom(roomId);
+          if (repository.issued(roomId, month)) throw ServiceException.conflict("Cannot change readings after invoice issuance");
+          var current = repository.reading(roomId, month);
+          if (!ServiceContext.hash(context.json(current)).equals(input.revision()))
+            throw ServiceException.conflict("Readings changed; reload before editing");
+          repository.saveReading(roomId, month, reading, actor.accountId());
+          context.event(actor, request, "METER_READING_SAVED", roomId,
+              Map.of("month", month, "reading", reading));
+          return new CommandResultDto(roomId, "COMPLETED", 1L, request.requestId());
+        }, "KETOAN", "KYTHUAT", "ADMIN");
+  }
+
+  /** Danh sách chọn phòng của kế toán theo kỳ tháng hợp lệ. */
+  public List<InvoiceRepository.UnbilledRoom> unbilledRooms(Actor actor, String month) {
+    requireMonth(month);
     return context.transaction(() -> {
       context.require(actor, "KETOAN");
       return repository.unbilledRooms(month);
