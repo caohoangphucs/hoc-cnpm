@@ -27,6 +27,13 @@ public class RepairController {
                 actor, context, request.body(RepairDto.class)));
     }
 
+    /** Nhận đánh giá ưu tiên từ kỹ thuật viên đang phụ trách phiếu. */
+    public ServerResponse priority(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> repairs.priority(actor, context,
+                Integer.parseInt(request.pathVariable("id")),
+                request.body(vn.id.caohoangphuc.cnpm.api.dto.RepairPriorityDto.class)));
+    }
+
     /** Lists repairs visible to the authenticated student, technician, or administrator. */
     public ServerResponse list(ServerRequest request) throws Exception {
         return api.handle(request, (actor, context) -> repairs.list(actor,

@@ -5,7 +5,7 @@ import { TextField } from '@/shared/components/TextField'
 import { Feedback, NotesField, SelectField } from '@/shared/workflow/Workflow'
 import { useApiAction } from '@/shared/api/hooks'
 import { command } from '@/shared/api/protocol'
-import { parseCompletion, priorityLabels, repairPayload, type Repair, type SupplyLine, type Priority } from './model'
+import { parseCompletion, repairPayload, type Repair, type SupplyLine } from './model'
 export function RepairActionDialog({ repair, mode, onClose, onSave }: { repair: Repair; mode: 'schedule' | 'complete'; onClose: () => void; onSave: (message: string) => void }) {
   const action = useApiAction(), form = useId()
   const [note,setNote]=useState(''), [schedule,setSchedule]=useState(''), [warranty,setWarranty]=useState(''), [supplies,setSupplies]=useState<SupplyLine[]>([]), [errors,setErrors]=useState<Record<string,string>>({}), [shortage,setShortage]=useState<string[]>([])
@@ -25,7 +25,13 @@ export function RepairActionDialog({ repair, mode, onClose, onSave }: { repair: 
   </fieldset></form></Dialog>
 }
 export function ReportRepairDialog({onClose,onSave}:{onClose:()=>void;onSave:()=>void}) {
-  const action=useApiAction(), form=useId();const [title,setTitle]=useState(''),[description,setDescription]=useState(''),[priority,setPriority]=useState<Priority>('TRUNG_BINH'),[error,setError]=useState('')
-  async function submit(){if(!title.trim()||title.trim().length>1000||!description.trim()||description.trim().length>1000){setError('Nhập tiêu đề và mô tả từ 1 đến 1.000 ký tự.');return}setError('');const result=await action.run('repairs',{title:title.trim(),description:description.trim(),priority,fileIds:[]},command);if(result)onSave()}
-  return <Dialog title="Báo sự cố trong phòng" busy={action.busy} onClose={onClose} actions={<><Button variant="text" disabled={action.busy} onClick={onClose}>Hủy</Button><Button type="submit" form={form} pending={action.busy}>Gửi yêu cầu</Button></>}><Feedback error={action.error||error} /><form id={form} className="wl-form repair-form" noValidate onSubmit={e=>{e.preventDefault();void submit()}}><fieldset className="repair-fieldset" disabled={action.busy}><TextField label="Tiêu đề sự cố" value={title} maxLength={1000} required onChange={e=>setTitle(e.target.value)} /><NotesField label="Mô tả sự cố" value={description} required onChange={e=>setDescription(e.target.value)} /><SelectField label="Mức ưu tiên" value={priority} onChange={e=>setPriority(e.target.value as Priority)}>{Object.entries(priorityLabels).map(([v,l])=><option key={v} value={v}>{l}</option>)}</SelectField><p className="wl-note">Phiếu được gắn với phòng lưu trú của bạn. Chức năng đính kèm ảnh chưa sẵn sàng.</p></fieldset></form></Dialog>
+  const action=useApiAction(), form=useId();const [title,setTitle]=useState(''),[description,setDescription]=useState(''),[error,setError]=useState('')
+  async function submit(){if(!title.trim()||title.trim().length>1000||!description.trim()||description.trim().length>1000){setError('Nhập tiêu đề và mô tả từ 1 đến 1.000 ký tự.');return}setError('');const result=await action.run('repairs',{title:title.trim(),description:description.trim(),fileIds:[]},command);if(result)onSave()}
+  return <Dialog title="Báo sự cố trong phòng" busy={action.busy} onClose={onClose} actions={<><Button variant="text" disabled={action.busy} onClick={onClose}>Hủy</Button><Button type="submit" form={form} pending={action.busy}>Gửi yêu cầu</Button></>}><Feedback error={action.error||error} /><form id={form} className="wl-form repair-form" noValidate onSubmit={e=>{e.preventDefault();void submit()}}><fieldset className="repair-fieldset" disabled={action.busy}><TextField label="Tiêu đề sự cố" value={title} maxLength={1000} required onChange={e=>setTitle(e.target.value)} /><NotesField label="Mô tả sự cố" value={description} required onChange={e=>setDescription(e.target.value)} /><p className="wl-note">Kỹ thuật viên sẽ đánh giá mức ưu tiên khi tiếp nhận phiếu.</p><p className="wl-note">Phiếu được gắn với phòng lưu trú của bạn. Chức năng đính kèm ảnh chưa sẵn sàng.</p></fieldset></form></Dialog>
+}
+
+export function RepairPriorityDialog({repair,onClose,onSave}:{repair:Repair;onClose:()=>void;onSave:()=>void}) {
+  const [priority,setPriority]=useState(repair.priority), action=useApiAction()
+  async function save() { if (await action.run(`repairs/${repair.id}/priority`,{priority,version:repair.version},command,'PUT')) onSave() }
+  return <Dialog title={`Đánh giá ưu tiên SC-${repair.id}`} busy={action.busy} onClose={onClose} actions={<><Button variant="text" onClick={onClose} disabled={action.busy}>Hủy</Button><Button pending={action.busy} onClick={() => void save()}>Lưu đánh giá</Button></>}><Feedback error={action.error}/><SelectField label="Mức ưu tiên" value={priority} onChange={e=>setPriority(e.target.value as Repair['priority'])}>{['THAP','TRUNG_BINH','CAO','KHAN_CAP'].map((v,i)=><option key={v} value={v}>{['Thấp','Bình thường','Cao','Khẩn cấp'][i]}</option>)}</SelectField></Dialog>
 }

@@ -45,6 +45,14 @@ public class ApiSupport {
             if (result instanceof ServerResponse response) return response;
             return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(result);
         } catch (ServiceException exception) {
+            String field = switch (exception.getCode()) {
+                case "INVALID_VISITOR_NAME" -> "name";
+                case "INVALID_VISITOR_IDENTITY" -> "identity";
+                default -> null;
+            };
+            if (field != null) return ServerResponse.status(exception.getStatus()).contentType(MediaType.APPLICATION_JSON)
+                    .body(new ErrorDto(exception.getCode(), exception.getMessage(), requestId,
+                            Map.of(field, exception.getMessage())));
             return error(exception.getStatus(), exception.getCode(), exception.getMessage(), requestId);
         } catch (ConstraintViolationException exception) {
             var fields = exception.getConstraintViolations().stream().collect(

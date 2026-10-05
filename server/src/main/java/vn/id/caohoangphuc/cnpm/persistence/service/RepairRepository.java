@@ -23,6 +23,11 @@ public class RepairRepository {
 
   private final JdbcTemplate jdbc;
 
+  /** Lưu mức ưu tiên mới và tăng phiên bản, lịch sử do service ghi cùng transaction. */
+  public void priority(int id, String priority) {
+    jdbc.update("UPDATE yeu_cau_sua_chua SET mucdouutien=?,version=version+1 WHERE mayeucau=?", priority,id);
+  }
+
   /** Khởi tạo repository cho yêu cầu sửa chữa, phân công và xuất vật tư. */
   public RepairRepository(JdbcTemplate jdbc) {
     this.jdbc = jdbc;

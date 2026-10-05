@@ -19,7 +19,14 @@ public record VisitorDto(
     @NotBlank @Size(min = 1, max = 1000) String name,
     @NotBlank @Size(min = 1, max = 1000) String identity,
     @NotNull OffsetDateTime validFrom,
-    @NotNull OffsetDateTime validTo
+    @NotNull OffsetDateTime validTo,
+    IdentityType identityType
 ) {
+    public enum IdentityType { CCCD, CMND, PASSPORT }
 
+    /** Request cũ có thể bỏ loại giấy tờ, service suy luận theo định dạng. */
+    public VisitorDto(String hostStudentId, String name, String identity,
+            OffsetDateTime validFrom, OffsetDateTime validTo) {
+        this(hostStudentId,name,identity,validFrom,validTo,null);
+    }
 }

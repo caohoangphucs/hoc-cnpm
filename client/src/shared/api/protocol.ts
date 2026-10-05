@@ -33,7 +33,10 @@ export async function readJson<T>(response: Response, decode: (value: unknown) =
   const body: unknown = await response.json().catch(() => undefined)
   if (!response.ok) {
     const data = body && typeof body === 'object' ? body as Record<string, unknown> : {}
-    const message = data.code === 'ALREADY_REGISTERED' ? 'Bạn đã đăng ký hoạt động này. Xem phiếu tại Đăng ký của tôi.'
+    const message = data.code === 'INVALID_VISITOR_NAME' ? 'Họ tên khách phải có chữ, dài 2–100 ký tự.'
+      : data.code === 'INVALID_VISITOR_IDENTITY' ? 'Số giấy tờ không đúng định dạng loại đã chọn.'
+      : data.code === 'ENCRYPTION_UNAVAILABLE' ? 'Máy chủ chưa cấu hình mã hóa thông tin khách. Liên hệ Ban quản lý và thử lại sau.'
+      : data.code === 'ALREADY_REGISTERED' ? 'Bạn đã đăng ký hoạt động này. Xem phiếu tại Đăng ký của tôi.'
       : data.code === 'ACTIVITY_TIME_CONFLICT' ? 'Hoạt động trùng giờ với lịch bạn đã đăng ký. Xem Đăng ký của tôi để kiểm tra hoặc hủy lịch cũ.'
       : data.code === 'ACTIVITY_FULL' ? 'Hoạt động đã hết chỗ. Chọn hoạt động khác hoặc tải lại danh sách.'
       : data.code === 'ACTIVITY_CLOSED' ? 'Hoạt động đã đóng đăng ký hoặc đã bắt đầu.'
