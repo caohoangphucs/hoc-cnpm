@@ -155,6 +155,8 @@ class RemainingUseCasesApiBlackBoxIT {
     @Test
     void communityHistoryIsPersistentAndOwnedOverHttp() throws Exception {
         var student = login(STUDENT);
+        var sessionResponse = get(student, ApiRoutes.AUTH_SESSION);
+        assertEquals("21110001", json.readTree(sessionResponse.body()).path("studentId").asString());
         var response = get(student, ApiRoutes.MY_ACTIVITY_REGISTRATIONS);
         assertEquals(200, response.statusCode(), response.body());
         var tickets = json.readTree(response.body());

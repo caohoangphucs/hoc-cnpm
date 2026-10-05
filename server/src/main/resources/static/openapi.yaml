@@ -931,6 +931,7 @@ components:
         twoFactorVerified: {type: boolean}
         csrfToken: {type: string}
         idleExpiresAt: {type: string, format: date-time, nullable: true}
+        studentId: {type: string, nullable: true, description: MSSV của sinh viên đang đăng nhập}
     TwoFactorSetup:
       type: object
       properties:
