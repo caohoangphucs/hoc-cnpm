@@ -182,7 +182,7 @@ public class PaymentService {
       String providerRef,
       PaymentResourceDto session) {
     var created =
-        gateway.create(providerRef, BigDecimal.valueOf(session.amount()), request.requestId());
+        gateway.create(providerRef, BigDecimal.valueOf(session.amount()), request.requestId(), session.expiresAt().toInstant(), request.clientIp());
     requireSecurePaymentUrl(created);
 
     context.transaction(
@@ -289,7 +289,7 @@ public class PaymentService {
   private void requireCallbackAmount(
       PaymentRepository.Session session, PaymentGateway.Verified payment) {
     if (session.amount().compareTo(payment.amount()) != 0)
-      throw ServiceException.conflict("Callback amount does not match");
+      throw new ServiceException(409, "CALLBACK_AMOUNT_MISMATCH", "Callback amount does not match");
   }
 
   /** Không để sinh viên đọc hoặc thanh toán hóa đơn của người khác. */

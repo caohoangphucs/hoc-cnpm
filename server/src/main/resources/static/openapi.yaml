@@ -17,6 +17,38 @@ tags:
   - name: Discipline
   - name: Community
 paths:
+  /api/v1/payments/vnpay/ipn:
+    get:
+      tags: [Payments]
+      summary: VNPAY IPN xác nhận thanh toán (chữ ký provider)
+      security: []
+      parameters:
+        - {name: vnp_TmnCode, in: query, required: true, schema: {type: string}}
+        - {name: vnp_TxnRef, in: query, required: true, schema: {type: string, format: uuid}}
+        - {name: vnp_Amount, in: query, required: true, schema: {type: string}, description: Số tiền VND nhân 100}
+        - {name: vnp_ResponseCode, in: query, required: true, schema: {type: string}}
+        - {name: vnp_TransactionStatus, in: query, required: true, schema: {type: string}}
+        - {name: vnp_TransactionNo, in: query, required: true, schema: {type: string}}
+        - {name: vnp_SecureHash, in: query, required: true, schema: {type: string}, description: HMAC-SHA512 toàn bộ tham số vnp_ theo giao thức}
+      responses:
+        '200':
+          description: Phản hồi giao thức VNPAY; không đồng nghĩa mọi yêu cầu thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  RspCode: {type: string, enum: ['00', '01', '04', '97', '99']}
+                  Message: {type: string}
+  /api/v1/payments/vnpay/return:
+    get:
+      tags: [Payments]
+      summary: VNPAY ReturnURL chỉ xác minh và chuyển về trang trạng thái, không cập nhật công nợ
+      security: []
+      responses:
+        '303': {description: Chuyển tới trang sinh viên với UUID phiên thanh toán}
+        '400': {description: ReturnURL thiếu tham số hoặc chữ ký sai}
+
   /api/v1/rooms/{id}/meter-readings:
     parameters:
       - {name: id, in: path, required: true, schema: {type: string}, example: D-102}
