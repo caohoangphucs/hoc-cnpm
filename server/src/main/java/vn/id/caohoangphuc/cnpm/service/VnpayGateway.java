@@ -70,7 +70,7 @@ public class VnpayGateway implements PaymentGateway {
     var fields = new TreeMap<String, String>();
     fields.put("vnp_Version", "2.1.0"); fields.put("vnp_Command", "pay");
     fields.put("vnp_TmnCode", terminal); fields.put("vnp_Amount", scaled);
-    fields.put("vnp_CurrCode", "VND"); fields.put("vnp_TxnRef", reference);
+    fields.put("vnp_CurrCode", "VND"); fields.put("vnp_TxnRef", reference.replace("-", ""));
     fields.put("vnp_OrderInfo", "Thanh toan hoa don KTX " + reference.replace("-", ""));
     fields.put("vnp_OrderType", "other"); fields.put("vnp_Locale", "vn");
     fields.put("vnp_ReturnUrl", returnUrl.toString()); fields.put("vnp_IpAddr", clientIp);
@@ -95,7 +95,11 @@ public class VnpayGateway implements PaymentGateway {
         || !terminal.equals(fields.get("vnp_TmnCode")))
       throw new ServiceException(400, "VNPAY_INVALID_SIGNATURE", "Invalid VNPAY signature or merchant");
     String reference = required(fields, "vnp_TxnRef");
-    UUID.fromString(reference);
+    // TxnRef gửi 32 ký tự hex; chuẩn hóa về UUID đang lưu trong phiên nội bộ.
+    if (reference.matches("[0-9a-fA-F]{32}"))
+      reference = reference.substring(0, 8) + "-" + reference.substring(8, 12) + "-"
+          + reference.substring(12, 16) + "-" + reference.substring(16, 20) + "-" + reference.substring(20);
+    reference = UUID.fromString(reference).toString();
     String amount = required(fields, "vnp_Amount");
     if (!amount.matches("[0-9]{1,12}")) throw ServiceException.invalid("Invalid VNPAY amount");
     String response = required(fields, "vnp_ResponseCode");
