@@ -1,5 +1,6 @@
 import { BookingBedPicker } from './BookingBedPicker'
-import { useState } from 'react'
+import { Dialog } from '@/shared/components/Dialog'
+import { useId, useState } from 'react'
 import { Button } from '@/shared/components/Button'
 import { Feedback, SelectField } from '@/shared/workflow/Workflow'
 import { useAuth } from '@/features/auth/context'
@@ -10,7 +11,8 @@ import { EvidenceFiles } from './EvidenceFiles'
 import { evidenceKinds, evidenceLabels, parseEvidence, parseWindows, uploadProblem, type EvidenceFile, type EvidenceKind } from './evidence'
 
 /** Gửi hồ sơ với đợt đang mở, giường đã chọn và ba ảnh thực sự tải lên. */
-export function BookingForm({ bedId, onSelectBed, onComplete }: { onSelectBed: (id: string | null) => void; bedId: string | null; onComplete: () => void }) {
+export function BookingForm({ bedId, onSelectBed, onComplete, onClose }: { onClose: () => void; onSelectBed: (id: string | null) => void; bedId: string | null; onComplete: () => void }) {
+  const formId = useId()
   const windows = useResource('booking-windows', parseWindows), action = useApiAction(), auth = useAuth()
   const [selectedWindow, setSelectedWindow] = useState(''), [accepted, setAccepted] = useState(false)
   const [files, setFiles] = useState<Partial<Record<EvidenceKind, EvidenceFile>>>({})
@@ -44,8 +46,9 @@ export function BookingForm({ bedId, onSelectBed, onComplete }: { onSelectBed: (
     if (result) onComplete()
   }
 
-  return <section className="wl-card wl-panel booking-registration" id="booking-form">
-    <h2>Đăng ký phòng</h2>
+  return <Dialog title="Nộp hồ sơ đăng ký phòng" className="booking-dialog" busy={uploading || action.busy} onClose={onClose} actions={<><Button variant="text" disabled={uploading || action.busy} onClick={onClose}>Đóng</Button><Button type="submit" form={formId} pending={action.busy} disabled={!ready}>Gửi hồ sơ đăng ký</Button></>}>
+    <form id={formId} className="booking-registration" onSubmit={event => { event.preventDefault(); void submit() }}>
+    <ol className="booking-progress" aria-label="Các bước nộp hồ sơ"><li data-complete={!!bedId}><span>1</span>Chọn giường</li><li data-complete={fileIds.length === 3}><span>2</span>Minh chứng</li><li data-complete={accepted}><span>3</span>Xác nhận</li></ol>
     <p>Hoàn thành ba bước để gửi hồ sơ. Mỗi ảnh PNG/JPEG có dung lượng tối đa 5 MiB.</p>
     <Feedback error={windows.error || uploadError || action.error} />
     <h3>1. Chọn phòng & giường</h3>
@@ -58,6 +61,6 @@ export function BookingForm({ bedId, onSelectBed, onComplete }: { onSelectBed: (
     <h3>3. Xác nhận & gửi hồ sơ</h3>
     {!bedId && <p className="wl-note">Chọn một giường trống ở bước 1 để tiếp tục.</p>}
     <label className="wl-check"><input type="checkbox" checked={accepted} onChange={event => setAccepted(event.target.checked)} disabled={uploading || action.busy} />Tôi xác nhận thông tin hồ sơ và đồng ý nội quy ký túc xá.</label>
-    <Button pending={action.busy} disabled={!ready} onClick={() => void submit()}>Gửi hồ sơ đăng ký</Button>
-  </section>
+    </form>
+  </Dialog>
 }
