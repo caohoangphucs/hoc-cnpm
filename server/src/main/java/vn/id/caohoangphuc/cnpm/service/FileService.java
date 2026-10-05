@@ -80,7 +80,8 @@ public class FileService {
         var file = repository.find(id);
         if (file == null || (file.ownerId()!=account.id()
                 && !(account.role().equals("ADMIN") && repository.attachedToBooking(id))
-                && !repository.readableRepair(id, account.id(), account.role())))
+                && !repository.readableRepair(id, account.id(), account.role())
+                && !repository.readableDiscipline(id, account.id(), account.role())))
             throw ServiceException.notFound("File");
         return file;
     }

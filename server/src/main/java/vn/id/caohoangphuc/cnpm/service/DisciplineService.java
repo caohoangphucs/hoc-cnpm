@@ -183,7 +183,7 @@ public class DisciplineService {
                         d.decision(),
                         d.reason(),
                         (long) d.actorId(),
-                        java.time.OffsetDateTime.ofInstant(d.createdAt(), ServiceContext.ZONE)))
+                        java.time.OffsetDateTime.ofInstant(d.createdAt(), ServiceContext.ZONE), d.evidenceFileId()))
             .toList();
     return new ViolationResourceDto(
         (long) v.id(),

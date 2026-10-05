@@ -530,6 +530,42 @@ class RemainingUseCasesApiBlackBoxIT {
         }
     }
 
+    /** Upload ảnh thật, xử lý hồ sơ rồi đọc lại minh chứng theo quyền qua HTTP. */
+    @Test
+    void disciplineDecisionUploadsAndReadsPrivateEvidenceOverHttp() throws Exception {
+        var admin=login("admin"); var student=login(STUDENT); var other=login("sv002");
+        int id=jdbc.queryForObject("INSERT INTO vi_pham(masinhvien,noidungvipham,mucdo,trangthai,ngayvipham,mahocky) VALUES('21110001','API evidence decision','LOW','CHUA_XU_LY',now(),'HK1-2026') RETURNING mavipham",Integer.class);
+        String fileId=null;
+        try {
+            var image=new java.awt.image.BufferedImage(2,2,java.awt.image.BufferedImage.TYPE_INT_RGB);
+            var png=new java.io.ByteArrayOutputStream(); javax.imageio.ImageIO.write(image,"png",png);
+            String boundary="test-"+UUID.randomUUID(); var multipart=new java.io.ByteArrayOutputStream();
+            multipart.write(("--"+boundary+"\r\nContent-Disposition: form-data; name=\"kind\"\r\n\r\nEVIDENCE\r\n--"+boundary+"\r\nContent-Disposition: form-data; name=\"file\"; filename=\"evidence.png\"\r\nContent-Type: image/png\r\n\r\n").getBytes(StandardCharsets.UTF_8));
+            multipart.write(png.toByteArray()); multipart.write(("\r\n--"+boundary+"--\r\n").getBytes(StandardCharsets.UTF_8));
+            var upload=send(admin.client(),HttpRequest.newBuilder(uri("/api/v1/files"))
+                    .header("X-CSRF-TOKEN",admin.csrfToken()).header("Content-Type","multipart/form-data; boundary="+boundary)
+                    .POST(HttpRequest.BodyPublishers.ofByteArray(multipart.toByteArray())).build());
+            assertEquals(200,upload.statusCode(),upload.body());
+            fileId=json.readTree(upload.body()).path("id").asString();
+            assertEquals(404,get(student,"/api/v1/files/"+fileId).statusCode());
+            String body=json.writeValueAsString(java.util.Map.of("violationIds",java.util.List.of(id),"decision","Nhắc nhở","reason","Đã xác minh ảnh","evidenceFileId",fileId,"versions",java.util.Map.of(Integer.toString(id),1)));
+            assertEquals(403,post(student,ApiRoutes.VIOLATION_DECISIONS,body).statusCode());
+            var saved=post(admin,ApiRoutes.VIOLATION_DECISIONS,body); assertEquals(200,saved.statusCode(),saved.body());
+            var detail=json.readTree(get(admin,"/api/v1/violations/"+id).body());
+            assertEquals("DA_XU_LY",detail.path("status").asString());
+            assertEquals(fileId,detail.path("decisions").get(0).path("evidenceFileId").asString());
+            assertEquals(200,get(student,"/api/v1/files/"+fileId).statusCode());
+            assertEquals(404,get(other,"/api/v1/files/"+fileId).statusCode());
+            var content=admin.client().send(HttpRequest.newBuilder(uri("/api/v1/files/"+fileId+"/content")).GET().build(),HttpResponse.BodyHandlers.ofByteArray());
+            assertEquals(200,content.statusCode()); assertTrue(javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(content.body()))!=null);
+            assertEquals(409,post(admin,ApiRoutes.VIOLATION_DECISIONS,body).statusCode());
+        } finally {
+            jdbc.update("DELETE FROM svc_discipline_decision WHERE violation_id=?",id);
+            jdbc.update("DELETE FROM vi_pham WHERE mavipham=?",id);
+            if(fileId!=null) { jdbc.update("DELETE FROM svc_file_content WHERE file_id=?",UUID.fromString(fileId)); jdbc.update("DELETE FROM svc_file WHERE id=?",UUID.fromString(fileId)); }
+        }
+    }
+
     /** #52: contract 1.000 ký tự và tiền tố REVIEW không gây lỗi SQL; vượt contract trả 422. */
     @Test
     void disciplineLongDecisionAndAppealReasonsOverHttp() throws Exception {

@@ -452,3 +452,11 @@ Mã khai báo khách trên giao diện là `KT-{id}` của phiếu. Bảo vệ c
 - Cột hình thức xử lý vi phạm dùng TEXT; contract quyết định/lý do vẫn tối đa 1.000 ký tự. Khi chấp nhận khiếu nại, revision giữ toàn bộ `REVIEW: ` + lý do mà không bị giới hạn 255 ký tự. Migration chỉ mở rộng cột, giữ nguyên hồ sơ và lịch sử.
 
 - BR-13/issue #55: `semesterCount` đếm hồ sơ `DA_XU_LY` trong đúng học kỳ của hồ sơ đang đọc; `CHUA_XU_LY` không tính. Ngưỡng 3 chỉ tạo cảnh báo rà soát, không tự khóa tài khoản hoặc chấm dứt lưu trú. UI gọi rõ “Số lần đã xử lý”; ghi nhận hồ sơ chưa đồng nghĩa đã xác nhận bằng quyết định.
+
+### Minh chứng quyết định kỷ luật
+
+Admin tải ảnh PNG/JPEG (tối đa 5 MiB) bằng `POST /api/v1/files`, multipart gồm `kind=EVIDENCE` và `file`.
+Sau đó gửi `POST /api/v1/violations/decisions` với `violationIds`, `decision`, `reason`, `evidenceFileId` và `versions` theo ID hồ sơ.
+API kiểm tra hồ sơ còn chờ, version hiện tại và quyền sở hữu ảnh trước khi gắn ảnh, ghi quyết định cùng transaction.
+`GET /api/v1/violations/{id}` trả `decisions[].evidenceFileId`; metadata và nội dung ảnh đọc tại `GET /api/v1/files/{id}` và `/content`.
+Ảnh đã gắn được đọc bởi admin hoặc sinh viên thuộc quyết định; người khác nhận 404. Ảnh nháp chỉ chủ tệp được đọc.
