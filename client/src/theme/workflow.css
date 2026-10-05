@@ -1114,3 +1114,16 @@
 .evidence-preview img { height: 180px; object-fit: contain; background: var(--md-sys-color-surface-container-low); }
 .evidence-grid { align-items: start; }
 @media (max-width: 640px) { .booking-upload-grid { grid-template-columns: 1fr; } }
+
+/* Modal nộp hồ sơ có vùng cuộn riêng và nút gửi cố định ở chân hộp thoại. */
+.booking-dialog { width: min(880px, calc(100vw - 32px)); max-width: 880px; }
+.booking-dialog .dialog-body { padding: 24px; }
+.booking-launch { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 24px; margin: 20px 0; border-radius: 20px; background: var(--md-sys-color-surface-container-low); }
+.booking-launch h2 { margin: 0 0 8px; }
+.booking-launch p { margin: 0; }
+.booking-progress { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 0; margin: 0; list-style: none; }
+.booking-progress li { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 12px; background: var(--md-sys-color-surface-container); font-weight: 600; }
+.booking-progress li span { display: grid; place-items: center; width: 28px; height: 28px; flex-shrink: 0; border-radius: 50%; background: var(--md-sys-color-surface-container-highest); }
+.booking-progress li[data-complete="true"] { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
+.booking-registration h3 { padding-top: 16px; border-top: 1px solid var(--md-sys-color-outline-variant); }
+@media (max-width: 640px) { .booking-launch { flex-direction: column; align-items: stretch; } .booking-progress { gap: 6px; } .booking-progress li { flex-direction: column; padding: 10px 4px; font-size: 12px; } .booking-dialog .dialog-body { padding: 16px; } }
