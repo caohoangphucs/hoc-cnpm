@@ -137,6 +137,18 @@ LEFT JOIN vi_pham v ON v.maravao=r.maravao WHERE e.event_id=?
         java.sql.Timestamp.from(at));
   }
 
+  /** Chỉ đọc vi phạm đúng ID và đúng sinh viên của lượt cổng đã được kiểm tra quyền. */
+  public EntryResourceDto.GateViolation violation(Integer id, String student) {
+    if (id == null) return null;
+    var rows = jdbc.query(
+        "SELECT mavipham,noidungvipham,mucdo,trangthai,ngayvipham FROM vi_pham WHERE mavipham=? AND masinhvien=?",
+        (r, n) -> new EntryResourceDto.GateViolation(r.getInt("mavipham"),
+            r.getString("noidungvipham"), r.getString("mucdo"), r.getString("trangthai"),
+            r.getObject("ngayvipham", LocalDateTime.class).atZone(ServiceContext.ZONE).toOffsetDateTime()),
+        id, student);
+    return rows.isEmpty() ? null : rows.get(0);
+  }
+
   /** Lưu dấu vết xử lý sự kiện thiết bị và trạng thái barrier ban đầu. */
   public void gateEvent(
       UUID eventId, int entryId, String device, String hash, int actor, String status) {

@@ -77,7 +77,8 @@ public class GateService {
         throw ServiceException.notFound("Entry");
       return new EntryResourceDto(event.eventId(), event.studentId(), event.type(),
           java.time.OffsetDateTime.ofInstant(event.time(), ServiceContext.ZONE),
-          event.barrierStatus(), event.violationId());
+          event.barrierStatus(), event.violationId(),
+          repository.violation(event.violationId(), event.studentId()));
     });
   }
 
@@ -133,7 +134,7 @@ public class GateService {
     if (late)
       violation =
           repository.lateViolation(
-              card.studentId(), id, "Late return at " + local.toLocalTime(), now);
+              card.studentId(), id, "Về ký túc xá sau giờ quy định lúc " + local.toLocalTime(), now);
     repository.gateEvent(
         input.eventId(), id, input.deviceId(), payloadHash, actor.accountId(), "PENDING");
 
@@ -150,7 +151,8 @@ public class GateService {
         input.type().name(),
         java.time.OffsetDateTime.ofInstant(now, ServiceContext.ZONE),
         "PENDING",
-        violation);
+        violation,
+        repository.violation(violation, card.studentId()));
   }
 
   /** Sinh viên khai báo khách đến thăm trong một khoảng thời gian. */
