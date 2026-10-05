@@ -399,3 +399,13 @@ Hồ sơ trả về từ `GET /api/v1/bookings` và `GET /api/v1/bookings/{id}` 
 - `GET /api/v1/rooms/{id}/meter-readings?month=2026-11`: KETOAN/KYTHUAT/ADMIN; trả `{exists, editable, reading, revision}`. `reading` là null khi chưa nhập; nếu có gồm `oldElectricity`, `newElectricity`, `oldWater`, `newWater`.
 - `PUT` cùng URL: body `{oldElectricity:100,newElectricity:140,oldWater:20,newWater:25,revision:"<revision từ GET>"}`; cần CSRF, Idempotency-Key và X-Request-Id. Trả CommandResult. Mỗi số nguyên trong [0,2147483647], số mới >= cũ. 409 khi đã phát hành hoặc revision cũ; 422 khi nhập sai. Backend ghi người cập nhật và audit, không sửa hóa đơn cũ.
 - UI: tính nháp → Nhập / sửa chỉ số → Lưu & tính lại → đối chiếu → phát hành.
+
+### VNPAY Sandbox (UC-08)
+
+- `POST /api/v1/payment-sessions`: sinh viên đăng nhập, CSRF và headers idempotency như trước, body `{"invoiceIds":[900001],"gateway":"VNPAY"}`. Backend tính số còn nợ, tạo phiên hạn 15 phút và trả `payUrl` ký HMAC-SHA512; không lấy số tiền từ frontend.
+- `GET /api/v1/payments/vnpay/ipn`: endpoint công khai cho VNPAY. Kiểm tra chữ ký, terminal, TxnRef, tiền, trạng thái, xử lý lặp và đối soát hóa đơn. JSON đúng giao thức `{RspCode, Message}`; `00` đã nhận, `97` chữ ký sai, `01` không có phiên, `04` tiền không khớp, `99` lỗi cần retry. ReturnURL không thay thế IPN.
+- `GET /api/v1/payments/vnpay/return`: chỉ xác minh chữ ký và redirect tới `/student/invoices?paymentSession=<uuid>`. Không cộng tiền tại đây. Sinh viên đọc kết quả từ API phiên của chính mình.
+- Cấu hình `VNPAY_ENABLED`, `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`, `VNPAY_URL`, `VNPAY_RETURN_URL` qua environment. Không commit khóa. Server demo đặt chúng trong runtime.env, chỉ chủ máy đọc.
+- Đăng ký IPN URL `https://cnpm.caohoangphuc.id.vn/api/v1/payments/vnpay/ipn` với VNPAY. Return URL: `https://cnpm.caohoangphuc.id.vn/api/v1/payments/vnpay/return`. Localhost không nhận IPN Internet; dùng domain HTTPS cho luồng đầy đủ.
+- Test tay: demo_resident_m → Hóa đơn 900001 → VNPAY → Tạo phiên → Mở VNPAY; dùng thẻ test của VNPAY; quay về kiểm tra trạng thái và công nợ. Chỉ `SUCCESS` từ IPN mới xác nhận đã trả. `NEEDS_REVIEW` cần kế toán đối soát.
+- Tài liệu giao thức: https://sandbox.vnpayment.vn/apis/docs/thanh-toan-pay/pay.html . Không tự động thực hiện giao dịch ngân hàng thật.

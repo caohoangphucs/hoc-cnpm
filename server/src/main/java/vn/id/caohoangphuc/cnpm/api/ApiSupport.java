@@ -81,7 +81,7 @@ public class ApiSupport {
     /** Uses caller idempotency headers when supplied and creates safe defaults otherwise. */
     private RequestContext requestContext(ServerRequest request, UUID requestId) {
         String key = request.headers().firstHeader("Idempotency-Key");
-        return new RequestContext(requestId, key == null ? UUID.randomUUID() : UUID.fromString(key));
+        return new RequestContext(requestId, key == null ? UUID.randomUUID() : UUID.fromString(key), request.servletRequest().getRemoteAddr());
     }
 
     /** Reads a supplied request ID or generates one for this request. */

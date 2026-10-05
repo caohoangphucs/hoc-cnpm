@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { Button } from '@/shared/components/Button'
 import { Dialog } from '@/shared/components/Dialog'
 import { useApiAction, useResource } from '@/shared/api/hooks'
@@ -11,7 +12,10 @@ import { parsePayment, parsePayments, paymentLabels, type Payment } from './api'
 import { useClock } from '@/shared/workflow/hooks'
 
 export function PaymentsPage() {
-  const [section, setSection] = useState('invoices'), [invoice, setInvoice] = useState<Invoice | null>(null), [gateway, setGateway] = useState('VNPAY'), [receipt, setReceipt] = useState<string | null>(null)
+  const [params] = useSearchParams()
+  const returnedSession = params.get('paymentSession')
+  const initialSession = returnedSession && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(returnedSession) ? returnedSession : null
+  const [section, setSection] = useState(initialSession ? 'sessions' : 'invoices'), [invoice, setInvoice] = useState<Invoice | null>(null), [gateway, setGateway] = useState('VNPAY'), [receipt, setReceipt] = useState<string | null>(initialSession)
   const action = useApiAction()
   async function create() {
     if (!invoice) return
@@ -19,7 +23,7 @@ export function PaymentsPage() {
     if (result) { setReceipt(result.id); setInvoice(null); setSection('sessions') }
   }
   return <><div className="wl-segments"><Button variant="outlined" disabled={action.busy} aria-pressed={section === 'invoices'} onClick={() => setSection('invoices')}>Hóa đơn của tôi</Button><Button variant="outlined" disabled={action.busy} aria-pressed={section === 'sessions'} onClick={() => setSection('sessions')}>Phiên thanh toán</Button></div>{section === 'invoices' ? <InvoiceList onSelect={r => { action.setError(''); setInvoice(r) }} /> : <PaymentSessions />}
-    {invoice && <Dialog title={`Thanh toán HĐ-${invoice.id}`} onClose={() => setInvoice(null)} busy={action.busy} actions={<><Button variant="text" onClick={() => setInvoice(null)} disabled={action.busy}>Quay lại</Button><Button pending={action.busy} onClick={() => void create()}>Tạo phiên thanh toán</Button></>}><Facts items={[[ 'Phòng', invoice.roomId ], ['Tháng', invoice.month ], ['Còn phải đóng', money(invoice.balance) ]]} /><SelectField label="Cổng thanh toán" value={gateway} onChange={e => setGateway(e.target.value)} disabled={action.busy}><option value="VNPAY">VNPAY</option><option value="MOMO">MoMo</option></SelectField><p className="wl-note">Hệ thống kiểm tra lại số tiền trước khi tạo phiên. Chỉ mở cổng thanh toán sau khi nhận được liên kết hợp lệ.</p><Feedback error={action.error} /></Dialog>}
+    {invoice && <Dialog title={`Thanh toán HĐ-${invoice.id}`} onClose={() => setInvoice(null)} busy={action.busy} actions={<><Button variant="text" onClick={() => setInvoice(null)} disabled={action.busy}>Quay lại</Button><Button pending={action.busy} onClick={() => void create()}>Tạo phiên thanh toán</Button></>}><Facts items={[[ 'Phòng', invoice.roomId ], ['Tháng', invoice.month ], ['Còn phải đóng', money(invoice.balance) ]]} /><SelectField label="Cổng thanh toán" value={gateway} onChange={e => setGateway(e.target.value)} disabled={action.busy}><option value="VNPAY">VNPAY</option></SelectField><p className="wl-note">Hệ thống kiểm tra lại số tiền trước khi tạo phiên. Chỉ mở cổng thanh toán sau khi nhận được liên kết hợp lệ.</p><Feedback error={action.error} /></Dialog>}
     {receipt && <PaymentDetail key={receipt} id={receipt} onClose={() => setReceipt(null)} />}
   </>
 }

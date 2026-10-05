@@ -22,5 +22,11 @@ public interface PaymentGateway {
 
   Created create(String providerRef, BigDecimal amount, UUID requestId);
 
+  /** Adapter có thể dùng thêm thời hạn phiên và IP của người thanh toán. */
+  default Created create(String providerRef, BigDecimal amount, UUID requestId,
+      java.time.Instant expiresAt, String clientIp) {
+    return create(providerRef, amount, requestId);
+  }
+
   Verified verify(Map<String, String> callback);
 }
