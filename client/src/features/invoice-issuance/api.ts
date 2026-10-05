@@ -12,3 +12,6 @@ export type Draft = { id: string; version: number; month: string; rooms: DraftRo
 export const draftWarningLabels: Record<string, string> = { MISSING_METER: 'Thiếu chỉ số điện nước', MISSING_PRICE: 'Thiếu biểu giá đã duyệt', ALREADY_ISSUED: 'Đã phát hành hóa đơn' }
 export function parseDraft(value: unknown): Draft { const v = object(value); return { id: text(v.id), version: integer(v.version, 1), month: text(v.month), inputHash: text(v.inputHash), rooms: list(v.rooms, item => { const r = object(item); return { roomId: text(r.roomId), oldElectricity: integer(r.oldElectricity), newElectricity: integer(r.newElectricity), oldWater: integer(r.oldWater), newWater: integer(r.newWater), electricityPrice: integer(r.electricityPrice), waterPrice: integer(r.waterPrice), roomPrice: integer(r.roomPrice), discount: integer(r.discount), extras: integer(r.extras), total: integer(r.total), warnings: list(r.warnings, text) } }) } }
 export const parseIssue = (value: unknown) => list(value, item => { const v = object(item); return { roomId: text(v.roomId), status: text(v.status), invoiceId: nullableText(v.invoiceId) } })
+
+/** Phòng chưa phát hành trong tháng đã chọn. */
+export const parseUnbilledRooms = (value: unknown) => list(value, item => { const room = object(item); return { id: text(room.id), buildingId: text(room.buildingId), number: text(room.number) } })

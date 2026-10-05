@@ -1127,3 +1127,10 @@
 .booking-progress li[data-complete="true"] { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
 .booking-registration h3 { padding-top: 16px; border-top: 1px solid var(--md-sys-color-outline-variant); }
 @media (max-width: 640px) { .booking-launch { flex-direction: column; align-items: stretch; } .booking-progress { gap: 6px; } .booking-progress li { flex-direction: column; padding: 10px 4px; font-size: 12px; } .booking-dialog .dialog-body { padding: 16px; } }
+
+/* Chọn phòng chưa phát hành hóa đơn theo tháng, thay cho nhập mã thủ công. */
+.invoice-room-picker { display: grid; gap: 16px; }
+.invoice-room-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; max-height: 360px; overflow-y: auto; padding: 4px; }
+.invoice-room-option { display: flex; align-items: center; gap: 12px; padding: 16px; border: 1px solid var(--md-sys-color-outline-variant); border-radius: 16px; cursor: pointer; }
+.invoice-room-option:has(input:checked) { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); border-color: var(--md-sys-color-primary); }
+.invoice-room-option small { display: block; margin-top: 4px; }

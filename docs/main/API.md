@@ -391,3 +391,5 @@ curl -b cookies.txt -H 'X-CSRF-TOKEN: TOKEN_SAU_DANG_NHAP'   -F 'kind=CCCD_FRONT
 Sau khi tải đủ ba ảnh, gửi `POST /bookings` với `bedId`, `windowId` lấy từ `/booking-windows`, ba `fileIds` nhận từ upload và `acceptedTerms: true`; kèm `Idempotency-Key` UUID. Backend kiểm tra owner/kind/DRAFT/expiry và chuyển tệp sang ATTACHED trong cùng transaction tạo đơn. Tệp seed giữ nguyên ID nhưng được bổ sung PNG tổng hợp khi app khởi động. Quyền admin xem tệp dựa trên hồ sơ đã gắn; tệp nháp của người khác vẫn trả 404.
 
 Hồ sơ trả về từ `GET /api/v1/bookings` và `GET /api/v1/bookings/{id}` có thêm `roomId`: mã phòng lấy từ giường đăng ký trong database. Sơ đồ xét duyệt đọc `GET /api/v1/rooms/{roomId}/beds`, không tự tạo giường hoặc tên người ở. Quyết định duyệt giữ nguyên `bedId` của hồ sơ.
+
+`GET /api/v1/invoices/unbilled-rooms?month=2026-11` (KETOAN): trả mảng `{id, buildingId, number}` của phòng chưa có hóa đơn trong tháng. UI dùng danh sách này để tích chọn tối đa 100 phòng thay cho nhập mã. Phòng thiếu chỉ số/giá vẫn hiển thị, bản nháp kiểm tra dữ liệu trước khi phát hành.
