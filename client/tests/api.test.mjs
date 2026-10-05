@@ -24,3 +24,8 @@ test('datetime-local is converted to Vietnam time without device timezone or dat
   assert.equal(vietnamTime('2026-02-30T08:30'), undefined)
   assert.equal(vietnamTime('2026-12-01T25:30'), undefined)
 })
+test('visitor gate errors explain approval and visiting time separately', async () => {
+  for (const [code, text] of [['VISITOR_NOT_APPROVED', 'chưa được duyệt'], ['VISITOR_NOT_STARTED', 'Chưa đến'], ['VISITOR_EXPIRED', 'hết hạn']]) {
+    await assert.rejects(readJson(new Response(JSON.stringify({ code }), { status: 409 }), command), e => e.code === code && e.message.includes(text))
+  }
+})
