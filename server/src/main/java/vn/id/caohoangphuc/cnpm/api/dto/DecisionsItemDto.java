@@ -20,7 +20,8 @@ public record DecisionsItemDto(
     @NotBlank String decision,
     @NotBlank String reason,
     @NotNull @DecimalMin("0") Long actorId,
-    @NotNull OffsetDateTime createdAt
+    @NotNull OffsetDateTime createdAt,
+    UUID evidenceFileId
 ) {
 
 }
