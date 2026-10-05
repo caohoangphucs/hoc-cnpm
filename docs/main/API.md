@@ -417,3 +417,5 @@ Hồ sơ trả về từ `GET /api/v1/bookings` và `GET /api/v1/bookings/{id}` 
 - Lỗi đăng ký công ích trả 409 với code ALREADY_REGISTERED, ACTIVITY_TIME_CONFLICT, ACTIVITY_FULL hoặc ACTIVITY_CLOSED để client giải thích đúng điều kiện chặn. Đăng ký hoạt động khác không trùng giờ vẫn được phép.
 
 Session/login/2FA response có thêm `studentId` (MSSV của tài khoản SINHVIEN; null với vai trò khác). Form khai báo khách dùng MSSV này, không cho chọn người tiếp đón khác. Backend vẫn kiểm tra quyền sở hữu khi nhận khai báo.
+
+Khóa thông tin khách `KTX_PERSONAL_DATA_KEY` phải là 32 byte được mã hóa Base64 (`openssl rand -base64 32`). Production lưu một lần trong runtime.env, không đổi hoặc sinh lại khi deploy/reset database. Script deploy kiểm tra khóa trước khi thay container. Compose local có khóa demo mặc định chỉ dành cho môi trường phát triển.

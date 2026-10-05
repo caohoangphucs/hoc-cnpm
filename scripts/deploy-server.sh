@@ -20,6 +20,15 @@ awk -F= '$1 == "TOTP_ENCRYPTION_KEY" { count++; key_length = length($2) }
   echo 'TOTP_ENCRYPTION_KEY must be set once and contain at least 32 characters in runtime.env' >&2
   exit 1
 }
+# Khóa AES-256 cho khách thăm phải tồn tại ổn định qua mọi lần deploy.
+# Chỉ kiểm tra định dạng; tuyệt đối không in giá trị khóa vào log CI.
+awk '$0 ~ /^KTX_PERSONAL_DATA_KEY=/ {
+  count++; value=substr($0,23)
+  if (length(value)==44 && value ~ /^[A-Za-z0-9+\/]+=$/) valid++
+} END { if (count != 1 || valid != 1) exit 1 }' "$DEPLOY_DIR/runtime.env" || {
+  echo 'KTX_PERSONAL_DATA_KEY must be a persistent Base64-encoded 32-byte key in runtime.env' >&2
+  exit 1
+}
 exec 9> "$DEPLOY_DIR/deploy.lock"
 flock -n 9 || { echo 'Another deployment is active'; exit 1; }
 for image in "$server_image" "$client_image"; do
