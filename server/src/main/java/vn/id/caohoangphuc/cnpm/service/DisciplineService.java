@@ -129,8 +129,8 @@ public class DisciplineService {
     var ids = input.violationIds().stream().sorted().toList();
     for (String student : repository.studentIds(ids)) repository.lockStudent(student);
     var violations = repository.violations(ids, true);
-    context.files(List.of(input.evidenceFileId()), actor.accountId(), "EVIDENCE");
     validateDecisionBatch(ids, violations, input.versions());
+    context.files(List.of(input.evidenceFileId()), actor.accountId(), "EVIDENCE");
 
     for (var violation : violations) applyDecision(actor, request, input, violation);
 
