@@ -534,7 +534,7 @@ class RemainingUseCasesApiBlackBoxIT {
     @Test
     void disciplineDecisionUploadsAndReadsPrivateEvidenceOverHttp() throws Exception {
         var admin=login("admin"); var student=login(STUDENT); var other=login("sv002");
-        int id=jdbc.queryForObject("INSERT INTO vi_pham(masinhvien,noidungvipham,mucdo,trangthai,ngayvipham,mahocky) VALUES('21110001','API evidence decision','LOW','CHUA_XU_LY',now(),'HK1-2026') RETURNING mavipham",Integer.class);
+        int id=jdbc.queryForObject("INSERT INTO vi_pham(masinhvien,noidungvipham,mucdo,trangthai,ngayvipham) VALUES('21110001','API evidence decision','LOW','CHUA_XU_LY','2026-10-01') RETURNING mavipham",Integer.class);
         String fileId=null;
         try {
             var image=new java.awt.image.BufferedImage(2,2,java.awt.image.BufferedImage.TYPE_INT_RGB);
