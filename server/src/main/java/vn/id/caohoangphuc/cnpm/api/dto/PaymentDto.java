@@ -15,7 +15,7 @@ import vn.id.caohoangphuc.cnpm.api.validation.UniqueElements;
 
 /** Target API contract; not proof that the associated endpoint is implemented. */
 public record PaymentDto(
-    @NotNull @Valid @Size(min = 1, max = 100) @UniqueElements List<@NotNull @DecimalMin("1") Long> invoiceIds,
+    @NotNull @Valid @Size(min = 1, max = 100) @UniqueElements List<@NotNull @DecimalMin("1") @DecimalMax("2147483647") Long> invoiceIds,
     @NotNull Gateway gateway
 ) {
     public enum Gateway { VNPAY, MOMO }

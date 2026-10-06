@@ -122,7 +122,7 @@ FROM dot_dang_ky d JOIN hoc_ky h USING(mahocky) WHERE d.madot=?
         FROM dang_ky_phong d JOIN giuong g ON g.magiuong=d.magiuong LEFT JOIN svc_profile p ON p.booking_id=d.madangky
         WHERE (CAST(? AS varchar) IS NULL OR d.masinhvien=?)
         ORDER BY d.ngaydangky DESC,d.madangky DESC LIMIT ? OFFSET ?
-        """, (rs, n) -> bookingResource(rs), studentId, studentId, size, (page - 1) * size);
+        """, (rs, n) -> bookingResource(rs), studentId, studentId, size, (long) (page - 1) * size);
     Long total = jdbc.queryForObject(
         "SELECT count(*) FROM dang_ky_phong WHERE (CAST(? AS varchar) IS NULL OR masinhvien=?)",
         Long.class, studentId, studentId);
@@ -164,6 +164,35 @@ FROM giuong g JOIN phong p USING(maphong) JOIN toa_nha t USING(matoanha) WHERE g
                     rs.getString(4),
                     rs.getString(5)),
             id);
+    return rows.isEmpty() ? null : rows.get(0);
+  }
+
+  /** Reads the newest unexpired pending booking currently holding a bed. */
+  public Integer activeBookingForBed(String bedId, Instant now) {
+    var rows = jdbc.queryForList("SELECT madangky FROM dang_ky_phong "
+        + "WHERE magiuong=? AND trangthai='CHO_DUYET' AND ngayhethan>? "
+        + "ORDER BY ngaydangky DESC,madangky DESC LIMIT 1", Integer.class, bedId, local(now));
+    return rows.isEmpty() ? null : rows.get(0);
+  }
+
+  /** Reads the current student's gender again when an administrator decides a booking. */
+  public String studentGender(String studentId) {
+    var rows = jdbc.queryForList("SELECT gioitinh FROM sinh_vien WHERE masinhvien=?", String.class, studentId);
+    return rows.isEmpty() ? null : rows.get(0);
+  }
+
+  /** Counts unexpired holds in a room, excluding the booking currently being approved. */
+  public long otherActiveHolds(String roomId, int bookingId, Instant now) {
+    Long count = jdbc.queryForObject("SELECT count(DISTINCT g.magiuong) FROM dang_ky_phong d "
+        + "JOIN giuong g USING(magiuong) WHERE g.maphong=? AND d.trangthai='CHO_DUYET' "
+        + "AND d.ngayhethan>? AND d.madangky<>?", Long.class, roomId, local(now), bookingId);
+    return count == null ? 0 : count;
+  }
+
+  /** Returns one active administrator for audited expiry work, or null when none exists. */
+  public Integer activeAdminId() {
+    var rows = jdbc.queryForList("SELECT mataikhoan FROM tai_khoan WHERE vaitro='ADMIN' "
+        + "AND trangthai='ACTIVE' ORDER BY mataikhoan LIMIT 1", Integer.class);
     return rows.isEmpty() ? null : rows.get(0);
   }
 

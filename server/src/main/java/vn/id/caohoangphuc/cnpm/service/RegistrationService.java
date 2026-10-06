@@ -48,11 +48,13 @@ public class RegistrationService {
       throw ServiceException.conflict("Booking is already processed");
 
     var bed = repository.lockBed(booking.bedId());
-    requireApprovableBed(bed);
-    String status =
-        input.decision() == ApprovalDto.Decision.DUYET
-            ? approveBooking(id, booking, bed)
-            : rejectBooking(bed);
+    String status;
+    if (input.decision() == ApprovalDto.Decision.DUYET) {
+      requireApprovableBed(id, booking, bed);
+      status = approveBooking(id, booking, bed);
+    } else {
+      status = rejectBooking(booking, bed);
+    }
     return saveDecision(actor, request, id, booking, status, input.reason());
   }
 
@@ -71,7 +73,9 @@ public class RegistrationService {
   private CommandResultDto expireBooking(
       Actor actor, RequestContext request, BookingRepository.Booking booking) {
     var bed = repository.lockBed(booking.bedId());
-    if (bed != null && bed.status().equals("GIU_CHO")) repository.bedStatus(bed.id(), "TRONG");
+    Integer owner = repository.activeBookingForBed(booking.bedId(), context.now());
+    if (bed != null && bed.status().equals("GIU_CHO") && owner == null)
+      repository.bedStatus(bed.id(), "TRONG");
     repository.status(booking.id(), "HUY", "Hold expired");
     context.event(
         actor,
@@ -98,8 +102,13 @@ public class RegistrationService {
   }
 
   /** Giải phóng giường của yêu cầu bị từ chối. */
-  private String rejectBooking(BookingRepository.Bed bed) {
-    repository.bedStatus(bed.id(), "TRONG");
+  private String rejectBooking(BookingRepository.Booking booking, BookingRepository.Bed bed) {
+    // Release only this booking's hold; preserve a bed an administrator locked.
+    Integer owner = repository.activeBookingForBed(booking.bedId(), context.now());
+    if (bed != null && bed.status().equals("GIU_CHO")
+        && (owner != null && owner == booking.id())) {
+      repository.bedStatus(bed.id(), "TRONG");
+    }
     return "TU_CHOI";
   }
 
@@ -136,11 +145,25 @@ public class RegistrationService {
   }
 
   /** Từ chối duyệt khi giường không còn được giữ hoặc phòng không dùng được. */
-  private void requireApprovableBed(BookingRepository.Bed bed) {
-    if (bed == null
-        || !bed.status().equals("GIU_CHO")
-        || Set.of("KHOA", "DANG_SUA").contains(bed.roomStatus()))
+  private void requireApprovableBed(int bookingId, BookingRepository.Booking booking,
+      BookingRepository.Bed bed) {
+    if (bed == null || !bed.status().equals("GIU_CHO")
+        || Set.of("KHOA", "DANG_SUA", "DAY").contains(bed.roomStatus()))
       throw ServiceException.conflict("Bed or room is unavailable");
+
+    Integer owner = repository.activeBookingForBed(bed.id(), context.now());
+    if (owner == null || owner != bookingId)
+      throw ServiceException.conflict("Bed is no longer held by this booking");
+
+    String currentGender = repository.studentGender(booking.studentId());
+    if (currentGender == null) throw ServiceException.notFound("Student");
+    if (!bed.gender().equals("TAT_CA") && !bed.gender().equals(currentGender))
+      throw ServiceException.conflict("Building gender no longer matches the student");
+
+    long occupied = repository.occupiedBeds(bed.roomId());
+    long otherHolds = repository.otherActiveHolds(bed.roomId(), bookingId, context.now());
+    if (occupied + otherHolds + 1 > repository.capacity(bed.roomId()))
+      throw ServiceException.conflict("Room has no remaining capacity");
   }
 
   /** Chặn duyệt nếu hồ sơ chưa đạt hoặc sinh viên đã có chỗ ở đang hoạt động. */

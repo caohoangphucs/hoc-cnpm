@@ -52,8 +52,11 @@ public class PaymentController {
     public ServerResponse vnpayIpn(ServerRequest request) {
         try {
             var verified = payments.verify("VNPAY", vnpayParameters(request));
-            payments.accept(null, new RequestContext(UUID.randomUUID(), UUID.randomUUID()), verified);
-            return vnpayAck("00", "Confirm Success");
+            var receipt = payments.acceptCallback(null,
+                    new RequestContext(UUID.randomUUID(), UUID.randomUUID()), verified);
+            return receipt.replayed()
+                    ? vnpayAck("02", "Order already confirmed")
+                    : vnpayAck("00", "Confirm Success");
         } catch (ServiceException exception) {
             String code = switch (exception.getCode()) {
                 case "VNPAY_INVALID_SIGNATURE" -> "97";

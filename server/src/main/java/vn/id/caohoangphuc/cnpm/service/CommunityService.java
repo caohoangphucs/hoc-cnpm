@@ -229,6 +229,11 @@ public class CommunityService {
           if (registration == null) throw ServiceException.notFound("Registration QR");
           if (!registration.status().equals("REGISTERED"))
             throw ServiceException.conflict("Registration is not active");
+          var activity = repository.activityByCode(registration.activityId(), false);
+          if (activity == null) throw ServiceException.notFound("Activity");
+          var now = context.now();
+          if (now.isBefore(activity.start()) || now.isAfter(activity.end()))
+            throw ServiceException.conflict("Attendance can only be recorded during the activity");
           repository.state(registration.id(), "ATTENDED");
           context.event(
               actor,
@@ -302,6 +307,10 @@ public class CommunityService {
       Actor actor, RequestContext request, CommunityRepository.Registration registration) {
     if (!registration.status().equals("ATTENDED"))
       throw ServiceException.conflict("Only attended registrations can be completed");
+    var activity = repository.activityByCode(registration.activityId(), false);
+    if (activity == null) throw ServiceException.notFound("Activity");
+    if (context.now().isBefore(activity.end()))
+      throw ServiceException.conflict("Activity cannot be completed before it ends");
 
     repository.confirm(registration.id(), actor.accountId(), context.now());
     context.event(

@@ -92,6 +92,8 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f database/tests/discipline_decision_width.sql
       - name: Expand discipline decision storage without resetting data
         run: psql -v ON_ERROR_STOP=1 --single-transaction -f database/migrations/V20261013__discipline_decision_text.sql
+      - name: Expand invoice meter quantity storage
+        run: psql -v ON_ERROR_STOP=1 --single-transaction -f database/migrations/V20261014__support_invoice_meter_quantity.sql
       - name: Apply encrypted evidence storage migration
         run: psql -v ON_ERROR_STOP=1 --single-transaction -f database/migrations/V20261010__evidence_file_content.sql
       - name: Build backend and run Java unit tests

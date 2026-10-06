@@ -16,7 +16,7 @@ import vn.id.caohoangphuc.cnpm.api.validation.UniqueElements;
 /** Target API contract; not proof that the associated endpoint is implemented. */
 public record BookingDto(
     @NotBlank @Size(min = 1, max = 1000) String bedId,
-    @NotNull @DecimalMin("1") Long windowId,
+    @NotNull @DecimalMin("1") @jakarta.validation.constraints.DecimalMax("2147483647") Long windowId,
     @NotNull @Valid @Size(min = 2, max = 5) List<@NotNull UUID> fileIds,
     @NotNull @AssertTrue Boolean acceptedTerms
 ) {

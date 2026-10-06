@@ -138,7 +138,7 @@ LEFT JOIN vi_pham v ON v.maravao=r.maravao AND v.masinhvien=r.masinhvien WHERE e
         r.getObject(4, LocalDateTime.class).atZone(ServiceContext.ZONE).toOffsetDateTime(),
         r.getString(5), (Integer) r.getObject(6), r.getObject(6) == null ? null : new EntryResourceDto.GateViolation(
             r.getInt(6),r.getString(7),r.getString(8),r.getString(9),
-            r.getObject(10, LocalDateTime.class).atZone(ServiceContext.ZONE).toOffsetDateTime())), studentId, studentId, size, (page - 1) * size);
+            r.getObject(10, LocalDateTime.class).atZone(ServiceContext.ZONE).toOffsetDateTime())), studentId, studentId, size, (long) (page - 1) * size);
     Long total = jdbc.queryForObject("""
         SELECT count(*) FROM svc_gate_event e JOIN ra_vao r ON r.maravao=e.entry_id
         WHERE (CAST(? AS varchar) IS NULL OR r.masinhvien=?)
@@ -229,7 +229,7 @@ LEFT JOIN vi_pham v ON v.maravao=r.maravao AND v.masinhvien=r.masinhvien WHERE e
         WHERE (CAST(? AS varchar) IS NULL OR host_student_id=?) AND (?=false OR state='APPROVED') ORDER BY id DESC LIMIT ? OFFSET ?
         """, (r, n) -> new Visitor(r.getLong(1), r.getString(2), r.getString(3),
         r.getTimestamp(4).toInstant(), r.getTimestamp(5).toInstant(), r.getLong(6)),
-        hostStudentId, hostStudentId, approvedOnly, size, (page - 1) * size);
+        hostStudentId, hostStudentId, approvedOnly, size, (long) (page - 1) * size);
   }
 
   /** Deletes a visitor request that has not yet been approved. */

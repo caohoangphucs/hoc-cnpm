@@ -68,7 +68,7 @@ public class CommunityController {
     /** Cancels a registration using the version returned when it was created. */
     public ServerResponse cancel(ServerRequest request) throws Exception {
         return api.handle(request, (actor, context) -> community.cancel(actor, context,
-                Integer.parseInt(request.pathVariable("id")), request.body(VersionDto.class).version()));
+                Integer.parseInt(request.pathVariable("id")), requiredVersion(request.body(VersionDto.class))));
     }
 
     /** Records attendance using the one-time QR token. */
@@ -86,7 +86,7 @@ public class CommunityController {
     /** Returns the authenticated student's activity points for one semester. */
     public ServerResponse points(ServerRequest request) throws Exception {
         return api.handle(request, (actor, context) -> community.points(actor,
-                Long.parseLong(request.param("semesterId").orElseThrow())));
+                requiredSemester(request)));
     }
 
     /** Converts eligible community points into conduct points. */
@@ -99,5 +99,23 @@ public class CommunityController {
     public ServerResponse requestCertificate(ServerRequest request) throws Exception {
         return api.handle(request, (actor, context) -> community.requestCertificate(actor, context,
                 request.body(CertificateRequestDto.class)));
+    }
+
+    /** Validates a required cancellation version before primitive unboxing. */
+    private long requiredVersion(VersionDto input) {
+        if (input == null || input.version() == null || input.version() < 1)
+            throw vn.id.caohoangphuc.cnpm.service.ServiceException.invalid("version is required and must be positive");
+        return input.version();
+    }
+
+    /** Returns a structured input error when semesterId is omitted. */
+    private long requiredSemester(ServerRequest request) {
+        String value = request.param("semesterId").orElse(null);
+        if (value == null || value.isBlank())
+            throw vn.id.caohoangphuc.cnpm.service.ServiceException.invalid("semesterId is required");
+        try { return Long.parseLong(value); }
+        catch (NumberFormatException exception) {
+            throw vn.id.caohoangphuc.cnpm.service.ServiceException.invalid("semesterId is invalid");
+        }
     }
 }

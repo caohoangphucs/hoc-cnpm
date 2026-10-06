@@ -143,8 +143,9 @@ FROM hoa_don h WHERE h.mahoadon=?
   /** Lists payment sessions for one account, or all accounts for an administrator/accounting. */
   public List<Session> sessions(Integer actorId, int page, int size) {
     String ownerFilter = actorId == null ? "" : "WHERE actor_id=?";
-    Object[] args = actorId == null ? new Object[] {size, (page - 1) * size}
-        : new Object[] {actorId, size, (page - 1) * size};
+    long offset = (long) (page - 1) * size;
+    Object[] args = actorId == null ? new Object[] {size, offset}
+        : new Object[] {actorId, size, offset};
     return jdbc.query("SELECT id,actor_id,gateway,provider_ref,amount,state,expires_at,pay_url,provider_transaction_id "
             + "FROM svc_payment_session " + ownerFilter + " ORDER BY created_at DESC LIMIT ? OFFSET ?",
         (r, n) -> new Session(r.getObject(1, UUID.class), r.getInt(2), r.getString(3), r.getString(4),
@@ -249,11 +250,14 @@ FROM hoa_don h WHERE h.mahoadon=?
     if (after.compareTo(invoice[0]) > 0)
       throw vn.id.caohoangphuc.cnpm.service.ServiceException.conflict(
           "Payment would exceed invoice balance");
-    jdbc.update(
-        "UPDATE thanh_toan SET trangthai='SUCCESS',nguoixacnhan=? WHERE magiaodich=? AND"
-            + " trangthai='PENDING'",
-        Integer.toString(actor),
-        allocation.childRef());
+    if (jdbc.update(
+            "UPDATE thanh_toan SET trangthai='SUCCESS',nguoixacnhan=? WHERE magiaodich=? AND"
+                + " trangthai IN ('PENDING','FAILED')",
+            Integer.toString(actor),
+            allocation.childRef())
+        != 1)
+      throw vn.id.caohoangphuc.cnpm.service.ServiceException.conflict(
+          "Payment transaction is no longer confirmable");
     if (jdbc.update(
             "UPDATE hoa_don SET dathanhtoan=?,trangthai=? WHERE mahoadon=? AND trangthai<>'HUY'",
             after,

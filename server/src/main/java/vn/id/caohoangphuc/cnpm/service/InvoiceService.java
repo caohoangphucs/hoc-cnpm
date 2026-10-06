@@ -186,20 +186,28 @@ public class InvoiceService {
   /** Phát hành hóa đơn cho các phòng sau khi đối chiếu bản xem trước. */
   public List<IssueResult> issue(Actor actor, RequestContext request, IssueDto input) {
     context.validate(input);
-    var draft = repository.draft(input.draftId(), actor.accountId(), false);
+    var draft = context.transaction(() -> {
+      context.require(actor, "KETOAN");
+      return repository.draft(input.draftId(), actor.accountId(), false);
+    });
     if (draft == null) throw ServiceException.notFound("Invoice draft");
     context.version(draft.version(), input.version());
 
-    // Mỗi phòng phát hành độc lập, nhưng luôn được đối chiếu lại với snapshot.
+    // Each room commits independently; a stale room gets a result without blocking later rooms.
     List<RoomSnapshot> rooms =
-        java.util.Arrays.asList(context.parse(draft.rooms(), RoomSnapshot[].class));
-    var result = new ArrayList<IssueResult>();
+        java.util.Arrays.stream(context.parse(draft.rooms(), RoomSnapshot[].class))
+            .sorted(java.util.Comparator.comparing(RoomSnapshot::roomId)).toList();
+    var results = new ArrayList<IssueResult>();
     for (RoomSnapshot expected : rooms) {
       var item = new IssueRoom(expected.roomId(), input.draftId(), input.version());
-      var one = issueRoom(actor, request, item);
-      result.add(one);
+      try {
+        results.add(issueRoom(actor, request, item));
+      } catch (ServiceException exception) {
+        if (exception.getStatus() >= 500) throw exception;
+        results.add(new IssueResult(expected.roomId(), "ERROR", null, exception.getMessage()));
+      }
     }
-    return result;
+    return results;
   }
 
   /** Đối chiếu snapshot và phát hành một hóa đơn trong cùng transaction. */

@@ -120,7 +120,7 @@ WHERE v.trangthai='CHUA_XU_LY' ORDER BY v.ngayvipham DESC LIMIT ? OFFSET ?
 """,
         (r, n) -> map(r),
         size,
-        (page - 1) * size);
+        (long) (page - 1) * size);
   }
 
   /** Lists all violations that fall within a configured semester. */
@@ -129,7 +129,7 @@ WHERE v.trangthai='CHUA_XU_LY' ORDER BY v.ngayvipham DESC LIMIT ? OFFSET ?
         SELECT v.mavipham FROM vi_pham v JOIN hoc_ky h
           ON v.ngayvipham::date BETWEEN h.ngaybatdau AND h.ngayketthuc
         ORDER BY v.ngayvipham DESC,v.mavipham DESC LIMIT ? OFFSET ?
-        """, Integer.class, size, (page - 1) * size);
+        """, Integer.class, size, (long) (page - 1) * size);
     if (ids.isEmpty()) return List.of();
     return violations(ids.stream().map(Long::valueOf).toList(), false);
   }

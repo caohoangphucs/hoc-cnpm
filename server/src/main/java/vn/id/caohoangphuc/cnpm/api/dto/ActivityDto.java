@@ -16,11 +16,11 @@ import vn.id.caohoangphuc.cnpm.api.validation.UniqueElements;
 /** Target API contract; not proof that the associated endpoint is implemented. */
 public record ActivityDto(
     @NotNull @DecimalMin("1") Long semesterId,
-    @NotBlank @Size(min = 1, max = 1000) String title,
+    @NotBlank @Size(min = 1, max = 255) String title,
     @NotNull OffsetDateTime startAt,
     @NotNull OffsetDateTime endAt,
-    @NotNull @DecimalMin("1") Long capacity,
-    @NotNull @DecimalMin("1") Long points
+    @NotNull @DecimalMin("1") @DecimalMax("2147483647") Long capacity,
+    @NotNull @DecimalMin("1") @DecimalMax("2147483647") Long points
 ) {
 
     /** Ensures a complete activity time range ends after it begins. */

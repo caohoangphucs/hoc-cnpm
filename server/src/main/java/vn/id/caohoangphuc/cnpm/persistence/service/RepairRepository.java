@@ -86,8 +86,8 @@ public class RepairRepository {
                 + " ? OFFSET ?"
             : "SELECT r.* FROM yeu_cau_sua_chua r ORDER BY r.ngaytao DESC LIMIT ? OFFSET ?";
     return role.equals("KYTHUAT")
-        ? jdbc.query(sql, (r, n) -> map(r), actor, size, (page - 1) * size)
-        : jdbc.query(sql, (r, n) -> map(r), size, (page - 1) * size);
+        ? jdbc.query(sql, (r, n) -> map(r), actor, size, (long) (page - 1) * size)
+        : jdbc.query(sql, (r, n) -> map(r), size, (long) (page - 1) * size);
   }
 
   /** Đọc yêu cầu sửa chữa theo ID và tùy chọn khóa trước khi cập nhật. */
@@ -258,7 +258,7 @@ public class RepairRepository {
         (r, n) -> map(r),
         studentId,
         size,
-        (page - 1) * size);
+        (long) (page - 1) * size);
   }
 
   /** Liệt kê các yêu cầu đang xử lý đã được phân công. */
