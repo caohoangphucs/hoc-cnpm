@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { parseRooms, parseBeds, parseRoom, parseBed, catalogPayload, maxRoomPrice } from '../src/features/rooms/model.ts'
-import { parseBookings, parseBooking, validProfile, matchesBooking } from '../src/features/booking/api.ts'
+import { parseBookings, parseBooking, parseBookingEligibility, validProfile, matchesBooking } from '../src/features/booking/api.ts'
 const booking = { id: 1, bedId: 'G-A101-1', studentId: '21110001', status: 'CHO_DUYET', expiresAt: '2026-10-05T10:00:00+07:00', profileState: 'COMPLETE', version: 3, fileIds: ['owned-file-id'], reason: null }
 test('catalogue preserves public IDs, gender and server availability with page totals', () => {
   const page = parseRooms({ items: [{ id: 'A-101', buildingId: 'TOA-A', roomType: '4 người', gender: 'NAM', capacity: 4, availableBeds: 2 }], page: 2, pageSize: 8, total: 20 })
@@ -52,4 +52,11 @@ test('catalogue writes respect schema boundaries without truncating IDs, prices 
   for (const invalid of [{ id: 'A'.repeat(21) }, { price: String(maxRoomPrice + 1) }, { floor: '2147483648' }, { capacity: '0' }, { id: ' ' }, { status: 'UNKNOWN' }]) assert.throws(() => catalogPayload('room', { ...fields, ...invalid }, ''))
   assert.equal(catalogPayload('bed', { ...fields, status: 'TRONG' }, 'QA').position.length, 50)
   assert.throws(() => catalogPayload('bed', { ...fields, status: 'TRONG', position: 'A'.repeat(51) }, 'QA'))
+})
+
+
+test('room registration eligibility follows the authenticated student current residency', () => {
+  assert.deepEqual(parseBookingEligibility({ hasActiveRoom: true }), { hasActiveRoom: true })
+  assert.deepEqual(parseBookingEligibility({ hasActiveRoom: false }), { hasActiveRoom: false })
+  assert.throws(() => parseBookingEligibility({ hasActiveRoom: 'true' }))
 })

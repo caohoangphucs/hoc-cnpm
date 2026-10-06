@@ -156,6 +156,32 @@ paths:
                   format: uuid
         '404':
           description: Không tồn tại hoặc không được xem
+  /api/v1/students/me:
+    get:
+      tags: [Gate]
+      summary: Read the authenticated student's own profile (SINHVIEN)
+      operationId: getMyStudentProfile
+      responses:
+        '200':
+          description: Private profile belonging to the authenticated student
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [studentId, name, gender, email, phone, status]
+                properties:
+                  studentId: {type: string}
+                  name: {type: string}
+                  dateOfBirth: {type: string, format: date, nullable: true}
+                  gender: {type: string, enum: [NAM, NU]}
+                  email: {type: string, format: email}
+                  phone: {type: string}
+                  className: {type: string, nullable: true}
+                  faculty: {type: string, nullable: true}
+                  hometown: {type: string, nullable: true}
+                  roomId: {type: string, nullable: true}
+                  status: {type: string, enum: [DANG_O, DA_ROI_KTX, CHO_DUYET]}
+        '403': {description: Available only to the authenticated student role}
   /api/v1/students:
     get:
       tags: [Gate]
@@ -565,6 +591,21 @@ paths:
         '401': {$ref: '#/components/responses/Error'}
         '403': {$ref: '#/components/responses/Error'}
         '404': {$ref: '#/components/responses/Error'}
+  /api/v1/bookings/eligibility:
+    get:
+      tags: [Rooms and bookings]
+      summary: Check whether the signed-in student currently has a room
+      operationId: getBookingEligibility
+      responses:
+        '200':
+          description: Current room assignment status
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [hasActiveRoom]
+                properties:
+                  hasActiveRoom: {type: boolean}
   /api/v1/bookings:
     get:
       tags: [Rooms and bookings]

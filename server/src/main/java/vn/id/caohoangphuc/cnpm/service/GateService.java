@@ -3,6 +3,7 @@ package vn.id.caohoangphuc.cnpm.service;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.util.Map;
+import vn.id.caohoangphuc.cnpm.api.dto.StudentProfileDto;
 import vn.id.caohoangphuc.cnpm.api.dto.ApprovalDto;
 import vn.id.caohoangphuc.cnpm.api.dto.CommandResultDto;
 import vn.id.caohoangphuc.cnpm.api.dto.EntryDto;
@@ -69,6 +70,19 @@ public class GateService {
       EntryDto.Type type, String deviceId, String note) {
     record Fingerprint(java.util.UUID eventId, String identityHash, EntryDto.Type type, String deviceId, String note) {}
     return ServiceContext.hash(context.json(new Fingerprint(eventId, identityHash, type, deviceId, note)));
+  }
+
+  /** Reads the authenticated student's own profile without exposing other students. */
+  public StudentProfileDto profile(Actor actor) {
+    return context.transaction(() -> {
+      var account = context.require(actor, "SINHVIEN");
+      var profile = repository.profile(account.studentId());
+      if (profile == null) throw ServiceException.notFound("Student");
+      return new StudentProfileDto(
+          profile.studentId(), profile.name(), profile.dateOfBirth(), profile.gender(),
+          profile.email(), profile.phone(), profile.className(), profile.faculty(),
+          profile.hometown(), profile.roomId(), profile.status());
+    });
   }
 
   /** Sinh viên chỉ tra cứu chính mình; bảo vệ/admin được tìm danh sách để làm nghiệp vụ. */

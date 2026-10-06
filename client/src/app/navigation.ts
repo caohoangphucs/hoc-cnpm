@@ -30,6 +30,7 @@ export const workspaces: readonly Workspace[] = [
     description: 'Không gian dành cho cuộc sống và hoạt động của bạn tại ký túc xá.',
     navigation: [
       overview,
+      { path: 'profile', label: 'Thông tin cá nhân', shortLabel: 'Hồ sơ', icon: 'people', description: 'Xem thông tin cá nhân đang lưu trong hồ sơ sinh viên của bạn.' },
       { path: 'stay', label: 'Phòng & lưu trú', shortLabel: 'Lưu trú', icon: 'building', description: 'Đăng ký phòng, hồ sơ minh chứng và yêu cầu đổi phòng.' },
       { path: 'invoices', label: 'Hóa đơn & thanh toán', shortLabel: 'Hóa đơn', icon: 'wallet', description: 'Xem hóa đơn, tải PDF và thanh toán tiền phòng, điện nước.' },
       { path: 'repairs', label: 'Yêu cầu sửa chữa', shortLabel: 'Sửa chữa', icon: 'tool', description: 'Gửi yêu cầu sửa chữa thiết bị trong phòng kèm ảnh.' },

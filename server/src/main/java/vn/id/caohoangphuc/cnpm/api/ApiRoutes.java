@@ -25,6 +25,7 @@ public class ApiRoutes {
     public static final String BEDS = "/api/v1/beds";
     public static final String BED = "/api/v1/beds/{id}";
     public static final String BOOKINGS = "/api/v1/bookings";
+    public static final String BOOKING_ELIGIBILITY = "/api/v1/bookings/eligibility";
     public static final String BOOKING = "/api/v1/bookings/{id}";
     public static final String BOOKING_DECISION = "/api/v1/bookings/{id}/decision";
     public static final String METER_READINGS = "/api/v1/rooms/{id}/meter-readings";
@@ -44,6 +45,7 @@ public class ApiRoutes {
     public static final String MATERIALS = "/api/v1/materials";
     public static final String MANUAL_ENTRY = "/api/v1/entries/manual";
     public static final String STUDENTS = "/api/v1/students";
+    public static final String STUDENT_PROFILE = "/api/v1/students/me";
     public static final String REPAIR_ASSIGNMENT = "/api/v1/repairs/{id}/assignment";
     public static final String REPAIR_SCHEDULE = "/api/v1/repairs/{id}/schedule";
     public static final String REPAIR_COMPLETE = "/api/v1/repairs/{id}/complete";
@@ -105,6 +107,7 @@ public class ApiRoutes {
                 .POST(BEDS, rooms::createBed)
                 .PUT(BED, rooms::updateBed)
                 .DELETE(BED, rooms::deleteBed)
+                .GET(BOOKING_ELIGIBILITY, bookings::eligibility)
                 .GET(BOOKINGS, bookings::list)
                 .POST(BOOKINGS, bookings::create)
                 .GET(BOOKING, bookings::get)
@@ -133,6 +136,7 @@ public class ApiRoutes {
                 .GET("/api/v1/repairs/{id}/files", repairs::files)
                 .GET(REPAIR, repairs::get)
                 .DELETE(REPAIR, repairs::delete)
+                .GET(STUDENT_PROFILE, gate::studentProfile)
                 .GET(STUDENTS, gate::students)
                 .PUT(REPAIR_PRIORITY, repairs::priority)
                 .POST(REPAIR_ASSIGNMENT, repairs::assign)

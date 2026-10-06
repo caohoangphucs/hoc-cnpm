@@ -48,6 +48,7 @@ class ApiRoutesTest {
         when(rooms.deleteBed(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
         when(bookings.create(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
         when(bookings.list(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
+        when(bookings.eligibility(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
         when(bookings.get(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
         when(bookings.delete(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
         when(registrations.decide(any(ServerRequest.class))).thenReturn(ServerResponse.ok().build());
@@ -121,6 +122,7 @@ class ApiRoutesTest {
         mvc.perform(post(ApiRoutes.BEDS)).andExpect(status().isOk());
         mvc.perform(put(ApiRoutes.BED.replace("{id}", "A-101-1"))).andExpect(status().isOk());
         mvc.perform(delete(ApiRoutes.BED.replace("{id}", "A-101-1"))).andExpect(status().isOk());
+        mvc.perform(get(ApiRoutes.BOOKING_ELIGIBILITY)).andExpect(status().isOk());
         mvc.perform(get(ApiRoutes.BOOKINGS)).andExpect(status().isOk());
         mvc.perform(post(ApiRoutes.BOOKINGS)).andExpect(status().isOk());
         mvc.perform(get(ApiRoutes.BOOKING.replace("{id}", "1"))).andExpect(status().isOk());
