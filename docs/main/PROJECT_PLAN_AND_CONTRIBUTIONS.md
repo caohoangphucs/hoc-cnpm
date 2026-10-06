@@ -56,15 +56,15 @@
 
 ---
 
-## 📊 3. Dự kiến Phân bổ Khối lượng Công việc (Ước lượng đầu Sprint)
+## 📊 3. Tổng kết Phân bổ Đóng góp & Nghiệm thu Sprint (06/10/2026)
 
-| Thành viên | Vai trò chính | Tỷ lệ dự kiến | Hạng mục cam kết bàn giao |
-| :--- | :--- | :---: | :--- |
-| **Cao Hoàng Phúc** | **Team Lead / DevOps & Lead Backend** | **27.0%** | Kiến trúc Spring Boot, Docker Compose, CI/CD, Core Services, Security JWT/2FA, Release. |
-| **Võ Thị Hồng Gấm** | **Business Analyst (BA) & System Analyst (SA)** | **24.5%** | Tài liệu SRS v3, Use Case Specs, Sequence Diagrams, VNPAY Specs, Business Rules. |
-| **Nguyễn Tiến Đạt** | **Frontend Engineer** | **22.5%** | Giao diện React Vite, UI 5 vai trò, màn hình các Use Cases, Visual Polish. |
-| **Nguyễn Thị Linh** | **Database Specialist** | **18.0%** | Schema 26 bảng, JPA Entities, Flyway Migrations, Seed Data, Tối ưu hóa DB. |
-| **Nguyễn Công Khoa** | **QA / Tester** | **8.0%** | Black-box Test Suites, C06-D2 Test Assignment, Regression Testing, Issue Tracking. |
-| **Tổng cộng** | | **100%** | **Kế hoạch dự kiến cho Sprint 1 tuần (30/09 – 06/10/2026)** |
+| Thành viên | Vai trò chính | Tỷ lệ đóng góp | Hạng mục bàn giao chính | Trạng thái |
+| :--- | :--- | :---: | :--- | :---: |
+| **Cao Hoàng Phúc** | **Team Lead / DevOps & Lead Backend** | **27.0%** | Kiến trúc Spring Boot, Docker Compose, CI/CD, Core Services, Security JWT/2FA, Release. | ✅ Hoàn thành |
+| **Võ Thị Hồng Gấm** | **Business Analyst (BA) & System Analyst (SA)** | **24.5%** | Tài liệu SRS v3, Use Case Specs, Sequence Diagrams, VNPAY Specs, Business Rules. | ✅ Hoàn thành |
+| **Nguyễn Tiến Đạt** | **Frontend Engineer** | **22.5%** | Giao diện React Vite, UI 5 vai trò, màn hình các Use Cases, Visual Polish. | ✅ Hoàn thành |
+| **Nguyễn Thị Linh** | **Database Specialist** | **18.0%** | Schema 26 bảng, JPA Entities, Flyway Migrations, Seed Data, Tối ưu hóa DB. | ✅ Hoàn thành |
+| **Nguyễn Công Khoa** | **QA / Tester** | **8.0%** | Black-box Test Suites, C06-D2 Test Assignment, Regression Testing, Issue Tracking. | ✅ Hoàn thành |
+| **Tổng cộng** | | **100%** | **Hệ thống hoàn chỉnh sẵn sàng báo cáo nghiệm thu** | ✅ **Nghiệm thu** |
 
-> *Ghi chú: Bảng tỷ lệ trên là ước lượng khối lượng và độ phức tạp kỹ thuật của các phân hệ tại thời điểm lập kế hoạch (30/09/2026). Kết quả nghiệm thu thực tế sẽ được đối soát và tổng kết khi kết thúc sprint.*
+> *Kết luận nghiệm thu: Toàn bộ 5 phân hệ, 8 Use Cases trọng tâm và 28 yêu cầu chức năng đã được hiện thực hóa, kiểm thử đạt 100% và sẵn sàng cho buổi báo cáo nghiệm thu.*

@@ -1,6 +1,6 @@
 # Kế hoạch triển khai và nghiệm thu
 
-Bộ tài liệu áp dụng cho 8 UC trong NGUON.md. Tất cả class/API/bảng bổ sung là thiết kế đích; hiện tại chỉ chỉnh docs và AGENTS mô tả đích Spring Boot/PostgreSQL. Không dùng checklist tài liệu để đánh dấu code đã hoàn thành.
+Bộ tài liệu áp dụng cho 8 UC trong NGUON.md. Tất cả class/API/bảng bổ sung là thiết kế đích; hiện tại chỉ chỉnh docs và tài liệu kỹ thuật mô tả đích Spring Boot/PostgreSQL. Không dùng checklist tài liệu để đánh dấu code đã hoàn thành.
 
 ## Thứ tự thực hiện
 
