@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router'
 import { type Workspace, workspacePath } from '../navigation'
 import { Icon } from '@/shared/components/Icon'
+import { BrandLogo } from '@/shared/components/BrandLogo'
 import { ThemeToggle } from '@/shared/components/ThemeToggle'
 import { Navigation } from './Navigation'
 import { useAuth } from '@/features/auth/context'
@@ -92,8 +93,7 @@ export function AppShell({ workspace, preview = false }: { workspace: Workspace;
       <a className="skip-link" href="#main-content">Đến nội dung chính</a>
       <aside className="sidebar" aria-label={`Không gian ${workspace.label}`}>
         <Link className="brand" to={`${prefix}${workspacePath(workspace)}`} aria-label="KTX Smart Hub — Tổng quan">
-          <span className="brand-mark"><Icon name="building" /></span>
-          <span className="brand-name">KTX Smart Hub<strong>Hệ thống ký túc xá</strong></span>
+          <BrandLogo />
         </Link>
         <Navigation workspace={workspace} prefix={prefix} />
         <div className="sidebar-footer">
@@ -115,6 +115,9 @@ export function AppShell({ workspace, preview = false }: { workspace: Workspace;
             >
               <Icon name="menu" />
             </button>
+            <Link className="header-brand" to={`${prefix}${workspacePath(workspace)}`} aria-label="KTX Smart Hub — Tổng quan">
+              <BrandLogo symbol />
+            </Link>
             <nav className="top-breadcrumbs" aria-label="Đường dẫn trang">
               <Link to={`${prefix}${workspacePath(workspace)}`}>{workspace.label}</Link>
               <span aria-hidden="true">/</span>
@@ -146,7 +149,10 @@ export function AppShell({ workspace, preview = false }: { workspace: Workspace;
         }}
       >
         <div className="drawer-heading">
-          <div><p className="eyebrow">KTX Smart Hub</p><h2 id="drawer-title">{workspace.label}</h2></div>
+          <div className="drawer-brand">
+            <Link to={`${prefix}${workspacePath(workspace)}`} onClick={closeDrawer} aria-label="KTX Smart Hub — Tổng quan"><BrandLogo /></Link>
+            <h2 id="drawer-title">{workspace.label}</h2>
+          </div>
           <button
             className="icon-button state-layer"
             type="button"
