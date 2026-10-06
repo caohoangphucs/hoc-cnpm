@@ -451,4 +451,4 @@ Mã khai báo khách trên giao diện là `KT-{id}` của phiếu. Bảo vệ c
 - Check-in/out chỉ cho khách APPROVED còn trong hạn, lượt vào trước lượt ra và mỗi lượt chỉ ghi một lần. Mỗi lần ghi tăng version trong DB; command và GET cùng version. Không xóa phiếu đã có lượt, kể cả dữ liệu lỗi cũ còn PENDING.
 - Cột hình thức xử lý vi phạm dùng TEXT; contract quyết định/lý do vẫn tối đa 1.000 ký tự. Khi chấp nhận khiếu nại, revision giữ toàn bộ `REVIEW: ` + lý do mà không bị giới hạn 255 ký tự. Migration chỉ mở rộng cột, giữ nguyên hồ sơ và lịch sử.
 
-- BR-13/issue #55: `semesterCount` đếm hồ sơ `DA_XU_LY` trong đúng học kỳ của hồ sơ đang đọc; `CHUA_XU_LY`/`DA_HUY` không tính. Ngưỡng 3 chỉ tạo cảnh báo rà soát, không tự khóa tài khoản hoặc chấm dứt lưu trú. UI gọi rõ “Số lần đã xử lý”; ghi nhận hồ sơ chưa đồng nghĩa đã xác nhận bằng quyết định.
+- BR-13/issue #55: `semesterCount` đếm hồ sơ `DA_XU_LY` trong đúng học kỳ của hồ sơ đang đọc; `CHUA_XU_LY` không tính. Ngưỡng 3 chỉ tạo cảnh báo rà soát, không tự khóa tài khoản hoặc chấm dứt lưu trú. UI gọi rõ “Số lần đã xử lý”; ghi nhận hồ sơ chưa đồng nghĩa đã xác nhận bằng quyết định.
