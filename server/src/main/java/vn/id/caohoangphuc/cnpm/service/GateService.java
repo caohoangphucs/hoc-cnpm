@@ -386,11 +386,16 @@ public class GateService {
 
   /** Xác nhận khách đã được duyệt và đang trong khung giờ thăm. */
   private void requireVisitorAllowed(GateRepository.Visitor visitor, Instant now) {
-    if (visitor == null
-        || !visitor.state().equals("APPROVED")
-        || now.isBefore(visitor.validFrom())
-        || !now.isBefore(visitor.validTo()))
-      throw ServiceException.conflict("Visitor is not allowed at this time");
+    if (visitor == null) throw ServiceException.notFound("Visitor");
+
+    if (!"APPROVED".equals(visitor.state()))
+      throw new ServiceException(409, "VISITOR_NOT_APPROVED", "Visitor request is not approved");
+
+    if (now.isBefore(visitor.validFrom()))
+      throw new ServiceException(409, "VISITOR_NOT_STARTED", "Visitor visiting period has not started");
+
+    if (!now.isBefore(visitor.validTo()))
+      throw new ServiceException(409, "VISITOR_EXPIRED", "Visitor visiting period has expired");
   }
 
   /** Kiểm tra thời điểm kết thúc đăng ký khách nằm sau thời điểm bắt đầu. */
