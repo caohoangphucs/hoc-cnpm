@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import vn.id.caohoangphuc.cnpm.api.dto.BookingDto;
+import vn.id.caohoangphuc.cnpm.api.dto.BookingEligibilityDto;
 import vn.id.caohoangphuc.cnpm.api.dto.CommandResultDto;
 import vn.id.caohoangphuc.cnpm.api.dto.BookingResourceDto;
 import vn.id.caohoangphuc.cnpm.api.dto.BookingResourceListDto;
@@ -37,6 +38,14 @@ public class BookingService {
         CommandResultDto.class,
         () -> createBooking(actor, request, input, windowId),
         "SINHVIEN");
+  }
+
+  /** Checks the signed-in student's active residency for room registration. */
+  public BookingEligibilityDto hasActiveRoom(Actor actor) {
+    return context.transaction(() -> {
+      var account = context.require(actor, "SINHVIEN");
+      return new BookingEligibilityDto(repository.hasResidency(account.studentId()));
+    });
   }
 
   /** Lists bookings visible to the authenticated student or administrator. */

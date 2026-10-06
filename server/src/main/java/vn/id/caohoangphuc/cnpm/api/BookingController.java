@@ -31,6 +31,11 @@ public class BookingController {
         this.api = api;
     }
 
+    /** Reports whether the signed-in student already has an active room assignment. */
+    public ServerResponse eligibility(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> bookings.hasActiveRoom(actor));
+    }
+
     /** Lists the authenticated student's bookings, or all bookings for administrators. */
     public ServerResponse list(ServerRequest request) throws Exception {
         return api.handle(request, (actor, context) -> bookings.list(actor,

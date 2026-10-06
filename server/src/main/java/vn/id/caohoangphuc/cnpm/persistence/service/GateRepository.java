@@ -45,6 +45,24 @@ public class GateRepository {
 
   public record StudentOption(String id, String name, String room) {}
 
+  public record StudentProfile(
+      String studentId, String name, java.time.LocalDate dateOfBirth, String gender,
+      String email, String phone, String className, String faculty, String hometown,
+      String roomId, String status) {}
+
+  /** Returns only the requested student's own profile fields. */
+  public StudentProfile profile(String studentId) {
+    var rows = jdbc.query("""
+        SELECT s.masinhvien,s.hoten,s.ngaysinh,s.gioitinh,s.email,s.sodienthoai,
+               s.lop,s.khoa,s.quequan,s.maphonghientai,s.trangthai
+        FROM sinh_vien s WHERE s.masinhvien=?
+        """, (r,n) -> new StudentProfile(
+            r.getString(1), r.getString(2), r.getObject(3, java.time.LocalDate.class),
+            r.getString(4), r.getString(5), r.getString(6), r.getString(7),
+            r.getString(8), r.getString(9), r.getString(10), r.getString(11)), studentId);
+    return rows.isEmpty() ? null : rows.get(0);
+  }
+
   /** Tìm MSSV/họ tên bằng truy vấn tham số, không sử dụng danh sách hardcode. */
   public java.util.List<StudentOption> students(String search, String owner) {
     return jdbc.query("""

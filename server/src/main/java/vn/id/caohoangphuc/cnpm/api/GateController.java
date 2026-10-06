@@ -20,6 +20,11 @@ public class GateController {
         this.api = api;
     }
 
+    /** Returns the authenticated student's own profile. */
+    public ServerResponse studentProfile(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> gate.profile(actor));
+    }
+
     /** Trả gợi ý sinh viên theo phạm vi tài khoản, tìm theo MSSV hoặc họ tên. */
     public ServerResponse students(ServerRequest request) throws Exception {
         return api.handle(request, (actor, context) -> gate.students(actor, request.param("search").orElse("")));

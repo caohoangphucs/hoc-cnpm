@@ -41,6 +41,34 @@ class DemoSeedApiIT {
         jdbc.update("UPDATE phong SET dango=1,trangthai='CON_CHO' WHERE maphong IN ('DEMO-A','DEMO-B')");
     }
 
+    /** Students with an active residency are distinguished from applicants without an assigned room. */
+    @Test
+    void roomEligibilityReportsCurrentResidencyOnlyForStudentAccounts() throws Exception {
+        var resident = get(login("demo_resident_m"), "/api/v1/bookings/eligibility");
+        assertEquals(200, resident.statusCode(), resident.body());
+        assertTrue(json.readTree(resident.body()).path("hasActiveRoom").asBoolean());
+
+        var applicant = get(login("demo_pending_m1"), "/api/v1/bookings/eligibility");
+        assertEquals(200, applicant.statusCode(), applicant.body());
+        assertFalse(json.readTree(applicant.body()).path("hasActiveRoom").asBoolean());
+
+        assertEquals(403, get(login("admin"), "/api/v1/bookings/eligibility").statusCode());
+    }
+
+    /** Students can read their own profile, while staff roles cannot use the self-service endpoint. */
+    @Test
+    void studentProfileReturnsOnlyTheAuthenticatedStudentsFields() throws Exception {
+        var student = get(login("demo_resident_m"), "/api/v1/students/me");
+        assertEquals(200, student.statusCode(), student.body());
+        var profile = json.readTree(student.body());
+        assertEquals("DEMO-AM", profile.path("studentId").asString());
+        assertTrue(profile.path("name").asString().contains("Sinh viên nam"));
+        assertEquals("DEMO-A", profile.path("roomId").asString());
+        assertFalse(profile.has("identity"));
+
+        assertEquals(403, get(login("admin"), "/api/v1/students/me").statusCode());
+    }
+
     /** The administrator sees nonzero pending, approved and rejected cases with usable profiles. */
     @Test
     void reviewListContainsAllDemoStatesAndProfiles() throws Exception {
