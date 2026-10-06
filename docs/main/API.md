@@ -442,3 +442,13 @@ Mã khai báo khách trên giao diện là `KT-{id}` của phiếu. Bảo vệ c
 - `POST /api/v1/repairs/{id}/complete`: bổ sung `fileIds` tùy chọn, tối đa 10 UUID ảnh REPAIR do kỹ thuật viên tải qua multipart `POST /api/v1/files`. Giữ body cũ `{version,note,supplies,warrantyUntil}`. Khi đủ kho, gắn ảnh, xuất kho và hoàn tất cùng transaction; retry cùng key không xuất lần hai. Thiếu kho giữ phiếu đang xử lý và chưa gắn ảnh nghiệm thu.
 - `GET /api/v1/repairs/{id}/files`: mảng UUID ảnh đã gắn, kiểm quyền như đọc phiếu. Nội dung ảnh chỉ cho chủ phiếu, admin và kỹ thuật viên được phân công; tệp nháp chỉ chủ tệp đọc. UI chi tiết hỗ trợ xem/tải ảnh.
 - Kho vật tư tại `/technician/materials` dùng chung danh mục với ô chọn vật tư nghiệm thu, hỗ trợ tìm mã/tên. Tìm phiếu chấp nhận `SC-ID`; nút Trang sau dựa số phiếu API trả về, độc lập số kết quả lọc trên trang.
+
+### Ghi lượt cổng và khách thăm (#56–#61)
+
+- Quét thẻ vẫn dùng `POST /api/v1/entries` với `cardToken`; không thay token bằng MSSV. `deviceId` tối đa 100, `note` tùy chọn tối đa 255 ký tự. Cùng Idempotency-Key đổi token hoặc trường nghiệp vụ khác trả 409; token chỉ được băm trong fingerprint và không xuất hiện trong response/log.
+- Ghi thủ công dùng `POST /api/v1/entries/manual`, chỉ BAOVE: `{eventId,studentId,type,deviceId,note,identityVerified:true}`. Bảo vệ phải đối chiếu giấy tờ gốc; service vẫn kiểm tra thẻ ACTIVE còn hạn và sinh viên đang lưu trú. Chưa đối chiếu trả 422, vai trò khác 403, thẻ/lưu trú không hợp lệ 409. Thời gian và vi phạm do server xác định theo BR-12. API tìm sinh viên không trả token thẻ.
+- BAOVE chỉ nhận khách APPROVED trong danh sách, điều kiện được áp dụng trước LIMIT/OFFSET. SINHVIEN chỉ nhận phiếu của mình, ADMIN nhận toàn bộ.
+- Check-in/out chỉ cho khách APPROVED còn trong hạn, lượt vào trước lượt ra và mỗi lượt chỉ ghi một lần. Mỗi lần ghi tăng version trong DB; command và GET cùng version. Không xóa phiếu đã có lượt, kể cả dữ liệu lỗi cũ còn PENDING.
+- Cột hình thức xử lý vi phạm dùng TEXT; contract quyết định/lý do vẫn tối đa 1.000 ký tự. Khi chấp nhận khiếu nại, revision giữ toàn bộ `REVIEW: ` + lý do mà không bị giới hạn 255 ký tự. Migration chỉ mở rộng cột, giữ nguyên hồ sơ và lịch sử.
+
+- BR-13/issue #55: `semesterCount` đếm hồ sơ `DA_XU_LY` trong đúng học kỳ của hồ sơ đang đọc; `CHUA_XU_LY` không tính. Ngưỡng 3 chỉ tạo cảnh báo rà soát, không tự khóa tài khoản hoặc chấm dứt lưu trú. UI gọi rõ “Số lần đã xử lý”; ghi nhận hồ sơ chưa đồng nghĩa đã xác nhận bằng quyết định.

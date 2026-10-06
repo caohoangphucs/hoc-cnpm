@@ -31,6 +31,12 @@ public class GateController {
                 actor, context, request.body(EntryDto.class)));
     }
 
+    /** Nhận lượt xác minh trực tiếp, quyền và thẻ được kiểm tra lại trong service. */
+    public ServerResponse recordManual(ServerRequest request) throws Exception {
+        return api.handle(request, (actor, context) -> gate.recordManual(actor, context,
+                request.body(vn.id.caohoangphuc.cnpm.api.dto.ManualEntryDto.class)));
+    }
+
     /** Lists gate entries visible to the authenticated user. */
     public ServerResponse entries(ServerRequest request) throws Exception {
         return api.handle(request, (actor, context) -> gate.entries(actor,

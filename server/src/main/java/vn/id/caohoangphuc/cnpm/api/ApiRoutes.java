@@ -42,6 +42,7 @@ public class ApiRoutes {
     public static final String REPAIR = "/api/v1/repairs/{id}";
     public static final String REPAIR_PRIORITY = "/api/v1/repairs/{id}/priority";
     public static final String MATERIALS = "/api/v1/materials";
+    public static final String MANUAL_ENTRY = "/api/v1/entries/manual";
     public static final String STUDENTS = "/api/v1/students";
     public static final String REPAIR_ASSIGNMENT = "/api/v1/repairs/{id}/assignment";
     public static final String REPAIR_SCHEDULE = "/api/v1/repairs/{id}/schedule";
@@ -137,6 +138,7 @@ public class ApiRoutes {
                 .POST(REPAIR_ASSIGNMENT, repairs::assign)
                 .PUT(REPAIR_SCHEDULE, repairs::reschedule)
                 .POST(REPAIR_COMPLETE, repairs::complete)
+                .POST(MANUAL_ENTRY, gate::recordManual)
                 .POST(ENTRIES, gate::record)
                 .GET(ENTRIES, gate::entries)
                 .GET(ENTRY, gate::entry)

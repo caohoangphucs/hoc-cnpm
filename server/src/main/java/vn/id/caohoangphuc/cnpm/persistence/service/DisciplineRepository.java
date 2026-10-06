@@ -97,7 +97,7 @@ public class DisciplineRepository {
         """
 SELECT v.*,h.public_id semester_id,
   (SELECT count(*) FROM vi_pham v2 WHERE v2.masinhvien=v.masinhvien
-     AND v2.ngayvipham::date BETWEEN h.ngaybatdau AND h.ngayketthuc AND v2.trangthai IN ('CHUA_XU_LY','DA_XU_LY')) semester_count,
+     AND v2.ngayvipham::date BETWEEN h.ngaybatdau AND h.ngayketthuc AND v2.trangthai='DA_XU_LY') semester_count,
   (v.maravao IS NOT NULL) evidence_required
 FROM vi_pham v JOIN sinh_vien s USING(masinhvien)
 JOIN hoc_ky h ON v.ngayvipham::date BETWEEN h.ngaybatdau AND h.ngayketthuc
@@ -113,7 +113,7 @@ WHERE v.mavipham IN (%s) ORDER BY v.masinhvien,v.mavipham
     return jdbc.query(
         """
 SELECT v.*,h.public_id semester_id,
- (SELECT count(*) FROM vi_pham v2 WHERE v2.masinhvien=v.masinhvien AND v2.ngayvipham::date BETWEEN h.ngaybatdau AND h.ngayketthuc) semester_count,
+ (SELECT count(*) FROM vi_pham v2 WHERE v2.masinhvien=v.masinhvien AND v2.ngayvipham::date BETWEEN h.ngaybatdau AND h.ngayketthuc AND v2.trangthai='DA_XU_LY') semester_count,
  (v.maravao IS NOT NULL) evidence_required
         FROM vi_pham v JOIN hoc_ky h ON v.ngayvipham::date BETWEEN h.ngaybatdau AND h.ngayketthuc
 WHERE v.trangthai='CHUA_XU_LY' ORDER BY v.ngayvipham DESC LIMIT ? OFFSET ?
