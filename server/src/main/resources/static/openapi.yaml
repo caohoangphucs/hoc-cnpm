@@ -1270,7 +1270,18 @@ components:
         level: {type: string}
         status: {type: string}
         semesterCount: {type: integer, format: int64}
-        decisions: {type: array, items: {type: object}}
+        decisions:
+          type: array
+          items:
+            type: object
+            properties:
+              id: {type: integer}
+              revision: {type: integer}
+              decision: {type: string}
+              reason: {type: string}
+              actorId: {type: integer}
+              createdAt: {type: string, format: date-time}
+              evidenceFileId: {type: string, format: uuid, nullable: true}
         version: {type: integer, format: int64}
     Activity:
       type: object

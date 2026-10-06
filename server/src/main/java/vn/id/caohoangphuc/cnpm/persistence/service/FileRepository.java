@@ -65,6 +65,19 @@ public class FileRepository {
             """, Boolean.class, id,id.toString(),role,accountId,role,accountId));
     }
 
+    /** Chỉ admin hoặc sinh viên trong quyết định được đọc minh chứng đã gắn. */
+    public boolean readableDiscipline(UUID id, int accountId, String role) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+            SELECT EXISTS (
+                SELECT 1 FROM svc_discipline_decision d
+                JOIN vi_pham v ON v.mavipham=d.violation_id
+                JOIN sinh_vien s ON s.masinhvien=v.masinhvien
+                JOIN svc_file f ON f.id=d.evidence_id AND f.state='ATTACHED'
+                WHERE f.id=? AND (?='ADMIN' OR (?='SINHVIEN' AND s.mataikhoan=?))
+            )
+            """, Boolean.class, id,role,role,accountId));
+    }
+
     public record RegistrationWindow(int id, String name, String semesterName,
                                      java.time.OffsetDateTime opensAt, java.time.OffsetDateTime closesAt) {}
 

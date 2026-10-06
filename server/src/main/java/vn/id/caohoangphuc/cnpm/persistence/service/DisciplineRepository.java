@@ -25,7 +25,7 @@ public class DisciplineRepository {
       String decision,
       String reason,
       int actorId,
-      Instant createdAt) {}
+      Instant createdAt, java.util.UUID evidenceFileId) {}
 
   public record Appeal(long id, long decisionId, String studentId, String state, long version) {}
 
@@ -205,7 +205,7 @@ WHERE v.trangthai='CHUA_XU_LY' ORDER BY v.ngayvipham DESC LIMIT ? OFFSET ?
   public List<Decision> decisions(int id) {
     return jdbc.query(
         "SELECT"
-            + " d.id,d.violation_id,v.masinhvien,d.semester_id,d.revision,d.decision,d.reason,d.actor_id,d.created_at"
+            + " d.id,d.violation_id,v.masinhvien,d.semester_id,d.revision,d.decision,d.reason,d.actor_id,d.created_at,d.evidence_id"
             + " FROM svc_discipline_decision d JOIN vi_pham v ON v.mavipham=d.violation_id WHERE"
             + " d.violation_id=? ORDER BY d.revision",
         (r, n) ->
@@ -218,7 +218,7 @@ WHERE v.trangthai='CHUA_XU_LY' ORDER BY v.ngayvipham DESC LIMIT ? OFFSET ?
                 r.getString(6),
                 r.getString(7),
                 r.getInt(8),
-                r.getTimestamp(9).toInstant()),
+                r.getTimestamp(9).toInstant(), r.getObject(10,java.util.UUID.class)),
         id);
   }
 
