@@ -398,7 +398,7 @@ class RemainingUseCasesApiBlackBoxIT {
         var guard=login("baove1");
         UUID cardId=UUID.randomUUID();
         String token="api-card-"+UUID.randomUUID();
-        jdbc.update("INSERT INTO svc_card(id,student_id,token_hash,valid_from,valid_to,state) VALUES(?,'21110001',?,now()-interval '1 hour',now()+interval '1 hour','ACTIVE')",
+        jdbc.update("INSERT INTO svc_card(id,student_id,token_hash,valid_from,valid_to,state) VALUES(?,'DEMO-AM',?,now()-interval '1 hour',now()+interval '1 hour','ACTIVE')",
                 cardId,vn.id.caohoangphuc.cnpm.service.ServiceContext.hash(token));
         UUID event=UUID.randomUUID();
         try {
@@ -441,16 +441,16 @@ class RemainingUseCasesApiBlackBoxIT {
     void manualGateEntryRequiresGuardVerificationOverHttp() throws Exception {
         var guard=login("baove1");
         UUID card=UUID.randomUUID();
-        jdbc.update("INSERT INTO svc_card(id,student_id,token_hash,valid_from,valid_to,state) VALUES(?,'21110001',?,now()-interval '1 hour',now()+interval '1 hour','ACTIVE')",
+        jdbc.update("INSERT INTO svc_card(id,student_id,token_hash,valid_from,valid_to,state) VALUES(?,'DEMO-AM',?,now()-interval '1 hour',now()+interval '1 hour','ACTIVE')",
                 card,vn.id.caohoangphuc.cnpm.service.ServiceContext.hash("manual-fixture-"+card));
-        String body=json.writeValueAsString(java.util.Map.of("eventId",UUID.randomUUID(),"studentId","21110001","type","RA","deviceId","API-MANUAL-GATE","identityVerified",true));
+        String body=json.writeValueAsString(java.util.Map.of("eventId",UUID.randomUUID(),"studentId","DEMO-AM","type","RA","deviceId","API-MANUAL-GATE","identityVerified",true));
         try {
             assertEquals(422,post(guard,ApiRoutes.MANUAL_ENTRY,body.replace("true","false")).statusCode());
             assertEquals(403,post(login(STUDENT),ApiRoutes.MANUAL_ENTRY,body).statusCode());
-            assertEquals(409,post(guard,ApiRoutes.MANUAL_ENTRY,body.replace("21110001","21110091")).statusCode());
+            assertEquals(409,post(guard,ApiRoutes.MANUAL_ENTRY,body.replace("DEMO-AM","21110091")).statusCode());
             var response=post(guard,ApiRoutes.MANUAL_ENTRY,body);
             assertEquals(200,response.statusCode(),response.body());
-            assertEquals("21110001",json.readTree(response.body()).path("studentId").asString());
+            assertEquals("DEMO-AM",json.readTree(response.body()).path("studentId").asString());
             assertFalse(response.body().contains("token"));
             assertFalse(get(guard,ApiRoutes.STUDENTS).body().contains("token"));
         } finally {
@@ -505,7 +505,7 @@ class RemainingUseCasesApiBlackBoxIT {
             int id=jdbc.queryForObject("INSERT INTO vi_pham(masinhvien,noidungvipham,mucdo,ngayvipham,trangthai) VALUES('21110001','API CRUD violation long decision','LOW','2026-10-01','CHUA_XU_LY') RETURNING mavipham",Integer.class);
             UUID file=UUID.randomUUID();
             int owner=jdbc.queryForObject("SELECT mataikhoan FROM tai_khoan WHERE tendangnhap='admin'",Integer.class);
-            jdbc.update("INSERT INTO svc_file(id,owner_id,kind,object_key,mime,size_bytes,sha256,key_id,nonce,tag,state,expires_at) VALUES(?,?,'EVIDENCE',?,'image/png',1,?,'api-fixture',?,?,'DRAFT',now()+interval '1 hour')",file,owner,"test/"+file,"a".repeat(64),new byte[12],new byte[16]);
+            jdbc.update("INSERT INTO svc_file(id,owner_id,kind,object_key,mime,size_bytes,sha256,key_id,nonce,tag,state,scanned_at,expires_at) VALUES(?,?,'EVIDENCE',?,'image/png',1,?,'api-fixture',?,?,'DRAFT',now(),now()+interval '1 hour')",file,owner,"test/"+file,"a".repeat(64),new byte[12],new byte[16]);
             try {
                 String decision="D".repeat(length);
                 String body=json.writeValueAsString(java.util.Map.of("violationIds",java.util.List.of(id),"decision",decision,"reason","Xác minh","evidenceFileId",file,"versions",java.util.Map.of(Integer.toString(id),1)));
