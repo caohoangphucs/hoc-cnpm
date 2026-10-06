@@ -21,7 +21,7 @@ export function SelectField({ label, children, error, ...props }: SelectHTMLAttr
 }
 export function NotesField({ label, error, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement> & { label: string; error?: string }) {
   const id = useId()
-  return <label className="wl-field"><span>{label}</span><textarea {...props} id={id} aria-label={label} maxLength={1000} aria-invalid={error ? true : undefined} aria-describedby={error ? `${id}-error` : undefined} />{error && <small className="wl-error" id={`${id}-error`}>{error}</small>}</label>
+  return <label className="wl-field"><span>{label}</span><textarea {...props} id={id} aria-label={label} maxLength={props.maxLength ?? 1000} aria-invalid={error ? true : undefined} aria-describedby={error ? `${id}-error` : undefined} />{error && <small className="wl-error" id={`${id}-error`}>{error}</small>}</label>
 }
 export function Facts({ items }: { items: [string, ReactNode][] }) { return <dl className="wl-facts">{items.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl> }
 export function DataTable({ label, head, rows, pagination = true }: { label: string; head: ReactNode; rows: ReactNode[]; pagination?: boolean }) {

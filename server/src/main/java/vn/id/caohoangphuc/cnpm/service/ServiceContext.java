@@ -167,7 +167,12 @@ public class ServiceContext {
 
   /** Kiểm tra file nháp thuộc người gọi, đúng loại và chưa hết hạn. */
   public void files(List<UUID> ids, int ownerId, String... kinds) {
-    if (ids == null || ids.size() > 5 || new HashSet<>(ids).size() != ids.size())
+    files(ids, ownerId, 5, kinds);
+  }
+
+  /** Áp dụng giới hạn ảnh riêng của từng nghiệp vụ, giữ kiểm tra owner/nháp/hiệu lực. */
+  public void files(List<UUID> ids, int ownerId, int maximum, String... kinds) {
+    if (ids == null || ids.size() > maximum || new HashSet<>(ids).size() != ids.size())
       throw ServiceException.invalid("Invalid file list");
     for (UUID id : ids.stream().sorted().toList()) {
       var file = repository.file(id);
