@@ -35,6 +35,7 @@ export async function readJson<T>(response: Response, decode: (value: unknown) =
     const data = body && typeof body === 'object' ? body as Record<string, unknown> : {}
     const message = data.code === 'INVALID_VISITOR_NAME' ? 'Họ tên khách phải có chữ, dài 2–100 ký tự.'
       : data.code === 'INVALID_VISITOR_IDENTITY' ? 'Số giấy tờ không đúng định dạng loại đã chọn.'
+      : data.code === 'NO_CURRENT_ROOM' ? 'Bạn chưa có phòng lưu trú nên chưa thể gửi yêu cầu sửa chữa.'
       : data.code === 'ENCRYPTION_UNAVAILABLE' ? 'Máy chủ chưa cấu hình mã hóa thông tin khách. Liên hệ Ban quản lý và thử lại sau.'
       : data.code === 'ALREADY_REGISTERED' ? 'Bạn đã đăng ký hoạt động này. Xem phiếu tại Đăng ký của tôi.'
       : data.code === 'ACTIVITY_TIME_CONFLICT' ? 'Hoạt động trùng giờ với lịch bạn đã đăng ký. Xem Đăng ký của tôi để kiểm tra hoặc hủy lịch cũ.'
