@@ -80,6 +80,23 @@ Preview/fixture đăng ký, duyệt hồ sơ, hóa đơn, thanh toán, sửa ch�
 - Kiểm tra đọc API local ngày 2026-10-03: 29 kiểm tra danh sách/chi tiết/DTO/quyền đọc đạt. Sau khi đồng bộ bản sửa backend `37208ce` từ develop và build lại server, cả 5 GET từng trả 500 đều trả 200 qua proxy Vite: ADMIN đọc bookings/visitors/entries; BAOVE đọc visitors/entries. Dữ liệu local hiện trống; đã kiểm tra cấu trúc danh sách và tổng phân trang khi API cung cấp, chưa kiểm tra lại với danh sách có dữ liệu. Bản sửa backend ép kiểu bộ lọc NULL trong BookingRepository/GateRepository; client không cần đổi cách gọi API.
 - Trạng thái hồ sơ hợp lệ để duyệt là `VALID` theo RegistrationService thực tế; ví dụ `COMPLETE` trong docs không đủ để mở nút duyệt.
 
+### Sửa issue frontend — 2026-10-05
+
+Nhánh `fix/dat-client-issues` dựa trên `origin/develop` (`2d12493`). Chỉ sửa trong `client`, giữ API và kiểm tra quyền nghiệp vụ ở backend.
+
+| Issue | Thay đổi frontend | Phần backend còn cần xử lý |
+|---|---|---|
+| #71, #72, #77 | Chi tiết hồ sơ chỉ dùng minh chứng thật; tìm ĐK-/DK-/ID; lỗi xét duyệt tải lại chi tiết/danh sách và bỏ xác nhận cũ. | Không phát sinh yêu cầu API mới. |
+| #88 | Chọn nhiều hóa đơn qua các trang, kiểm tra điều kiện/tổng và xác nhận danh sách trước tạo một phiên thanh toán. | Gộp dùng endpoint hiện có; kết quả thanh toán vẫn từ server. |
+| #62, #90 | Tên hoạt động tối đa 255, mã 20, vị trí giường 50, giá phòng tối đa 999999999999999; kiểm tra cả form và payload. | DTO/service vẫn cần trả lỗi đầu vào thay vì 500 cho request trực tiếp vượt schema. |
+| #80 | Giữ số đo tích lũy trong INT; mức tiêu thụ mỗi kỳ tối đa 99999999. Bản nháp vượt giới hạn bị cảnh báo và khóa phát hành. | Validation/preview/schema vẫn cần thống nhất ở server. |
+| #79 | Sau lỗi phát hành, bỏ bản nháp cũ, đọc lại phòng chưa phát hành, loại phòng không còn đủ điều kiện và cho tính lại phần còn lại. Không tự dựng mã hóa đơn hay báo thành công khi chưa xác nhận. | Batch vẫn cần trả kết quả từng phòng và tiếp tục xử lý sau lỗi một phòng. |
+| #95 | Đọc lại cấu hình trước sửa, chỉ điền các trường thực do API trả về; khóa sửa toàn bộ khi dữ liệu thiếu. Hỗ trợ cấu hình đầy đủ nếu API bổ sung các trường. | GET phòng cần number/floor/basePrice/status/roomTypeId; GET giường cần position. API hiện tại thiếu các trường nên thao tác sửa vẫn bị khóa an toàn. |
+
+Thanh toán VNPAY chặn tổng trên 9999999999 đồng trước khi tạo phiên, theo giới hạn 12 chữ số của số tiền nhân 100 trong adapter hiện tại. API vẫn kiểm lại số dư và quyền của mỗi hóa đơn. Tải lại danh sách xóa lựa chọn cũ; lựa chọn qua trang được giữ đến khi xác nhận/bỏ chọn.
+
+Kiểm tra luồng browser dùng bản build và HTTP fixture riêng trên localhost, không đưa dữ liệu demo vào ứng dụng hay ghi database đang dùng. Test trong các file hiện có bổ sung các trường hợp hồi quy của giới hạn, tìm mã, cấu hình thiếu và thanh toán gộp; không xóa test backend.
+
 ## 1. Công nghệ và môi trường
 
 | Thành phần | Lựa chọn |

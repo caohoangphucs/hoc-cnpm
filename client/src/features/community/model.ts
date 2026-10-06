@@ -23,7 +23,7 @@ export function activityPayload(semesterId: string, title: string, start: string
   const startAt = vietnamTime(start), endAt = vietnamTime(end)
   if (!startAt || !endAt || Date.parse(endAt) <= Date.parse(startAt)) throw new Error('Chọn khoảng thời gian hoạt động hợp lệ theo giờ Việt Nam.')
   if (![semesterId, capacity, points].every(s => /^[1-9]\d*$/.test(s) && Number.isSafeInteger(Number(s)) && Number(s) <= 2147483647)) throw new Error('Mã học kỳ, số chỗ và điểm phải là số nguyên dương hợp lệ.')
-  if (!title.trim() || title.trim().length > 1000) throw new Error('Nhập tên hoạt động từ 1 đến 1.000 ký tự.')
+  if (!title.trim() || title.trim().length > 255) throw new Error('Nhập tên hoạt động từ 1 đến 255 ký tự.')
   return { semesterId: Number(semesterId), title: title.trim(), startAt, endAt, capacity: Number(capacity), points: Number(points) }
 }
 export function conversionPayload(semesterId: number, drl: string, points: Pick<ReturnType<typeof parsePoints>, 'available' | 'convertedDrl'>) {
