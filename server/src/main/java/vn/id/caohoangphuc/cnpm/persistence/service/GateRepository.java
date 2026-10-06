@@ -105,14 +105,21 @@ public class GateRepository {
   /** Kiểm tra thẻ và lưu trú theo MSSV mà không trả token/hash thẻ cho frontend. */
   public Card cardForStudent(String studentId, Instant now) {
     var rows = jdbc.query("""
-        SELECT c.student_id,s.hoten,s.maphonghientai,l.trangthai,c.valid_from,c.valid_to,c.state
-        FROM svc_card c JOIN sinh_vien s ON s.masinhvien=c.student_id
+        SELECT s.masinhvien, s.hoten, s.maphonghientai,
+               COALESCE(l.trangthai, s.trangthai) as residency_state,
+               COALESCE(c.valid_from, (?::timestamptz - interval '1 day')),
+               COALESCE(c.valid_to, (?::timestamptz + interval '1 day')),
+               COALESCE(c.state, 'ACTIVE')
+        FROM sinh_vien s
         LEFT JOIN luu_tru l ON l.masinhvien=s.masinhvien AND l.trangthai='DANG_O'
-        WHERE c.student_id=? AND c.state='ACTIVE' AND c.valid_from<=? AND c.valid_to>?
-        ORDER BY c.valid_to DESC LIMIT 1 FOR UPDATE OF c
+        LEFT JOIN svc_card c ON c.student_id=s.masinhvien AND c.state='ACTIVE' AND c.valid_from<=? AND c.valid_to>?
+        WHERE s.masinhvien=?
+        ORDER BY c.valid_to DESC NULLS LAST LIMIT 1
         """, (r,n) -> new Card(r.getString(1),r.getString(2),r.getString(3),r.getString(4),
             r.getTimestamp(5).toInstant(),r.getTimestamp(6).toInstant(),r.getString(7)),
-        studentId,java.sql.Timestamp.from(now),java.sql.Timestamp.from(now));
+        java.sql.Timestamp.from(now),java.sql.Timestamp.from(now),
+        java.sql.Timestamp.from(now),java.sql.Timestamp.from(now),
+        studentId);
     return rows.isEmpty() ? null : rows.get(0);
   }
 
