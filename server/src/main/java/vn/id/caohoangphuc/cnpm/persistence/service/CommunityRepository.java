@@ -65,7 +65,7 @@ public class CommunityRepository {
             + " WHERE a.trangthai='MO_DANG_KY' ORDER BY a.thoigianbatdau LIMIT ? OFFSET ?",
         (r, n) -> activityRow(r),
         size,
-        (page - 1) * size);
+        (long) (page - 1) * size);
   }
 
   /** Đọc toàn bộ phiếu của đúng sinh viên, kể cả hoạt động đã đóng và phiếu đã hủy. */
@@ -168,7 +168,7 @@ public class CommunityRepository {
     return jdbc.queryForObject(
         """
         SELECT count(*) FROM dang_ky_cong_ich d JOIN hoat_dong a USING(mahoatdong)
-        WHERE d.masinhvien=? AND d.trangthai IN ('REGISTERED','ATTENDED')
+        WHERE d.masinhvien=? AND d.trangthai IN ('REGISTERED','ATTENDED','COMPLETED')
         AND a.thoigianbatdau<? AND ?<a.thoigianketthuc
         """,
         Integer.class,

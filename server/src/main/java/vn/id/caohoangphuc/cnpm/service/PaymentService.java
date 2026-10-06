@@ -13,6 +13,8 @@ import vn.id.caohoangphuc.cnpm.persistence.service.PaymentRepository;
 import vn.id.caohoangphuc.cnpm.persistence.service.ServiceRepository;
 
 public class PaymentService {
+  public record CallbackReceipt(PaymentResourceDto payment, boolean replayed) {}
+
   private final PaymentRepository repository;
   private final ServiceContext context;
   private final List<PaymentGateway> gateways;
@@ -114,6 +116,12 @@ public class PaymentService {
       Actor provider, RequestContext request, PaymentGateway.Verified payment) {
     // Chỉ gọi sau khi adapter đã xác thực chữ ký và định danh merchant của provider.
     requireVerifiedCallback(payment);
+    return acceptCallback(provider, request, payment).payment();
+  }
+
+  /** Reports whether an identical provider callback was already confirmed. */
+  public CallbackReceipt acceptCallback(Actor provider, RequestContext request, PaymentGateway.Verified payment) {
+    requireVerifiedCallback(payment);
     return context.transaction(() -> applyCallback(provider, request, payment));
   }
 
@@ -156,6 +164,7 @@ public class PaymentService {
     for (var invoice : invoices) total = total.add(outstandingAmount(invoice));
 
     requirePaymentAmount(total);
+    requireGatewayAmount(input.gateway(), total);
     var session =
         repository.create(
             id,
@@ -217,13 +226,13 @@ public class PaymentService {
   }
 
   /** Xử lý callback trong transaction và lưu kết quả để provider gửi lặp lại an toàn. */
-  private PaymentResourceDto applyCallback(
+  private CallbackReceipt applyCallback(
       Actor provider, RequestContext request, PaymentGateway.Verified payment) {
     var session = repository.byReference(payment.gateway(), payment.providerRef(), true);
     if (session == null) throw ServiceException.notFound("Payment session");
 
     var previous = repository.callback(payment.gateway(), payment.eventKey());
-    if (previous != null) return replayCallback(previous, session, payment);
+    if (previous != null) return new CallbackReceipt(replayCallback(previous, session, payment), true);
 
     requireCallbackAmount(session, payment);
     var allocations = repository.allocations(session.id());
@@ -244,7 +253,7 @@ public class PaymentService {
         "PAYMENT_CALLBACK",
         session.id().toString(),
         Map.of("status", updated.status()));
-    return result;
+    return new CallbackReceipt(result, false);
   }
 
   /** Trả kết quả cũ nếu eventKey và nội dung callback giống hệt lần trước. */
@@ -275,6 +284,13 @@ public class PaymentService {
       return;
     }
 
+    if (session.status().equals("FAILED")
+        && session.providerTransactionId() != null
+        && !session.providerTransactionId().equals(payment.transactionId())) {
+      repository.paymentState(session.id(), "NEEDS_REVIEW", payment.transactionId());
+      return;
+    }
+
     if (needsManualReview(session, allocations)) {
       repository.paymentState(session.id(), "NEEDS_REVIEW", payment.transactionId());
       return;
@@ -302,8 +318,10 @@ public class PaymentService {
   private List<PaymentRepository.Invoice> loadOwnedInvoices(
       List<Long> ids, String studentId, boolean lock) {
     var invoices = new ArrayList<PaymentRepository.Invoice>();
-    for (long id : ids.stream().sorted().toList()) {
-      var invoice = repository.invoice(Math.toIntExact(id), lock);
+    for (Long id : ids.stream().sorted().toList()) {
+      if (id == null || id > Integer.MAX_VALUE)
+        throw ServiceException.invalid("invoiceId is out of range");
+      var invoice = repository.invoice(id.intValue(), lock);
       requireOwnedInvoice(invoice, studentId);
       invoices.add(invoice);
     }
@@ -333,6 +351,18 @@ public class PaymentService {
   private void requirePaymentAmount(BigDecimal amount) {
     if (amount.compareTo(new BigDecimal("999999999999999")) > 0)
       throw ServiceException.invalid("Payment amount is too large");
+  }
+
+  /** Checks provider-specific amount limits before persisting a pending payment attempt. */
+  private void requireGatewayAmount(PaymentDto.Gateway gateway, BigDecimal amount) {
+    if (gateway == PaymentDto.Gateway.VNPAY) {
+      try {
+        if (amount.multiply(BigDecimal.valueOf(100)).toBigIntegerExact().toString().length() > 12)
+          throw ServiceException.invalid("VNPAY amount exceeds provider limit");
+      } catch (ArithmeticException exception) {
+        throw ServiceException.invalid("VNPAY amount must be whole VND");
+      }
+    }
   }
 
   /** Từ chối kết quả callback thiếu hoặc có số tiền không hợp lệ. */

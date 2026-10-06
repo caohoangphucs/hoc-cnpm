@@ -312,7 +312,7 @@ VALUES(?,?,?,?,?,?,?,?,?,'CHUA_TT') RETURNING mahoadon
     }
 
     args.add(size);
-    args.add((page - 1) * size);
+    args.add((long) (page - 1) * size);
     var ids = jdbc.query("SELECT i.mahoadon FROM hoa_don i WHERE true " + visibility
             + " ORDER BY i.ngayphathanh DESC,i.mahoadon DESC LIMIT ? OFFSET ?",
         (r, n) -> r.getInt(1), args.toArray());
@@ -363,6 +363,7 @@ VALUES(?,?,?,?,?,?,?,?,?,'CHUA_TT') RETURNING mahoadon
 
   /** Deletes an unpaid invoice and its itemized lines. */
   public boolean deleteUnpaid(int id) {
+    jdbc.update("DELETE FROM svc_invoice_snapshot WHERE invoice_id=?", id);
     jdbc.update("DELETE FROM chi_tiet_hoa_don WHERE mahoadon=?", id);
     return jdbc.update("DELETE FROM hoa_don WHERE mahoadon=? AND trangthai='CHUA_TT'", id) == 1;
   }

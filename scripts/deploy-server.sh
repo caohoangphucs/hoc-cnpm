@@ -65,7 +65,8 @@ for migration in \
   V20261010__evidence_file_content.sql \
   V20261011__seed_unissued_invoice_month.sql \
   V20261012__repair_seed_gate_violation_links.sql \
-  V20261013__discipline_decision_text.sql; do
+  V20261013__discipline_decision_text.sql \
+  V20261014__support_invoice_meter_quantity.sql; do
   echo "Applying database migration $migration"
   docker exec "$database_container" pg_isready -U "$database_user" -d "$database_name"
   docker exec -i -e PGCLIENTENCODING=UTF8 "$database_container" psql -X -v ON_ERROR_STOP=1 --single-transaction \

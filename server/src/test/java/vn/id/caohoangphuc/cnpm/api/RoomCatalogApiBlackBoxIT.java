@@ -33,6 +33,7 @@ class RoomCatalogApiBlackBoxIT {
 
     @AfterEach
     void removeCrudTestData() {
+        jdbc.update("DELETE FROM svc_room_price WHERE room_id='API-CRUD-ROOM'");
         jdbc.update("DELETE FROM phong WHERE maphong='API-CRUD-ROOM'");
         jdbc.update("DELETE FROM AUDIT_LOG WHERE TenBang IN ('ROOM_CREATED','ROOM_UPDATED','ROOM_DELETED',"
                 + "'BED_CREATED','BED_UPDATED','BED_DELETED')");
@@ -68,10 +69,31 @@ class RoomCatalogApiBlackBoxIT {
         var deletedBed = send(admin.client(), request(admin, ApiRoutes.BED.replace("{id}", "API-CRUD-BED"),
                 "DELETE", ""));
         assertEquals(200, deletedBed.statusCode(), deletedBed.body());
+        jdbc.update("DELETE FROM svc_room_price WHERE room_id='API-CRUD-ROOM'");
         var deletedRoom = send(admin.client(), request(admin,
                 ApiRoutes.ROOM.replace("{id}", "API-CRUD-ROOM"), "DELETE", ""));
         assertEquals(200, deletedRoom.statusCode(), deletedRoom.body());
         assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM phong WHERE maphong='API-CRUD-ROOM'", Integer.class));
+    }
+
+    @Test
+    void roomWithOnlyPriceHistoryCannotBeDeleted() throws Exception {
+        var admin = login("admin");
+        var roomBody = "{\"id\":\"API-CRUD-ROOM\",\"buildingId\":\"TOA-C\","
+                + "\"roomTypeId\":\"LP-4\",\"number\":\"API-CRUD\",\"floor\":1,"
+                + "\"capacity\":1,\"basePrice\":100000,\"status\":\"TRONG\"}";
+        assertEquals(200, send(admin.client(), request(admin, ApiRoutes.ROOMS, "POST", roomBody)).statusCode());
+        assertEquals(200, send(admin.client(), request(admin,
+                ApiRoutes.ROOM.replace("{id}", "API-CRUD-ROOM"), "PUT", roomBody.replace("100000", "120000")))
+                .statusCode());
+
+        var response = send(admin.client(), request(admin,
+                ApiRoutes.ROOM.replace("{id}", "API-CRUD-ROOM"), "DELETE", ""));
+
+        assertEquals(409, response.statusCode(), response.body());
+        assertEquals("CONFLICT", json.readTree(response.body()).path("code").asString());
+        assertTrue(jdbc.queryForObject(
+                "SELECT COUNT(*) FROM svc_room_price WHERE room_id='API-CRUD-ROOM'", Integer.class) > 0);
     }
 
     @Test

@@ -48,6 +48,8 @@ public class ApiSupport {
             String field = switch (exception.getCode()) {
                 case "INVALID_VISITOR_NAME" -> "name";
                 case "INVALID_VISITOR_IDENTITY" -> "identity";
+                case "INVALID_BUILDING_ID" -> "buildingId";
+                case "INVALID_ROOM_TYPE_ID" -> "roomTypeId";
                 default -> null;
             };
             if (field != null) return ServerResponse.status(exception.getStatus()).contentType(MediaType.APPLICATION_JSON)

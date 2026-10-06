@@ -1136,12 +1136,17 @@ components:
     Room:
       type: object
       properties:
-        id: {type: string}
-        buildingId: {type: string}
-        roomType: {type: string}
+        id: {type: string, maxLength: 20}
+        buildingId: {type: string, maxLength: 20}
+        roomType: {type: string, description: Tên loại phòng để hiển thị}
+        roomTypeId: {type: string, nullable: true, maxLength: 20, description: Mã loại phòng để điền biểu mẫu sửa}
         gender: {type: string}
+        number: {type: string, maxLength: 20}
+        floor: {type: integer}
+        basePrice: {type: integer, format: int64, maximum: 999999999999999}
+        status: {type: string}
         capacity: {type: integer, format: int64}
-        availableBeds: {type: integer, format: int64}
+        availableBeds: {type: integer, format: int64, description: Số giường trống không vượt quá sức chứa còn lại}
     RoomPage:
       allOf: [{$ref: '#/components/schemas/Page'}]
       type: object
@@ -1150,8 +1155,9 @@ components:
     Bed:
       type: object
       properties:
-        id: {type: string}
-        number: {type: string}
+        id: {type: string, maxLength: 20}
+        number: {type: string, maxLength: 20}
+        position: {type: string, maxLength: 50, nullable: true}
         status: {type: string}
         version: {type: integer, format: int64}
     BedPage:

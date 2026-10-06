@@ -1,6 +1,7 @@
 package vn.id.caohoangphuc.cnpm.service;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import vn.id.caohoangphuc.cnpm.api.dto.BookingDto;
@@ -23,7 +24,9 @@ public class BookingService {
   public CommandResultDto book(Actor actor, RequestContext request, BookingDto input) {
     context.validate(input);
     context.text(input.bedId(), 20, "bedId");
-    int windowId = Math.toIntExact(input.windowId());
+    if (input.windowId() > Integer.MAX_VALUE)
+      throw ServiceException.invalid("windowId is out of range");
+    int windowId = input.windowId().intValue();
 
     // Giữ khóa sinh viên trong transaction để không tạo hai chỗ giữ phòng cùng lúc.
     return context.write(
@@ -73,7 +76,9 @@ public class BookingService {
           if (!"CHO_DUYET".equals(booking.status()))
             throw ServiceException.conflict("Only pending bookings can be deleted");
           var bed = repository.lockBed(booking.bedId());
-          if (bed != null && "GIU_CHO".equals(bed.status())) repository.bedStatus(bed.id(), "TRONG");
+          Integer owner = repository.activeBookingForBed(booking.bedId(), context.now());
+          if (bed != null && "GIU_CHO".equals(bed.status()) && owner != null && owner == id)
+            repository.bedStatus(bed.id(), "TRONG");
           if (!repository.deletePending(id)) throw ServiceException.notFound("Booking");
           context.event(actor, request, "BOOKING_DELETED", Integer.toString(id),
               Map.of("studentId", booking.studentId(), "bedId", booking.bedId()));
@@ -139,7 +144,9 @@ public class BookingService {
   /** Hủy lượt giữ chỗ đã quá hạn và trả giường về trạng thái trống. */
   private void expire(Actor actor, RequestContext request, BookingRepository.Booking booking) {
     var bed = repository.lockBed(booking.bedId());
-    if (bed != null && bed.status().equals("GIU_CHO")) repository.bedStatus(bed.id(), "TRONG");
+    Integer owner = repository.activeBookingForBed(booking.bedId(), context.now());
+    if (bed != null && bed.status().equals("GIU_CHO") && owner == null)
+      repository.bedStatus(bed.id(), "TRONG");
     repository.status(booking.id(), "HUY", "Hold expired");
     context.event(
         actor,
@@ -149,13 +156,22 @@ public class BookingService {
         Map.of("studentId", booking.studentId()));
   }
 
+  /** Expires overdue reservations from the scheduler with an auditable system request. */
+  public int expireHoldsFromScheduler() {
+    Integer adminId = repository.activeAdminId();
+    if (adminId == null) return 0;
+    return expireHolds(new Actor(adminId, false),
+        new RequestContext(java.util.UUID.randomUUID(), java.util.UUID.randomUUID()), 100);
+  }
+
   /** Từ chối yêu cầu nếu đợt đăng ký hoặc học kỳ chưa mở hay đã đóng. */
   private void requireOpenWindow(BookingRepository.Window window, java.time.Instant now) {
     if (window == null
         || !window.status().equals("ACTIVE")
         || !window.semesterStatus().equals("ACTIVE")
         || now.isBefore(window.opensAt())
-        || !now.isBefore(window.closesAt()))
+        || !now.isBefore(window.closesAt())
+        || LocalDate.ofInstant(now, ServiceContext.ZONE).isAfter(window.endsOn()))
       throw ServiceException.invalid("Registration window is closed");
   }
 
@@ -169,6 +185,7 @@ public class BookingService {
       throw ServiceException.invalid("Building gender does not match");
 
     if (!bed.status().equals("TRONG")
+        || repository.activeBookingForBed(bed.id(), context.now()) != null
         || java.util.Set.of("KHOA", "DANG_SUA", "DAY").contains(bed.roomStatus()))
       throw ServiceException.conflict("Bed is not available");
 
