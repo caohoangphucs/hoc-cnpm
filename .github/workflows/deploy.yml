@@ -127,6 +127,10 @@ jobs:
         run: |
           psql -v ON_ERROR_STOP=1 -f database/tests/demo_usecases_migration.sql
           psql -v ON_ERROR_STOP=1 --single-transaction -f database/migrations/V20261009__complete_demo_usecases.sql
+      - name: Apply linked residency seed and verify data consistency
+        run: |
+          psql -v ON_ERROR_STOP=1 --single-transaction -f database/migrations/V20261015__link_seed_residencies.sql
+          psql -v ON_ERROR_STOP=1 -f database/tests/residency_links.sql
       - name: Verify seeded demo cases through real HTTP and PostgreSQL
         run: |
           docker run --rm --network "$CI_NETWORK" \

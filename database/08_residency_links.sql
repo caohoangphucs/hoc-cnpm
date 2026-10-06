@@ -1,0 +1,1 @@
+\ir migrations/V20261015__link_seed_residencies.sql
