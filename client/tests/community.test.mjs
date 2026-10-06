@@ -28,3 +28,12 @@ test('create payload contains implemented fields only and validates integers/dat
   assert.deepEqual(activityPayload('8', ' Trồng cây ', '2026-12-01T08:00', '2026-12-01T10:00', '20', '10'), { semesterId: 8, title: 'Trồng cây', startAt: activity.startAt, endAt: activity.endAt, capacity: 20, points: 10 })
   assert.throws(() => activityPayload('8', 'A', '2026-12-01T08:00', '2026-12-01T10:00', '2.5', '10'))
 })
+
+
+test('activity titles respect the 255-character storage limit on create and edit', () => {
+  const payload = title => activityPayload('1', title, '2026-12-01T08:00', '2026-12-01T10:00', '10', '5')
+  assert.equal(payload('A'.repeat(255)).title.length, 255)
+  assert.throws(() => payload('A'.repeat(256)))
+  assert.throws(() => payload(' '.repeat(5)))
+  assert.equal(payload('  Hoạt động  ').title, 'Hoạt động')
+})
