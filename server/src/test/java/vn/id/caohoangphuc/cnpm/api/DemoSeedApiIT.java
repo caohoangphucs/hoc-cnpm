@@ -41,6 +41,19 @@ class DemoSeedApiIT {
         jdbc.update("UPDATE phong SET dango=1,trangthai='CON_CHO' WHERE maphong IN ('DEMO-A','DEMO-B')");
     }
 
+    /** A second-floor seed resident has a real room assignment and cannot register again. */
+    @Test
+    void secondFloorResidentIsLinkedThroughHttp() throws Exception {
+        var session = login("sv013");
+        var response = get(session, "/api/v1/students/me");
+        assertEquals(200, response.statusCode(), response.body());
+        assertEquals("A-201", json.readTree(response.body()).path("roomId").asString());
+
+        var eligibility = get(session, "/api/v1/bookings/eligibility");
+        assertEquals(200, eligibility.statusCode(), eligibility.body());
+        assertTrue(json.readTree(eligibility.body()).path("hasActiveRoom").asBoolean());
+    }
+
     /** Students with an active residency are distinguished from applicants without an assigned room. */
     @Test
     void roomEligibilityReportsCurrentResidencyOnlyForStudentAccounts() throws Exception {
