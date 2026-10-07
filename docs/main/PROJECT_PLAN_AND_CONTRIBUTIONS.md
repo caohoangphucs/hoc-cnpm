@@ -68,3 +68,21 @@
 | **Tổng cộng** | | **100%** | **Hệ thống hoàn chỉnh sẵn sàng báo cáo nghiệm thu** | ✅ **Nghiệm thu** |
 
 > *Kết luận nghiệm thu: Toàn bộ 5 phân hệ, 8 Use Cases trọng tâm và 28 yêu cầu chức năng đã được hiện thực hóa, kiểm thử đạt 100% và sẵn sàng cho buổi báo cáo nghiệm thu.*
+
+
+## Phân công phụ trách BE cập nhật ngày 08/10/2026
+
+Gấm phụ trách bốn nhóm module tương đối dễ để bảo trì, hoàn thiện và trình bày luồng:
+
+| Nhóm module | Phạm vi phụ trách | File chính |
+|---|---|---|
+| Tra cứu phòng và giường | Tra cứu danh sách, chi tiết phòng và giường trống | RoomController, RoomCatalogService, RoomCatalogRepository |
+| Hồ sơ sinh viên | Thông tin cá nhân, phòng hiện tại và quyền xem hồ sơ của bản thân | StudentProfileDto và các endpoint hồ sơ sinh viên |
+| Sửa chữa | Tạo yêu cầu, cập nhật ưu tiên, phân công và hoàn tất sửa chữa | RepairController, RepairService, RepairRepository |
+| Hoạt động công ích | Tra cứu, đăng ký, hủy đăng ký và theo dõi kết quả hoạt động | CommunityController, CommunityService, CommunityRepository |
+
+Phúc tiếp tục phụ trách nền tảng, xác thực, đăng ký/duyệt phòng, hóa đơn, thanh toán,
+kiểm soát cổng và kỷ luật; hỗ trợ Gấm review các trường hợp giao dịch phức tạp.
+Đây là phân công phụ trách cập nhật, không phải bằng chứng về người thực hiện toàn bộ code trước đó.
+Metadata author của một số commit độc lập đã được điều chỉnh theo yêu cầu chủ repository;
+các commit gộp nhiều module được giữ nguyên tác giả.
