@@ -41,7 +41,7 @@ Mỗi Use Case đều được thực hiện đầy đủ theo chu trình 5 bư�
 
 - [x] **Doc Task 0: Hoàn thành Đặc tả Use Case chi tiết 100% (28 Functional Use Cases)**
   - **Đính kèm tài liệu:** [`docs/main/SRS_HeThongQuanLyKTX_v3.docx`](docs/main/SRS_HeThongQuanLyKTX_v3.docx) (Mục 5: Bảng tổng quan Table 17 & 28 bảng đặc tả 12 trường chuẩn).
-  - **Trạng thái:** ✅ Đã hoàn thành và commit (`c8849a0`).
+  - **Trạng thái:** ✅ Đã hoàn thành.
 
 - [ ] **Doc Task 1: Hoàn thiện Sequence Diagram toàn bộ 28 Functional Use Cases**
   - **Đính kèm tài liệu:** [`docs/sequence-diagrams/README.md`](docs/sequence-diagrams/README.md), [`docs/main/SRS_HeThongQuanLyKTX_v3.docx`](docs/main/SRS_HeThongQuanLyKTX_v3.docx).
@@ -57,7 +57,7 @@ Mỗi Use Case đều được thực hiện đầy đủ theo chu trình 5 bư�
 
 - [ ] **Doc Task 4: Rà soát & Đồng bộ Traceability Matrix (Bảng phân loại yêu cầu)**
   - **Đính kèm tài liệu:** [`docs/main/DanhSach_YeuCau_Nhom3.xlsx`](docs/main/DanhSach_YeuCau_Nhom3.xlsx), [`docs/main/ScreenFlow_QuanLyKTX.drawio`](docs/main/ScreenFlow_QuanLyKTX.drawio), [`docs/main/UseCaseDiagram_QuanLyKTX.png`](docs/main/UseCaseDiagram_QuanLyKTX.png), [`docs/main/GIT_WORKFLOW.md`](docs/main/GIT_WORKFLOW.md).
-  - **Nội dung:** Đảm bảo mã hóa Use Case (`#UC-XX` / `#REQ-XX`) khớp 100% giữa tài liệu SRS, danh sách yêu cầu, sơ đồ UML và commit git.
+  - **Nội dung:** Đảm bảo mã hóa Use Case (`#UC-XX` / `#REQ-XX`) khớp 100% giữa tài liệu SRS, danh sách yêu cầu, sơ đồ UML và mã nguồn.
 
 ---
 

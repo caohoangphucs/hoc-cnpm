@@ -1,8 +1,8 @@
 # Nguồn đặc tả demo
 
-Bộ demo dùng đúng 8 đặc tả trọng tâm trong SRS cũ ở commit `265ecc8`.
-File [SRS nguồn 8 UC](SRS_8UC_nguon.docx) được lấy nguyên bản từ
-`docs/main/SRS_HeThongQuanLyKTX_v3.docx` tại commit này, không chỉnh nội dung.
+Bộ demo dùng đúng 8 đặc tả trọng tâm trong tài liệu SRS nguồn.
+File [SRS nguồn 8 UC](SRS_8UC_nguon.docx) được trích xuất từ tài liệu đặc tả
+`docs/main/SRS_HeThongQuanLyKTX_v3.docx`, giữ nguyên vẹn nội dung gốc.
 File có cả danh sách yêu cầu và tài liệu phân tích; phần đặc tả chi tiết có 8 UC.
 
 | UC | Yêu cầu chính | Vai trò |
