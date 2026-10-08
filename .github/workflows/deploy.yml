@@ -1,11 +1,17 @@
 name: Backend and Frontend CI/CD
 on:
   push:
-    branches: [ "**" ]
+    branches: [ develop ]
   pull_request:
     branches: [ develop ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
+
 jobs:
   build-test-and-deploy:
     runs-on: [self-hosted, linux, x64, cnpm-deploy]
