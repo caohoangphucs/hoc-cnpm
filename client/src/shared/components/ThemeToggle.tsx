@@ -3,10 +3,14 @@ import { flushSync } from 'react-dom'
 import { applyTheme, getPreferredTheme, readStoredTheme, revealTheme } from '@/theme/theme'
 import { Icon } from './Icon'
 
+// component nút bấm chuyển đổi giữa giao diện sáng và tối
 export function ThemeToggle() {
+  // trạng thái theme hiện tại (light hoặc dark)
   const [theme, setTheme] = useState(getPreferredTheme)
   const requestedTheme = useRef(theme)
   const buttonRef = useRef<HTMLButtonElement>(null)
+
+  // hàm đảo theme có hiệu ứng chuyển cảnh mượt mà
   const toggleTheme = useCallback((button: HTMLButtonElement) => {
     const next = requestedTheme.current === 'light' ? 'dark' : 'light'
     requestedTheme.current = next

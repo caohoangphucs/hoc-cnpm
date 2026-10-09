@@ -9,6 +9,7 @@ import { TextField } from '@/shared/components/TextField'
 import { Button } from '@/shared/components/Button'
 import { Icon } from '@/shared/components/Icon'
 
+// màn hình đăng nhập tài khoản người dùng
 export function LoginPage() {
   const { state, login } = useAuth()
   const location = useLocation()
@@ -21,15 +22,21 @@ export function LoginPage() {
   const usernameRef = useRef<HTMLInputElement>(null)
   const passwordRef = useRef<HTMLInputElement>(null)
   const requested: unknown = location.state?.returnTo
+
+  // nếu đã có phiên hợp lệ: chuyển hướng ngay đến trang đích hoặc 2fa
   if (state.status === 'ready' && state.session.authenticated) {
     return <Navigate to={needsTwoFactor(state.session) ? '/login/2fa' : loginDestination(state.session, requested)} state={{ returnTo: requested }} replace />
   }
+
+  // xử lý gửi biểu mẫu đăng nhập
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (busy) return
     const issues: Record<string, string> = {}
+    // kiểm tra hợp lệ tên đăng nhập
     if (!username.trim()) issues.username = 'Nhập tên đăng nhập của bạn.'
     else if (username.trim().length > 50) issues.username = 'Tên đăng nhập không quá 50 ký tự.'
+    // kiểm tra hợp lệ mật khẩu
     if (!password.trim()) issues.password = 'Nhập mật khẩu của bạn.'
     else if (password.length > 128) issues.password = 'Mật khẩu không quá 128 ký tự.'
     setFields(issues)
@@ -51,9 +58,11 @@ export function LoginPage() {
       else passwordRef.current?.focus()
     } finally { setBusy(false) }
   }
+
   return <AuthLayout title="Chào mừng trở lại" description="Đăng nhập để tiếp tục sử dụng KTX Smart Hub.">
     <SessionFeedback />
     <AuthFeedback error={error} />
+    {/* biểu mẫu đăng nhập */}
     <form className="auth-form" onSubmit={submit} noValidate aria-label="Đăng nhập" aria-busy={busy}>
       <TextField ref={usernameRef} label="Tên đăng nhập" name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} value={username} readOnly={busy} required maxLength={50} errorText={fields.username} onChange={(event) => { setUsername(event.target.value); setFields((current) => ({ ...current, username: '' })) }} />
       <TextField ref={passwordRef} label="Mật khẩu" name="password" autoComplete="current-password" type={showPassword ? 'text' : 'password'} value={password} readOnly={busy} required maxLength={128} errorText={fields.password} onChange={(event) => { setPassword(event.target.value); setFields((current) => ({ ...current, password: '' })) }} trailing={
