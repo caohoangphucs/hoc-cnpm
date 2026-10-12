@@ -77,13 +77,13 @@ public class RepairRepository {
         r.getLong("version"));
   }
 
-  /** Liệt kê yêu cầu theo vai trò; kỹ thuật viên thấy việc được phân công hoặc đơn mới chưa tiếp nhận. */
+  /** Liệt kê yêu cầu theo vai trò; kỹ thuật viên chỉ thấy việc được phân công. */
   public List<Repair> list(String role, int actor, int page, int size) {
     String sql =
         role.equals("KYTHUAT")
-            ? "SELECT DISTINCT r.* FROM yeu_cau_sua_chua r LEFT JOIN svc_repair_assignment a ON"
-                + " a.repair_id=r.mayeucau WHERE a.technician_id=? OR (r.trangthai='MOI' AND"
-                + " a.technician_id IS NULL) ORDER BY r.ngaytao DESC LIMIT ? OFFSET ?"
+            ? "SELECT r.* FROM yeu_cau_sua_chua r JOIN svc_repair_assignment a ON"
+                + " a.repair_id=r.mayeucau WHERE a.technician_id=? ORDER BY r.ngaytao DESC LIMIT"
+                + " ? OFFSET ?"
             : "SELECT r.* FROM yeu_cau_sua_chua r ORDER BY r.ngaytao DESC LIMIT ? OFFSET ?";
     return role.equals("KYTHUAT")
         ? jdbc.query(sql, (r, n) -> map(r), actor, size, (long) (page - 1) * size)
