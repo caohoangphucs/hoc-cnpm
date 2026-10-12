@@ -1,9 +1,9 @@
 import type { ComponentType } from 'react'
 
+// định dạng module route được xuất từ các tính năng
 export type FeaturePageModule = { route: string; default: ComponentType }
 
-// Each feature owns its route entry. Independent UC branches share this registry
-// without editing the same navigation map for every new screen.
+// gom các module tính năng thành bảng tra cứu route -> component
 export function featurePages(modules: Record<string, FeaturePageModule>) {
   return Object.fromEntries(Object.values(modules).map(module => [module.route, module.default]))
 }

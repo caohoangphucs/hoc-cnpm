@@ -1,11 +1,17 @@
 name: Backend and Frontend CI/CD
 on:
   push:
-    branches: [ "**" ]
+    branches: [ develop ]
   pull_request:
     branches: [ develop ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
+
 jobs:
   build-test-and-deploy:
     runs-on: [self-hosted, linux, x64, cnpm-deploy]
@@ -182,7 +188,18 @@ jobs:
         run: |
           for container in "$CI_CLIENT" "$CI_SERVER"; do
             if docker inspect "$container" >/dev/null 2>&1; then
-              docker logs "$container" 2>&1
-              docker rm -f "$container"
+              docker logs "$container" 2>&1 || true
+              docker rm -f "$container" 2>/dev/null || true
             fi
           done
+
+      - name: Post-run image, builder cache, and temporary file cleanup
+        if: always()
+        run: |
+          echo "Cleaning up CI build images, dangling images, and build cache..."
+          docker rmi -f "cnpm-server-build:$CI_SHA" "cnpm-server-ci:$CI_SHA" "cnpm-client-ci:$CI_SHA" 2>/dev/null || true
+          docker image prune -f --filter "label=cnpm.commit=$CI_SHA" 2>/dev/null || true
+          docker image prune -f 2>/dev/null || true
+          docker builder prune -f --filter "until=24h" 2>/dev/null || true
+          rm -rf "$RUNNER_TEMP"/* 2>/dev/null || true
+

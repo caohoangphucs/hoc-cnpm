@@ -1,7 +1,9 @@
 import wordmark from '@/assets/ktx-smart-hub-logo.png'
 
+// component logo ktx smart hub hiển thị dạng đầy đủ hoặc biểu tượng thu gọn
 export function BrandLogo({ symbol = false }: { symbol?: boolean }) {
   // Frame the visible artwork without changing the supplied transparent PNGs.
+  // chọn ảnh logo đầy đủ hoặc icon biểu tượng favicon
   const image = symbol ? `${import.meta.env.BASE_URL}favicon.png` : wordmark
   return (
     <svg
