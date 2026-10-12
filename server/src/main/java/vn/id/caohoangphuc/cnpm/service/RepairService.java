@@ -98,7 +98,9 @@ public class RepairService {
         throw ServiceException.notFound("Repair");
       if ("KYTHUAT".equals(account.role())) {
         var assignment = repository.assignment(id, false);
-        if (assignment == null || assignment.technicianId() != account.id())
+        boolean isAssignedToMe = assignment != null && assignment.technicianId() == account.id();
+        boolean isUnassignedNew = assignment == null && "MOI".equals(repair.status());
+        if (!isAssignedToMe && !isUnassignedNew)
           throw ServiceException.notFound("Repair");
       }
       return repair;
