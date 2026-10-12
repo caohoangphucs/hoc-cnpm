@@ -1,7 +1,9 @@
 import type { IconName } from '@/shared/components/Icon'
 
+// danh sách mã định danh 5 vai trò / không gian làm việc
 export type WorkspaceId = 'student' | 'admin' | 'accountant' | 'technician' | 'security'
 
+// cấu trúc một mục điều hướng trên thanh menu
 export type NavigationItem = {
   path: string
   label: string
@@ -10,6 +12,7 @@ export type NavigationItem = {
   icon: IconName
 }
 
+// cấu trúc một không gian làm việc theo vai trò
 export type Workspace = {
   id: WorkspaceId
   label: string
@@ -17,6 +20,7 @@ export type Workspace = {
   navigation: readonly NavigationItem[]
 }
 
+// mục menu tổng quan mặc định cho mọi không gian làm việc
 const overview: NavigationItem = {
   path: '', label: 'Tổng quan', shortLabel: 'Tổng quan',
   description: 'Các khu vực công việc trong không gian của bạn.', icon: 'home',
@@ -24,6 +28,7 @@ const overview: NavigationItem = {
 
 // Nhóm chức năng theo Phần II của TODO.md. Đây là cấu hình điều hướng,
 // không phải nguồn quyền truy cập; quyền thật cần session và backend.
+// danh sách cấu hình menu chi tiết cho từng vai trò
 export const workspaces: readonly Workspace[] = [
   {
     id: 'student', label: 'Sinh viên',
@@ -91,6 +96,7 @@ export const workspaces: readonly Workspace[] = [
   },
 ]
 
+// hàm tạo đường dẫn url hoàn chỉnh cho một mục trong không gian làm việc
 export function workspacePath(workspace: Workspace, item?: NavigationItem) {
   return `/${workspace.id}${item?.path ? `/${item.path}` : ''}`
 }
