@@ -10,7 +10,7 @@ const modules = [
   ['22', 'Sửa chữa', 'Tiếp nhận yêu cầu và xử lý thiết bị.'],
   ['25', 'Ra vào', 'Ghi nhận hoạt động tại cổng ký túc xá.'],
   ['14', 'Kỷ luật', 'Theo dõi và xử lý vi phạm nội quy.'],
-  ['30', 'Công ích', 'Đăng ký hoạt động và quản lý điểm.'],
+  ['30', 'Hoạt động CTXH', 'Đăng ký hoạt động và quản lý điểm CTXH.'],
 ];
 export default function OverviewPage() {
   const [health, setHealth] = useState<'loading' | 'ready' | 'unavailable'>('loading');
